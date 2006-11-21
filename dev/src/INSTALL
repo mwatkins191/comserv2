@@ -1,0 +1,94 @@
+-----------------
+To make the new unified comserv under solaris, type:
+
+	make -f Makefile.solaris
+
+To make the new unified comserv under linux type:
+
+	make -f Makefile.linux
+
+To install either, type:
+
+	make -f Makefile.xxxxx install
+
+and for linux, the executables will be placed in ../bin/Linux and
+for solaris ../bin/Solaris (relative to this directory src).
+
+==========================================================================================
+
+
+
+These are the old installation instructions for comserv4linux
+==========================================================================================
+INSTALLATION
+First, choose a directory where you plan to install the bundle, as in example
+
+cd /home/user
+
+and copy comserv_linux.tar.gz in this direcory
+Next, you have to upack the archive using gunzip and tar programs
+
+gunzip comserv_linux.tar.gz
+tar xvf comserv_linux.tar
+
+After the distribution is unpacked, the directory structure looks like in the Figure
+Executables in the comserv/bin/Linux directory are compiled for Linux and can be used instantly.
+Executables in the comserv/bin/Solaris directory are compiled for big-endian Solaris
+computers and are also ready to use
+If you intend to use the software on other platforms or you are plannign to store data in
+big-endian order in shared memory of comserv server under Linux you have to recompile
+the distribution.
+
+When the distribution is unpacked and (if needed) is recompiles, an operator should edit
+configuration files network.ini, stations.ini and station.ini . Each station.ini file
+should reside in it's own directory. Files network.ini and stations.ini should be copied
+ into the directory /etc (one should have super-user privileges to do this!).
+
+==============================================================================================
+COMPILATION:
+
+Generally, there is no need to compile the programs.
+A directory bin contains two subdirectories: Solaris and Linux,
+which contain the precompiled executable programs for Solaris and Linux correspondingly.
+
+Nevertheless, compilation is an easy task to perform.
+In order to compile the release for Linux, cd to the  $RELEASE/src directory and type
+
+make
+
+This command recursively compiles the distribution, assuming that gcc compiler and linker are installed.
+
+To compile the release for Solaris, you have to issue the command
+
+make solaris.
+
+This command recursively calls make -f makefile.solaris in the src subdirectories
+to compile the Solaris binaries. Surely, you have to execute compilation on the
+Solaris platform. You must have SUN /usr/ucb/cc compiler installed on you Solaris computer.
+To compile the program with gcc, you have to modify the makefile.solaris
+files manually in each src directory.
+
+The second command
+
+make clean
+
+cleans object files.  To install the newly compiled binaries in the
+default $(RELEASE)/bin directory, type
+
+make install
+
+Note, that make install installs the binary files in $(RELEASE)/bin directory,
+whereas precompiled files in $(RELEASE)/bin/Solaris  and $(RELEASE)/bin/Linux
+directories are left untouched.
+
+The precompiled Linux comserv program stores data in MiniSEED format in
+shared memory ring buffers according to the following convention: MiniSEED
+headers are stored in little-endian byte order; compressed data are stored
+in big-endian byte-order.
+
+You can modify Makefile in $(RELEASE)/src/comserv directory and recompile
+comserv to force it to store MiniSEED headers in big-endian byte order.
+In order to do this you have to add the -D_BIG_ENDIAN_HEADER flag to the
+ CFLAG line of $(RELEASE)/src/comserv/Makefile.
+
+

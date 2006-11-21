@@ -1,0 +1,52 @@
+
+CSERV = ../cserv
+LIB330 = /home/hal/dev/cLib330/dev
+
+CXX	 = g++
+CLIBDIR	 = /usr/local/lib
+DEBUG	 = -g
+COPT	 = 
+
+# lib330 and libutil both define some of the same functions.  We'll rely on lib330's implementations (newer)
+USE_FIRST_DEFINED = -z muldefs
+LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl -lsocket -l330 -lutil -lposix4 -lpthread -R$(CLIBDIR)
+
+CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
+LD	 = $(CXX)
+INCL	 = -I../cserv -I. -I$(LIB330)
+LDFLAGS	 = $(DEBUG) $(LDLIBS)
+
+files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C
+
+headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h\
+          lib330Interface.h
+
+
+cserv = $(CSERV)/buffers.o $(CSERV)/clink.o $(CSERV)/cmands.o \
+        $(CSERV)/cscfg.o $(CSERV)/cserv.o $(CSERV)/qmacfg.o
+
+
+sources = $(headers) $(files)
+objects = $(files:.C=.o)
+
+program =  qmaserv
+
+.C.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+ALL =	$(program)
+
+$(program):$(objects) $(files)
+	$(LD) $(objects) $(cserv) -o $@ $(LDFLAGS)
+
+all:		$(ALL)
+
+clean:
+		-rm *.o qmaserv
+
+veryclean:	clean
+		-rm -f *~ qmaserv core
+
+install:	
+	cp qmaserv  $(BINDIR)
+

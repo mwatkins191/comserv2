@@ -1,0 +1,47 @@
+# $Id: Makefile.solaris_cc,v 1.1 2004/07/29 14:17:22 isti Exp $
+#########################################################################
+# Make all the comserv executables and default clients
+# Customize the Makefiles in each directory for your system.
+# You may add other client directories in this directory, and
+# add the directory name to the ALL definition.
+# The Makefile in each directory should support the following targets:
+#	all
+#	clean
+#	install
+
+# BINDIR defined with respect to the subdirectories.
+BINDIR	 = ../../bin/Solaris
+
+MAKEFILE = Makefile.solaris_cc
+
+ALLLIBS	 =  qlib2
+ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
+ALL	 =  $(ALLLIBS) $(ALLPROGS)
+
+all: 	
+	for dir in $(ALL) ; do \
+		echo BUILD for $$dir ... ; \
+		(cd $$dir; make -f $(MAKEFILE) all); \
+	done
+
+solaris: 	
+	for dir in $(ALL) ; do \
+		echo BUILD for $$dir ... ; \
+		(cd $$dir; make -f $(MAKEFILE) all); \
+	done
+
+clean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f $(MAKEFILE) clean); \
+	done
+
+veryclean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f $(MAKEFILE) veryclean); \
+	done
+
+install:
+	for dir in $(ALLPROGS) ; do \
+		(cd $$dir; make -f $(MAKEFILE) install BINDIR=$(BINDIR) );  \
+	done
+

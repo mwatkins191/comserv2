@@ -1,0 +1,65 @@
+########################################################################
+#
+# Makefile     : qmaserv
+#
+# Author       : Phil Maechling
+#
+# Last Revised : 25 March 2002
+#
+########################################################################
+# Linux 2 / Sun Compiler definitions
+#
+#CC      = cc
+#INCL = -I../../include -I../utils
+#CSUDIR  = ../../util
+#QMAUTILS = ../utils
+#CSERV = ../../comserv
+#CFLAGS = -D_SPARC -D_LINUX $(INCL) -I$(CSERV) -I$(CSUDIR)
+########################################################################
+# Linux 2 / gcc definitions
+#
+CC	= gcc
+INCL = ../../include
+CSERV = ../../comserv
+#CFLAGS_DEBUG	= -I$(INCL) -I$(CSERV) -DLINUX2 -g
+CFLAGS		= -I$(INCL) -I$(CSERV) -DLINUX -g
+#LDFLAGS_DEBUG	=
+LDFLAGS		= -lsocket -lnsl -lposix4
+CSUDIR	= ../../util
+LDLIBS	=
+
+OBJS = qmacfg.o cserv.o clink.o cscfg.o buffers.o cmands.o linux.o
+
+ALL =	$(OBJS)
+
+all:		$(ALL)
+
+cserv:	$(OBJS)
+	$(CC) -c $@
+
+qmacfg.o:qmacfg.c
+	$(CC) -c $(CFLAGS) qmacfg.c
+
+cserv.o:cserv.c
+	$(CC) -c $(CFLAGS) cserv.c
+
+clink.o:clink.c
+	$(CC) -c $(CFLAGS) clink.c
+
+cscfg.o: $(CSERV)/cscfg.c
+	$(CC) -c $(CFLAGS) $(CSERV)/cscfg.c
+
+buffers.o:$(CSERV)/buffers.c
+	$(CC) -c $(CFLAGS) $(CSERV)/buffers.c
+
+cmands.o: cmands.c
+	$(CC) -c $(CFLAGS) cmands.c
+
+clean:
+		-rm -f *.o $(ALL)
+
+veryclean:
+		-rm -f *.o *~ $(ALL)
+
+install:	$(ALL)
+		echo "Built cserv libs"

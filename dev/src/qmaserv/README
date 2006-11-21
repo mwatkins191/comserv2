@@ -1,0 +1,297 @@
+++++ Mountainair Software README  12 October 2003
+++++ Overview of the Mountainair Software (also known as qmaserv)
+ 
+Mountainair is a software program that acquires data from a Quanterra Q330 datalogger and outputs waveform data in a format that can be processed by comserv client programs. The Mountainair software program is named qmaserv (Quanterra Mountain Air server) in order to suggest its similarity to comserv, another Quanterra program. Both names ("Mountainair" and "qmaserv") refer to the same software program.
+
+Mountainair was designed to be used in place of comserv. Comserv will continue to be used to acquire data from previous version of Quanterra hardware such as the Q4120, and the Q730. However comserv does not support the new Q330 telemetry protocol and packet types. So, to acquire data from a Q330, Mountainair may be used instead of comserv. There are other programs that can acquire data from a Q330 so be sure to investigate your options to make sure Mountainair is an appropriate choice for your network and needs.
+
+The most significant feature of Mountainair is that you can continue to use all the existing comserv clients when you use Mountainair. Comserv clients such as netmon, datalog, dpda, and dataspy will work with Mountainair as well as with comserv.
+
+Another important feature of Mountainair is that it reads data channel information from the Q330, using the Q330 token system, and dynamically configures itself to record the channels being produced by the data port to which it connects. This means you do not need to configure Mountainair with any data channel related information, such as data sampling rates, filter delays, or data channel names. If the Q330 data channel configuration changes, Mountainair will automatically adjust, and will record the new channel configuration without any change to the Mountainiar configurations.
+
+It is important to understand that Mountainair does not configure the Q330 in any way. The configuration of the Q330 is current done using Quanterra software such as Willard. Once the Q330 has been properly configured, then Mountainair may be used to record data from the Q330. 
+
+++++ Mountainair Versions
+
+Mountainair uses a Release.Feature.Bugfix versioning scheme (e.g. v1.1.0)
+Each Mountainair distribution will contain a Version number. For an executable of mountianair, you type qmaserv -v, and it will display a message such as the following:
+
+You can also look in the file QMA_Version.h. 
+
+The first number (Release) is incremented when there are significant changes, including design changes, or architectural changes.
+
+The second number (Feature) is incremented when one or more new features are incorporated into the distribution. See the Modifications section at the end of this file for a description of the new features.
+
+The third number (Bugfix) is incremented when there is a change that fixes a problem, but no new functionality is included in a distribution.
+
+++++ Environment, Platform and Compilers
+
+There is currently one version of Mountainair available. This version runs on Sun Solaris systems. 
+
+Both the g++ compilers (2.95 and later), and the Sun Solaris compilers (6.0 and later) are supported by this initial distribution of Mountainair. To switch between the compilers, you edit the makefile definitions in the Mountainair source code directories. There is more information on building the software in a later section.
+
+There are also two sets of makefiles in the distribution (Makefile.solaris and Makefile.solcomp) as a convience for working in two different development environments. The variables are (a) the compiler (g++ or Solaris C++) and the comserv distribution being used (original comserv, or comserv with linux support) .The Makefile.solaris is setup to compile, without change, the g++ compiler and the comserv with linux support. The Makefile.solcomp is setup to compile the Solaris C++ with original comserv. To convienently use one version or another, you can edit the file qmaserv/Makefile to call the version you like. Where that file specifies a Makefile, change all references to the appropriate Makefile for your environment.
+For example, you can change all the lines that reference Makefile.solaris to reference Makefile.solcomp
+ To move from g++ with with comserv with linux support, edit lines like this:
+(cd $$dir; make -f Makefile.solaris all); 
+ to reference the Makefile.solcomp like this
+(cd $$dir; make -f Makefile.solcomp all);
+Then when you type make from the qmaserv directory, it will call the appropriate makefile automatically. Alternatively, you can call the Makefile you like using a command line call like this:
+<15%>make -f Makefile.solaris
+<15%>make -f Makefile.solcomp
+
+++++ Required Software
+
+Mountainair is closely tied to the Quanterra comserv software. A comserv distribution is required in order to build the Mountainair software. In turn, the comserv clients such as datalog, and netmon are tied to a qlib2 software distribution, so current distributions of both of these program are required in order to use Mountainair. Both comserv and qlib2 are available through the Quanterra Users group site operated by the Berkeley Seismological station.
+
+No other software (besides comserv and qlib2) is required to build Mountainair. Mountainair is written in C++ and in C. It does not use the STL, the C++ Standard Template Library, so those library's are not required in order to build it.
+
+++++ Installing the Mountainair software
+
+Here's a brief outline on how to build the Mountainair software.
+
+(a) You'll need both a C compiler and a C++ compiler. Select either the gcc tools or the Sun Solaris compilers.
+
+(b) Obtain a distribution of qlib2, and of comserv. The software has been tested with the comserv4linux distribution and qlib2 version 1.1 These are the latest distributions available from the Quanterra Users Group. Earlier versions may work, but have not been tested with Mountainair.
+
+(c) Build the qlib2 distribution. One results of the build process will be a libqlib2.a file. This is linked in by some of the comserv clients.
+
+(d) Build the comserv distribution. One result of the build process will be a libutil.a as well as a set of comserv, and comserv client, executable programs.
+
+(e) (Optional but recommended) You should also build a version of qmerge. This program is also available from the Quanterra Users group. This program is not required in order to build Mountainair, but it is very useful. It is used to manipulate the data files output by datalog.
+
+(f) Install the Mountainair distribution into the comserv directory tree. The comserv directory structure looks something like this:
+
+Makefile       bin/           clients.ucb/   include/       
+README         clients/       comserv/       trigger/
+README.UCB     clients.cit/   comserv.mail   util/
+
+Your comserv directory may vary somewhat from this. The key directores required by qmaserv are comserv/ include/ util/. As long as qmaserv distribution is put into a directory that contains these subdirectories, it will be able to find the files it needs.
+
+Copy the Mountainair tar file into this directory. Un-tar the file with
+tar xvf qmaserv.tar.
+
+As it untars, it will create a qmaserv directory structure into this directory.
+Your directory will now look something like this: Note the addition of the qmaserv/ subdirectory.
+
+Makefile       bin/           clients.ucb/   include/       util/
+README         clients/       comserv/       qmaserv/
+README.UCB     clients.cit/   comserv.mail   trigger/
+
+Installing the qmaserv directory structure into this directory is important because the makefiles assume that the comserv directories, include files, libraries, and object files are available in these directories.
+
+++++ Building the Mountainair Executable
+
+Building Mountainair will be fairly straight forward if the above steps are followed. Assuming the other software (qlib2 and comserv) are built, and that the Mountainair distribution is placed into the comserv directory structure described above, the following steps will build a Mountainair executable.
+
+(a) Determine which C++ and C compilers (gcc or Sun) were used to build qlib2 and comserv. Then edit 4 different Mountainair make files in order to specify the selected compiler
+
+(b) The Mountainair directory Structure looks like this:
+
+CVS               Makefile.solcomp  docs/             tests/
+CVSINFO           README            include/          utils/
+Makefile          configs/          msgs/
+Makefile.solaris  cserv/            qmaserv/
+
+
+(c) The Makefile calls either the Makefile.solaris, or Makefile.solcomp makefiles to build the distribution. The Makefile.solaris is configured for a Solaris OS, g++ compiler, comserv with linux support distribution. The Makefile.solcomp is configured for a Solaris OS, Solaris C++ compiler, and the original comserv distribution. If you have some other combination of initial conditions, you'll need probably need to to edit the makefiles a little. However, the differences between makefiles are fairly small. There are suggestions in the following sections about what the differences are between the Makefile versions.
+
+(d) There are makefiles in the following directories and ALL makefiles need to point to the correct, and the SAME, compilers. The directories containing makefiles that need to be edited are:
+
+	cserv/ utils/
+	msgs/  qmaserv/
+
+(e) In each of these directories, there is a Makefile.solaris file. In each makefile, there is a section for Solaris Compiler definitions, and a section for the gcc compiler definitions. Comment "in" the section describing the compiler you want, and comment "out" the section that defines the definitions for the other compiler. The makefiles use the # at the beginning of a line to comment out the line.
+
+(f) Once the makefiles all specify the appropriate compilers, return to the qmaserv directory and type "make all". The make will step into each of the above 4 directories, compile the source code, and build and executable.
+
+(g) On Solaris 2.8 and higher with the compilers listed above, the software builds with no errors or warnings.
+ 
+(h) On successful compilation, the Mountainair executable is located in the qmaserv/qmaserv directory. It is called qmaserv. It makes sense to copy this over to the comserv/bin directory so it resides with the other comserv executables and clients.
+
+++++ Special Instructions for comserv4linux Users
+
+If you use the comserv4linux directory you need to link in a slightly different set of objects when you build qmaserv.
+
+To accomplish this, edit the qmaserv/qmaserv/Makefile.solaris. Comment out the line that references the linux.o file. Comment in the line which does not reference this file.
+
+++++ Configuring a Mountainair to acquire data from a Q330
+
+Mountainair uses the same configuration system used by comserv. There is useful information on the comserv configuration system in the Comserv users guide. The brief description in this README file may be enough if you are familiar with comserv. If you want more information on comserv station.ini files check into the comserv users guide for background information.
+
+Configure the /etc/stations.ini with a reference to the station code you will be acquiring. This stations.ini entry will include a path to a station.ini file. This station.ini file must contain Mountainair specific configuration information.
+++++ Mountainair station.ini file
+
+A Mountainair station.ini file is similar to a comserv station.ini file. However it includes a section starting with the tag (in square brackets) [Mountainair]. This begins the configuration information needed by the Mountainair program.
+
+There are several sections in a comserv (and Mountainair) station.ini file. Each sections begins with a header in square brackets. The sections we will discuss are the [comlink] section, and the [Mountainair] section.
+
+++++ The [comlink] portion of the Mountainair station.ini
+
+The comlink section of a comserv station.ini may be used with Mountainair. However, several entries in the section relating to the mshear comlink protocol are not used by Mountainair. The portions of the [comlink] second relating to (a) comserv shared memory area, and (b) the comserv clients are use by Mountainair.
+
+Here's an example of the [comlink] section of a Mountainair station.ini file. The entries relating to the comlink protocol are commented out. They may be left in, commented out, or removed from the file. If they exist in the file, they are ignored by Mountainair, but they may confuse an operator.
+
+[comlink]
+* station=DSC
+* udpaddr=208.136.14.231
+* ipport=37207
+* netto=120
+* netdly=30
+* grpsize=1
+* grptime=1
+* verbosity=2
+* override=yes
+segid=8002
+pollusec=50000
+databufs=1000
+detbufs=200
+timbufs=200
+calbufs=20
+msgbufs=200
+reconfig=50
+client1=dlog
+uid200=32767
+uid122=32767
+uid0=32767
+
+Note the the dlog client is specified a a non-blocking client. This is important as Mountainair does not support blocking clients.
+
+++++ Client sections in the Mountainair station.ini configuration file
+
+The sections in the Mountainair relating to comserv clients can remain the same as a comserv station.ini. Again, however, note the restriction that Mountainair does not support blocking clients, so no clients should be specified as blocking.
+
+++++ Mountainair section of a Mountainair station.ini file.
+
+Here's an example of a Mountainair configuration section, along with an explanation of each entry in the section.
+
+[Mountainair]
+udpaddr=136.214.64.214
+baseport=5330
+dataport=2
+ipport=5506
+serialnumber=0x010000089F4071E6
+authcode=0x44
+* verbosity=1
+* diagnostic=47
+* startmsg=Mountainair data acquisition started on Port 2
+
+
+The REQUIRED [mountainair] station.ini entries are as follows:
+
+udpaddr  -  This is the IP address of the Q330. This is set during configuration of the Q330 and then entered into the Mountainair station.ini configuration file.
+baseport - This is the baseport on the Q330. It defines the number at which a series of control and data ports are available on the Q330.
+
+dataport -  This defines which of the 4 data ports on the Q330 that this instance of Mountainair will communicate with.
+
+ipport   - This is an unused IP port available on your Solaris machine. When you specify the IP port, you are actually assigning a pair of IP ports. You must insure that the specified IP port, and the specified IP port +1 are not in use by any other program on the system.
+
+serialnumber - This is the Q330 serial number available from Quanterra. It should be written in hexidecimal.
+
+authcode - This is an authorization code given to you by Quanterra. It must match the appropriate authorization code for the Q330 you wish to communicate with. The combination of serialnumber and authcode enables programs to connect to Q330. 
+
+There are OPTIONAL entries in the Mountainair station.ini file. These entries are allowed, but not required by Mountainair. When not is use, you may comment the entries out by placing a * at the start of the line (recommended), or you may remove the line entirely.
+
+The OPTIONAL [mountainair] station.ini entries are as follows:
+
+startmsg - This defines a string which will be sent to to the Q330 as a "User Message" when acquisition starts up. Max Length of the message is 80 characters. If defined, all other Users connected to this Q330 will see or log the string that is defined here. There is no need to put quote marks around the string.
+
+verbosity - (Min=0, Max=3, default=0 (no units)) This defines the verbosity of the log file created by Mountainair. No entry, or a value of 1 causes Mountainair log only periodic (currently every 100 seconds) status reports concerning the amount of data acquired. Higher number 2 and 3 are defined, but will cause significant increase in log information, and may cause Mountainair to use too much CPU resource.
+
+statusinterval - (Min=5, Max=200, default=100 (seconds)) This defines the frequency at which the Mountainair requests status from the Q330. More frequent requests have the advantage of receiving status information from the Q330 more quickly. If the Q330clock quality changes, or the Q330 configuration changes, Mountainair learns about it more quickly. However, frequent request will increase the traffic on the network link and will increase the size of the log files.
+
+datarateinterval - (Min=1 Max=200, default=3 (statusintervals)) This defines the inteval overwhich data rate information is calculated. Multiply this number by the status interval number to find the calculation interval. Every calculation interval number of seconds the data packet information will be reset so that the data rate information is reasonably up-to-date.
+
+++++  Modifications to Mountainair by Version Number
+
+---- v1.0.0 - 22 October 2002
+
+- Note this is a beta release V1.0.0 of Mountainair. We are interested in your comments and feedback to help us improve the software and make it useful to customers. You can send comments to phil@jetspring.org and we will try to incorporate your comments and suggestions into future versions of Mountainair.
+
+---- v1.0.1 - 10 February 2003
+
+- Added status interval configuration.
+- Fix to station.ini configuration file reader. Empty or no entries in the station.ini (for things like diagnostic levels or verbosity) are now correctly set to their default values. Previously, they could have been set to high verbosity or diagnotics inadvertently, causing large log files.
+
+---- v1.0.2 - 15 February 2003
+
+- A problem was fixed that caused Mountainair to enter a reset loop. If the station timed out, and the TX_OPEN command timer counted down 10x100 seconds, Mountinair would not re-establish data acquisition once the link was restored.
+
+---- v1.0.3 - 16 February 2003
+
+- Modified depth of PCQ to support sliding window size of 127 blockettes.
+
+
+----- v1.0.4 1 March 2003
+
+- Added station.ini parameter Data Rate Interval. This is the number of
+   status intervals over which the data rate will be calculated.
+
+- Added reset to sliding window when ackCounter is initialized.
+
+- Addd timestamp to the the TxCmd Requesting Challenge log msg so you can tell the lines apart.
+
+- Modified the code to re-read the station.ini when the program resets.
+
+- Modified the code to reset if a data port configuration parameter is changed.
+
+
+----- v1.0.5 26 March 2003
+
+- Added diagnotics to print out packet on CRC error.
+
+- Added diagnostics to turn verbosity way up if packet rate drops too low.
+  This will cause very large log files. Use only for diagnostics purposes.
+
+- Added the Makefile.solcomp to make it easier to compile with Solaris compilers.
+
+
+----- V1.0.6 28 March 2003
+
+
+- Added change to ack oldest packet every packet group, even if
+  no packet has been received.
+
+
+---- v1.0.7 4 April 2003
+
+- Removed the verbose logging for the diaganostic build in v4.
+
+- Removed a clearInputQueue command from reset Clear method.
+
+
+---- V1.0.8 21 April 2003
+
+- Updated Blockette 1001 header with FrameCount and reserved ID set to 6
+  to indicate a Q300
+
+- Updated the periodic reporting to indicate the Timing Quality, and the Data 
+  Queue Availablity.
+
+---- V1.0.9 3 May 2003
+
+- Modified QMA_Port.h input parameter type declaration so program links with
+   Solaris compiler and linker.
+
+---- V1.0.10 15 June 2003
+- Updated several include statements, replacing include <iostream.h> with include <iostream>. This eliminates some compilation warnings given by some compilers. 
+- Also includes some small updates to the Readme.txt to describe the differences between the Makefile.solaris and the Makefile.solcomp files.
+
+---- V1.0.11 6 July 2003
+- Removed information about the versions from the QMA_Version.h file. The only place to find version information is the README.
+
+- Updated the MAX_TERMINATE_WAIT value from 2 minutes to 20 minutes. On large networks, qmaserv was exiting before netmon killed it's clients. Then, the netmon gave up and never tried to kill the clients. Waiting 20 minutes should be a long enough wait for any network. Typically, qmaserv won't wait thing long to exit. It will usually get a TERMINATE signal from netmon and exit gracefully. The only time it would wait 20 minutes to exit would be if netmon was killed while qmaserv was in a SUSPENDED state.
+
+---- V1.1.0 August 10 2003
+
+- This is the first release of the version that will generate the data time series channels. Now Mountainair will create data time series channels such as mass position, and logical port status channels.
+
+---- v1.1.1 October 12, 2003
+
+- Added check in SlidingWindow::firstPosition for a sliding window size of 0. Program will exit and restart if this occurs.
+
+- Updated c1_fix.C code that used an un-initialized variable (temp) in some calculations. 
+
+- Corrected the calculation of channels LCQ LCE LCL. In v1.1.0, these were mis-labelled. LCL will be generated if an appropriate token is specified.
+- 
+- 
