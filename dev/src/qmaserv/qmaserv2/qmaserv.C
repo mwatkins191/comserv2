@@ -52,7 +52,7 @@ extern "C" {
 
 }
 
-#ifdef LINUX
+#ifdef linux
 #include "portingtools.h"
 #endif
 

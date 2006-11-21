@@ -44,7 +44,7 @@
 #include "QmaDiag.h"
 #include "global.h"
 
-#if defined(LINUX) || defined(_WINNT)
+#if defined(linux) || defined(_WINNT)
 #include "portingtools.h"
 #endif
 
