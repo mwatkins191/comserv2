@@ -16,6 +16,7 @@ LD	 = $(CXX)
 INCL	 = -I../cserv -I. -I$(LIB330)
 LDFLAGS	 = $(DEBUG) $(LDLIBS)
 
+
 files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C
 
 headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h\
@@ -29,24 +30,19 @@ cserv = $(CSERV)/buffers.o $(CSERV)/clink.o $(CSERV)/cmands.o \
 sources = $(headers) $(files)
 objects = $(files:.C=.o)
 
-program =  qmaserv
+program =  qmaserv2
 
 .C.o:
 	$(CXX) $(CXXFLAGS) -c $<
 
-ALL =	$(program)
-
 $(program):$(objects) $(files)
 	$(LD) $(objects) $(cserv) -o $@ $(LDFLAGS)
 
-all:		$(ALL)
+all:		$(program)
 
 clean:
-		-rm *.o qmaserv
+		-rm *.o $(program)
 
 veryclean:	clean
-		-rm -f *~ qmaserv core
-
-install:	
-	cp qmaserv  $(BINDIR)
+		-rm -f *~ $(program) core
 
