@@ -35,7 +35,7 @@ class Lib330Interface {
   static void state_callback(pointer p);
   static void miniseed_callback(pointer p);
   static void archival_miniseed_callback(pointer p);
-
+  static void msg_callback(pointer p);
 
  private:
   int sendUserMessage(char *);

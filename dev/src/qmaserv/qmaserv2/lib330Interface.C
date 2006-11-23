@@ -174,6 +174,7 @@ void Lib330Interface::miniseed_callback(pointer p) {
       //g_log << "ooo PKC_TIMING" << std::endl;
       break;
     case PKC_MESSAGE:
+      //g_log << "ooo PKC_MESSAGE" << std::endl;
       /*
       memcpy(msgCopy, data->data_address, 512);
       msgStart = msgCopy;
@@ -219,6 +220,13 @@ void Lib330Interface::archival_miniseed_callback(pointer p) {
 
 }
 
+void Lib330Interface::msg_callback(pointer p) {
+  tmsg_call *msg = (tmsg_call *) p;
+  string95 msgText;
+  lib_get_msg(msg->code, &msgText);
+  // g_log << "MSG: " <<  msgText << " " << msg->suffix << std::endl;
+}
+
 /**
  * For internal use only
  */
@@ -260,7 +268,7 @@ void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
   strcpy(this->registrationInfo.host_interface, "");
   this->registrationInfo.host_mincmdretry = 5;
   this->registrationInfo.host_maxcmdretry = 20;
-  this->registrationInfo.host_ctrlport = 0;
+  this->registrationInfo.host_ctrlport = 33042;
   this->registrationInfo.host_dataport = 0;
   this->registrationInfo.opt_latencytarget = 0;
   this->registrationInfo.opt_closedloop = 0;
@@ -293,7 +301,7 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
       this->creationInfo.q330id_dataport = LP_TEL4;
       break;
   }
-  this->creationInfo.q330id_dataport = ourConfig.getQ330DataPortNumber();
+  //this->creationInfo.q330id_dataport = ourConfig.getQ330DataPortNumber();
   strncpy(this->creationInfo.q330id_station, stationName, 5);
   this->creationInfo.host_timezone = 0;
   strcpy(this->creationInfo.host_software, APP_VERSION_STRING);
@@ -312,7 +320,7 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
   this->creationInfo.call_aminidata = this->archival_miniseed_callback;
   this->creationInfo.resp_err = LIBERR_NOERR;
   this->creationInfo.call_state = this->state_callback;
-  this->creationInfo.call_messages = NULL;
+  this->creationInfo.call_messages = this->msg_callback;
   this->creationInfo.call_secdata = NULL;
   this->creationInfo.call_lowlatency = NULL;
 }
