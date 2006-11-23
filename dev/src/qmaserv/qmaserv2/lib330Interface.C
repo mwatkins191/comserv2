@@ -268,7 +268,7 @@ void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
   strcpy(this->registrationInfo.host_interface, "");
   this->registrationInfo.host_mincmdretry = 5;
   this->registrationInfo.host_maxcmdretry = 20;
-  this->registrationInfo.host_ctrlport = 33042;
+  this->registrationInfo.host_ctrlport = 0;
   this->registrationInfo.host_dataport = 0;
   this->registrationInfo.opt_latencytarget = 0;
   this->registrationInfo.opt_closedloop = 0;
