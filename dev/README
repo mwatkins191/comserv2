@@ -1,4 +1,4 @@
-June 28, 2004
+Nov 30, 3006  - updated
 
 This unified COMSERV bundle contains the comserv server and several clients
 which together provide a communication/data link with Quanterra Inc. digitizers.
@@ -29,3 +29,5 @@ For brief installation and compilation instructions, please read the
 file INSTALL in the src directory.
 
 For information about the latest features of COMSERV, see the file NEWS.
+
+June 28, 2004 - doc started
