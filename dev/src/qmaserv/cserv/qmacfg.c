@@ -128,6 +128,10 @@ int getQmacfg(struct qma_cfg* out_cfg)
           if (strcmp(str1, "DATARATEINTERVAL") == 0)
               strcpy(out_cfg->datarateinterval, str2) ;
 
+	  if (strcmp(str1, "LOGLEVEL") == 0) {
+	    strcpy(out_cfg->loglevel, str2);
+	  }
+
       }
       while (1) ;
 
@@ -150,4 +154,5 @@ void clearConfig(struct qma_cfg* cfg)
   strcpy(cfg->startmsg,"");
   strcpy(cfg->statusinterval,"");
   strcpy(cfg->datarateinterval,"");
+  strcpy(cfg->loglevel, "");
 }

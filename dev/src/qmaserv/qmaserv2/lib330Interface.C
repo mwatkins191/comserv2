@@ -158,11 +158,14 @@ void Lib330Interface::state_callback(pointer p) {
 
 void Lib330Interface::miniseed_callback(pointer p) {
   tminiseed_call *data = (tminiseed_call *) p;
-  char msgCopy[512];;
-  char *msgStart;
-  char *newline;
-  FILE *f;
+
+  /*
+   * Handle non-data miniseed records
+   */
   if(data->packet_class != PKC_DATA) {
+    char msgCopy[512];
+    char *msgStart;
+    char *newline;
     switch(data->packet_class) {
     case PKC_EVENT:
       //g_log << "ooo PKC_EVENT" << std::endl;
@@ -174,39 +177,30 @@ void Lib330Interface::miniseed_callback(pointer p) {
       //g_log << "ooo PKC_TIMING" << std::endl;
       break;
     case PKC_MESSAGE:
-      //g_log << "ooo PKC_MESSAGE" << std::endl;
-      /*
+      // lets not muck with memory that we didn't allocate
       memcpy(msgCopy, data->data_address, 512);
-      msgStart = msgCopy;
-      msgStart += 56;
-      newline = msgStart;
-      f = fopen("test.txt", "a+");
-      fwrite(msgStart, sizeof(char), data->data_size-56, f);
-      fclose(f);
+      newline = msgStart = msgCopy + 56;
+      // run through the message, printing one line at a time
       for(int i=0; i < data->data_size-56; i++) {
-	newline = msgStart + i;
+	newline = msgCopy + 56 + i;
 	if(*newline == '\0') {
 	  break;
-	}
-	if(*newline == '{') {
-	  *(newline-1) = '\0';
+	} else if(*newline == '\n') {
+	  *(newline) = '\0';
 	  g_log << data->channel << " " << msgStart << std::endl;
-	  msgStart = newline;
+	  msgStart = newline + 1;
 	}
       }
-      */
       break;
     case PKC_OPAQUE:
       //g_log << "ooo PKC_OPAQUE" << std::endl;
       break;
     }
-    // for now, we'll skip this
-    return;
-  } 
-
-  if(data->timestamp < g_timestampOfLastRecord) {
-    g_log << "XXX Packets being received out of order" << std::endl;
-    g_timestampOfLastRecord = data->timestamp;
+  } else {
+    if(data->timestamp < g_timestampOfLastRecord) {
+      g_log << "XXX Packets being received out of order" << std::endl;
+      g_timestampOfLastRecord = data->timestamp;
+    }
   }
 
   // this should be queued up somewhere, and send to comserv in another thread, to prevent
@@ -307,7 +301,7 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
   strcpy(this->creationInfo.host_software, APP_VERSION_STRING);
   sprintf(continuityFile, "qmaserv_cont_%s.bin", stationName);
   strcpy(this->creationInfo.opt_contfile, continuityFile);
-  this->creationInfo.opt_verbose = VERB_REGMSG;
+  this->creationInfo.opt_verbose = VERB_SDUMP | VERB_REGMSG | VERB_LOGEXTRA | VERB_AUXMSG;
   this->creationInfo.opt_zoneadjust = 1;
   this->creationInfo.opt_secfilter = 0;
   this->creationInfo.opt_minifilter = OMF_ALL;

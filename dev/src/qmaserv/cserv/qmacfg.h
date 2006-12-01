@@ -28,18 +28,19 @@
 
 struct qma_cfg
 {
- char station_code[80];
- char udpaddr[80];
- char ipport[80];
- char baseport[80];
- char dataport[80];
- char serialnumber[80];
- char authcode[80];
- char verbosity[80];
- char diagnostic[80]; 
- char startmsg[80];
- char statusinterval[80];
- char datarateinterval[80];
+  char station_code[80];
+  char udpaddr[80];
+  char ipport[80];
+  char baseport[80];
+  char dataport[80];
+  char serialnumber[80];
+  char authcode[80];
+  char verbosity[80];
+  char diagnostic[80]; 
+  char startmsg[80];
+  char statusinterval[80];
+  char datarateinterval[80];
+  char loglevel[256];
 };
 
 #ifdef __cplusplus
