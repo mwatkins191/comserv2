@@ -17,7 +17,7 @@
 #define MAJOR_VERSION 2
 #define MINOR_VERSION 0
 #define RELEASE_VERSION 0
-#define APP_VERSION_STRING "Qmaserv v2.0.0 $Rev$"
+#define APP_VERSION_STRING "Qmaserv v2.0.0 $Revision$"
 extern Logger g_log;
 extern Lib330Interface *g_libInterface;
 #endif
