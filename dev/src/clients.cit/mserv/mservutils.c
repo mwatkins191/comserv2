@@ -78,6 +78,11 @@ int classify_packet(seed_fixed_data_record_header* sh)
       {
         return(CALIBRATION);
       }
+      else if ( (sh->deb.blockette_type == 2000))
+      {
+        return(BLOCKETTE);
+      }
+
       else if((sh->header.activity_flags && 
 		SEED_ACTIVITY_FLAG_END_EVENT) > 0)
       {
