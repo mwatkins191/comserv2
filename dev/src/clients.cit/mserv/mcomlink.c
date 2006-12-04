@@ -921,7 +921,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -933,7 +934,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -944,7 +946,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -955,7 +958,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -966,7 +970,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -977,7 +982,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
@@ -988,7 +994,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 {
                   LogMessage(CS_LOG_TYPE_ERROR,"Station blocked.");
 	          LogMessage(CS_LOG_TYPE_ERROR,"No blocking clients.Exiting");
-	          exit(12);
+/*::	          exit(12);*/
+		  return;
                 }
                 break;
               }
