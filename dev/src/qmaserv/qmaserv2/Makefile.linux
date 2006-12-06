@@ -13,7 +13,7 @@ LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl  -l330 -lutil -lp
 
 CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
 LD	 = $(CXX)
-INCL	 = -I../cserv -I. -I$(LIB330)
+INCL	 =  -I../cserv -I. -I$(LIB330)
 LDFLAGS	 = $(DEBUG) $(LDLIBS)
 
 

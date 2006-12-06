@@ -49,7 +49,6 @@ extern "C" {
 #include "qmacfg.h"
 #include "cserv.h"
 #include "clink.h"
-
 }
 
 #ifdef linux
@@ -175,10 +174,21 @@ void readOrRereadConfigFile(char* stationcode) {
   }
 }
 
+#define CSCM_SUSPEND 11
+#define CSCM_TERMINATE 14
+
 void scan_comserv_clients() {
   int stat = comserv_scan();
   if(stat != 0) {
      g_log << "+++ Found signal from client: " << stat << std::endl;
+     switch(stat) {
+     case CSCM_SUSPEND:
+       cleanup(1);
+       break;
+     case CSCM_TERMINATE:
+       cleanupAndExit(1);
+       break;
+     }
 	
   }
 }
