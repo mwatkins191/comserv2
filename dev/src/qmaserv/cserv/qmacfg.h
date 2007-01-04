@@ -38,9 +38,17 @@ struct qma_cfg
   char verbosity[80];
   char diagnostic[80]; 
   char startmsg[80];
-  char statusinterval[80];
-  char datarateinterval[80];
-  char loglevel[256];
+  char statusinterval[10];
+  char datarateinterval[10];
+  char loglevel[40];
+  char contFileDir[256];
+  char sourceport_control[8];
+  char sourceport_data[8];
+  char failedRegistrationsBeforeSleep[6];
+  char minutesToSleepBeforeRetry[8];
+  char dutycycle_maxConnectTime[10];
+  char dutycycle_sleepTime[10];
+  char dutycycle_bufferLevel[10];
 };
 
 #ifdef __cplusplus

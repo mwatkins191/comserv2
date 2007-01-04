@@ -74,6 +74,7 @@ Lib330Interface  *g_libInterface = NULL;
 //*****************************************************************************
 //
 
+
 int main(int argc, char *argv[]) {
   g_log.logToStdout(true);
   g_log.logToFile(false);

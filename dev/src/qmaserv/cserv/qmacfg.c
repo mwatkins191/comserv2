@@ -132,6 +132,34 @@ int getQmacfg(struct qma_cfg* out_cfg)
 	    strcpy(out_cfg->loglevel, str2);
 	  }
 
+	  if (strcmp(str1, "CONTFILEDIR") == 0) {
+	    strcpy(out_cfg->contFileDir, str2);
+	  }
+	  if (strcmp(str1, "SOURCEPORT_CONTROL") == 0) {
+	    strcpy(out_cfg->sourceport_control, str2);
+	  }
+	  if (strcmp(str1, "SOURCEPORT_DATA") == 0) {
+	    strcpy(out_cfg->sourceport_data, str2);
+	  }
+
+	  if (strcmp(str1, "FAILEDREGISTRATIONSBEFORESLEEP") == 0) {
+	    strcpy(out_cfg->failedRegistrationsBeforeSleep, str2);
+	  }
+	  if (strcmp(str1, "MINUTESTOSLEEPBEFORERETRY") == 0) {
+	    strcpy(out_cfg->minutesToSleepBeforeRetry, str2);
+	  }
+
+	  if (strcmp(str1, "DUTYCYCLE_MAXCONNECTTIME") == 0) {
+	    strcpy(out_cfg->dutycycle_maxConnectTime, str2);
+	  }
+	  if (strcmp(str1, "DUTYCYCLE_SLEEPTIME") == 0) {
+	    strcpy(out_cfg->dutycycle_sleepTime, str2);
+	  }
+	  if (strcmp(str1, "DUTYCYCLE_BUFFERLEVEL") == 0) {
+	    strcpy(out_cfg->dutycycle_bufferLevel, str2);
+	  }
+
+	  
       }
       while (1) ;
 
@@ -155,4 +183,12 @@ void clearConfig(struct qma_cfg* cfg)
   strcpy(cfg->statusinterval,"");
   strcpy(cfg->datarateinterval,"");
   strcpy(cfg->loglevel, "");
+  strcpy(cfg->contFileDir, "");
+  strcpy(cfg->sourceport_control, "");
+  strcpy(cfg->sourceport_data, "");
+  strcpy(cfg->failedRegistrationsBeforeSleep, "5");
+  strcpy(cfg->minutesToSleepBeforeRetry, "1");
+  strcpy(cfg->dutycycle_maxConnectTime, "");
+  strcpy(cfg->dutycycle_sleepTime, "");
+  strcpy(cfg->dutycycle_bufferLevel, "");
 }

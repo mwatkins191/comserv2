@@ -49,6 +49,7 @@
 #endif
 
 
+
 ConfigVO::ConfigVO(char* q330_udpaddr,
 		   char* q330_base_port,
 		   char* q330_data_port,
@@ -73,6 +74,29 @@ ConfigVO::ConfigVO(char* q330_udpaddr,
   p_configured = true;
 }
 
+ConfigVO::ConfigVO(qma_cfg cfg) {
+  setQ330UdpAddr(cfg.udpaddr);
+  setQ330BasePort(cfg.baseport);
+  setQ330DataPortNumber(cfg.dataport);
+  setQ330SerialNumber(cfg.serialnumber);
+  setQ330AuthCode(cfg.authcode);
+  setQMAIPPort(cfg.ipport);
+  setVerbosity(cfg.verbosity);
+  setDiagnostic(cfg.diagnostic);
+  setStartMsg(cfg.startmsg);
+  setStatusInterval(cfg.statusinterval);
+  setLogLevel(cfg.loglevel);
+  setContinuityFileDir(cfg.contFileDir);
+  setSourcePortControl(cfg.sourceport_control);
+  setSourcePortData(cfg.sourceport_data);
+  setFailedRegistrationsBeforeSleep(cfg.failedRegistrationsBeforeSleep);
+  setMinutesToSleepBeforeRetry(cfg.minutesToSleepBeforeRetry);
+  setDutyCycle_MaxConnectTime(cfg.dutycycle_maxConnectTime);
+  setDutyCycle_BufferLevel(cfg.dutycycle_bufferLevel);
+  setDutyCycle_SleepTime(cfg.dutycycle_sleepTime);
+  p_configured = true;
+}
+
 ConfigVO::ConfigVO()
 {
   strcpy(p_q330_udpaddr, "");
@@ -87,6 +111,7 @@ ConfigVO::ConfigVO()
   p_statusinterval = DEFAULT_STATUS_INTERVAL;
   p_configured = false;
 }
+
   
 int ConfigVO::initialize(char* infile)
 {
@@ -225,7 +250,39 @@ qma_uint32 ConfigVO::getStatusInterval() const
   return p_statusinterval;
 }
 
+qma_uint32 ConfigVO::getLogLevel() const {
+  return p_logLevel;
+}
 
+qma_uint16 ConfigVO::getSourcePortControl() const {
+  return p_sourcePortControl;
+}
+
+qma_uint16 ConfigVO::getSourcePortData() const {
+  return p_sourcePortData;
+}
+
+qma_uint16 ConfigVO::getFailedRegistrationsBeforeSleep() const {
+  return p_failedRegistrationsBeforeSleep;
+}
+
+qma_uint16 ConfigVO::getMinutesToSleepBeforeRetry() const {
+  return p_failedRegistrationsBeforeSleep;
+}
+
+char * ConfigVO::getContinuityFileDir() const {
+  return (char *)p_contFileDir;
+}
+
+qma_uint16 ConfigVO::getDutyCycle_MaxConnectTime() const {
+  return p_dutycycle_maxConnectTime;
+}
+qma_uint16 ConfigVO::getDutyCycle_SleepTime() const {
+  return p_dutycycle_sleepTime;
+}
+qma_uint16 ConfigVO::getDutyCycle_BufferLevel() const {
+  return p_dutycycle_bufferLevel;
+}
 
 //
 // Set values
@@ -459,3 +516,131 @@ void ConfigVO::setStatusInterval(char* input)
   }
 }
   
+void ConfigVO::setContinuityFileDir(char *input) {
+  strcpy(this->p_contFileDir, input);
+}
+
+void ConfigVO::setSourcePortControl(char *input) {
+  // make the default 0
+  if(!strcmp(input, "")|| !strcmp(input, "0")) {
+    p_sourcePortControl = 0;
+    return;
+  }
+
+  qma_uint16 port = atoi(input);
+  if(port <= 0)
+  {
+    g_log << "xxx Error converting input to port number : " <<  
+      port << std::endl;
+  }
+  else
+  {
+    p_sourcePortControl = port;
+  }
+
+}
+void ConfigVO::setSourcePortData(char *input) {
+  // make the default 0
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_sourcePortData = 0;
+    return;
+  }
+  qma_uint16 port = atoi(input);
+  if(port <= 0)
+  {
+    g_log << "xxx Error converting input to port number : " <<  
+      port << std::endl;
+  }
+  else
+  {
+    p_sourcePortData = port;
+  }
+}
+
+void ConfigVO::setFailedRegistrationsBeforeSleep(char *input) {
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_failedRegistrationsBeforeSleep = 0;
+    return;
+  }
+  p_failedRegistrationsBeforeSleep = atoi(input);
+  if(p_failedRegistrationsBeforeSleep <= 0) {
+    g_log << "xxx Error converting input to num registrations : " << input << std::endl;
+  }
+}
+
+void ConfigVO::setMinutesToSleepBeforeRetry(char *input) {
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_minutesToSleepBeforeRetry = 0;
+    return;
+  }
+  p_minutesToSleepBeforeRetry = atoi(input);
+  if(p_minutesToSleepBeforeRetry <= 0) {
+    g_log << "xxx Error converting input to num minutes : " << input << std::endl;
+  }
+}
+
+void ConfigVO::setLogLevel(char *input) {
+  int logLevel = 0;
+  char *tok;
+  char localInput[255];
+  strcpy(localInput, input);
+
+  tok = strtok(localInput, ", ");
+
+  while(tok != NULL) {
+    if(!strncasecmp("SD", tok, 2)) {
+      logLevel |= VERB_SDUMP;
+    }
+    if(!strncasecmp("CR", tok, 2)) {
+      logLevel |= VERB_RETRY;
+    }
+    if(!strncasecmp("RM", tok, 2)) {
+      logLevel |= VERB_REGMSG;
+    }
+    if(!strncasecmp("VB", tok, 2)) {
+      logLevel |= VERB_LOGEXTRA;
+    }
+    if(!strncasecmp("SM", tok, 2)) {
+      logLevel |= VERB_AUXMSG;
+    }
+    if(!strncasecmp("PD", tok, 2)) {
+      logLevel |= VERB_PACKET;
+    }
+    tok = strtok(NULL, ", ");
+  }
+  
+  p_logLevel = logLevel;
+}
+
+void ConfigVO::setDutyCycle_MaxConnectTime(char *input) {
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_dutycycle_maxConnectTime = 0;
+    return;
+  }
+  p_dutycycle_maxConnectTime = atoi(input);
+  if(p_dutycycle_maxConnectTime <= 0) {
+    g_log << "xxx Error converting input to num minutes : " << input << std::endl;
+  }
+}
+
+void ConfigVO::setDutyCycle_SleepTime(char *input) {
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_dutycycle_sleepTime = 0;
+    return;
+  }
+  p_dutycycle_sleepTime = atoi(input);
+  if(p_dutycycle_sleepTime <= 0) {
+    g_log << "xxx Error converting input to num minutes : " << input << std::endl;
+  }
+}
+
+void ConfigVO::setDutyCycle_BufferLevel(char *input) {
+  if(!strcmp(input, "") || !strcmp(input, "0")) {
+    p_dutycycle_bufferLevel = 0;
+    return;
+  }
+  p_dutycycle_bufferLevel = atoi(input);
+  if(p_dutycycle_bufferLevel <= 0) {
+    g_log << "xxx Error converting input to buffer level : " << input << std::endl;
+  }
+}

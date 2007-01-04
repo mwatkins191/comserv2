@@ -30,6 +30,7 @@
 int read_config(char* configFileName);
 
 #include "QmaTypes.h"
+#include "qmacfg.h"
 
 class ConfigVO {
 
@@ -46,6 +47,7 @@ class ConfigVO {
 	   char* diagnotic,	
 	   char* startmsg,
            char* statusinterval);
+  ConfigVO(qma_cfg);
 
   ConfigVO();
   ~ConfigVO() {};
@@ -63,6 +65,15 @@ class ConfigVO {
   qma_uint32 getDiagnostic() const;
   char*      getStartMessage() const;
   qma_uint32 getStatusInterval() const;
+  qma_uint32 getLogLevel() const;
+  char *     getContinuityFileDir() const;
+  qma_uint16 getSourcePortControl() const;
+  qma_uint16 getSourcePortData() const;
+  qma_uint16 getFailedRegistrationsBeforeSleep() const;
+  qma_uint16 getMinutesToSleepBeforeRetry() const;
+  qma_uint16 getDutyCycle_MaxConnectTime() const;
+  qma_uint16 getDutyCycle_SleepTime() const;
+  qma_uint16 getDutyCycle_BufferLevel() const;
 
   void setQ330BasePort(qma_uint32);
   void setQ330DataPortNumber(qma_uint32);
@@ -83,7 +94,15 @@ class ConfigVO {
   void setDiagnostic(char* input);
   void setStartMsg(char* input);
   void setStatusInterval(char* input);
- 
+  void setLogLevel(char *input);
+  void setContinuityFileDir(char *input);
+  void setSourcePortControl(char *input);
+  void setSourcePortData(char *input);
+  void setFailedRegistrationsBeforeSleep(char *input);
+  void setMinutesToSleepBeforeRetry(char *input);
+  void setDutyCycle_MaxConnectTime(char *input);
+  void setDutyCycle_SleepTime(char *input);
+  void setDutyCycle_BufferLevel(char *input);
 
   //
   // For efficiency, make this an external variable, so no
@@ -103,7 +122,15 @@ class ConfigVO {
   qma_uint32 p_verbosity;
   qma_uint32 p_diagnostic;
   bool       p_configured;
-
+  qma_uint32 p_logLevel;
+  char       p_contFileDir[256];
+  qma_uint16 p_sourcePortData;
+  qma_uint16 p_sourcePortControl;
+  qma_uint16 p_failedRegistrationsBeforeSleep;
+  qma_uint16 p_minutesToSleepBeforeRetry;
+  qma_uint16 p_dutycycle_maxConnectTime;
+  qma_uint16 p_dutycycle_sleepTime;
+  qma_uint16 p_dutycycle_bufferLevel;
 };
 
 #endif

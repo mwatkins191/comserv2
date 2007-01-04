@@ -5,14 +5,33 @@
 double g_timestampOfLastRecord = 0;
 
 Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
+  pmodules mods;
+  tmodule *mod;
+  int x;
 
   this->initializeCreationInfo(stationName, ourConfig);
   this->initializeRegistrationInfo(ourConfig);
 
+  mods = lib_get_modules();
+  g_log << "+++ Lib330 Modules:" << std::endl;
+  for(x=0; x <= MAX_MODULES - 1; x++) {
+    mod = &(*mods)[x];
+    if(!mod->name[0]) {
+      continue;
+    }
+    if( !(x % 5)) {
+      if(x > 0) {
+	g_log << std::endl;
+      }
+      if(x < MAX_MODULES-1) {
+	g_log << "+++ ";
+      }
+    }
+    g_log << mod->name << ":" << mod->ver << " ";
+  }
+  g_log << std::endl;
   g_log << "+++ Initializing station thread" << std::endl;
-
   lib_create_context(&(this->stationContext), &(this->creationInfo));
-
   if(this->creationInfo.resp_err == LIBERR_NOERR) {
     g_log << "+++ Station thread created" << std::endl;
   } else {
@@ -261,24 +280,24 @@ void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
   this->registrationInfo.host_mode = HOST_ETH;
   strcpy(this->registrationInfo.host_interface, "");
   this->registrationInfo.host_mincmdretry = 5;
-  this->registrationInfo.host_maxcmdretry = 20;
-  this->registrationInfo.host_ctrlport = 0;
-  this->registrationInfo.host_dataport = 0;
+  this->registrationInfo.host_maxcmdretry = 40;
+  this->registrationInfo.host_ctrlport = ourConfig.getSourcePortControl();
+  this->registrationInfo.host_dataport = ourConfig.getSourcePortData();
   this->registrationInfo.opt_latencytarget = 0;
   this->registrationInfo.opt_closedloop = 0;
   this->registrationInfo.opt_dynamic_ip = 0;
-  this->registrationInfo.opt_hibertime = 5;
-  this->registrationInfo.opt_conntime = 0;
-  this->registrationInfo.opt_connwait = 0;
-  this->registrationInfo.opt_regattempts = 5;
+  this->registrationInfo.opt_hibertime = ourConfig.getMinutesToSleepBeforeRetry();
+  this->registrationInfo.opt_conntime = ourConfig.getDutyCycle_MaxConnectTime();
+  this->registrationInfo.opt_connwait = ourConfig.getDutyCycle_SleepTime();
+  this->registrationInfo.opt_regattempts = ourConfig.getFailedRegistrationsBeforeSleep();
   this->registrationInfo.opt_ipexpire = 0;
-  this->registrationInfo.opt_buflevel = 0;
+  this->registrationInfo.opt_buflevel = ourConfig.getDutyCycle_BufferLevel();
 }
 
 void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConfig) {
   // Fill out the parts of the creationInfo that we know about
   qma_uint64 serial = ourConfig.getQ330SerialNumber();
-  char continuityFile[255];
+  char continuityFile[512];
   
   memcpy(this->creationInfo.q330id_serial, &serial, sizeof(qma_uint64));
   switch(ourConfig.getQ330DataPortNumber()) {
@@ -295,13 +314,16 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
       this->creationInfo.q330id_dataport = LP_TEL4;
       break;
   }
-  //this->creationInfo.q330id_dataport = ourConfig.getQ330DataPortNumber();
   strncpy(this->creationInfo.q330id_station, stationName, 5);
   this->creationInfo.host_timezone = 0;
   strcpy(this->creationInfo.host_software, APP_VERSION_STRING);
-  sprintf(continuityFile, "qmaserv_cont_%s.bin", stationName);
+  if(strlen(ourConfig.getContinuityFileDir())) {
+    sprintf(continuityFile, "%s/qmaserv_cont_%s.bin", ourConfig.getContinuityFileDir(), stationName);
+  } else {
+    sprintf(continuityFile, "qmaserv_cont_%s.bin", stationName);
+  }
   strcpy(this->creationInfo.opt_contfile, continuityFile);
-  this->creationInfo.opt_verbose = VERB_SDUMP | VERB_REGMSG | VERB_LOGEXTRA | VERB_AUXMSG;
+  this->creationInfo.opt_verbose = ourConfig.getLogLevel();
   this->creationInfo.opt_zoneadjust = 1;
   this->creationInfo.opt_secfilter = 0;
   this->creationInfo.opt_minifilter = OMF_ALL;

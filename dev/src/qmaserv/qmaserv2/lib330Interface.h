@@ -31,7 +31,7 @@ class Lib330Interface {
   int waitForState(enum tlibstate, int);
   enum tlibstate getLibState();
   int ping();
-
+ 
   static void state_callback(pointer p);
   static void miniseed_callback(pointer p);
   static void archival_miniseed_callback(pointer p);

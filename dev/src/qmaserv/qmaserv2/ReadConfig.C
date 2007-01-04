@@ -78,6 +78,7 @@ bool readConfigFile(char* stationcode)
   // This will convert string values to int, IP, and other usable
   // values, and put them into a ConfigVO.
   //
+  /*
   ConfigVO tcvo(qmacfg.udpaddr,
 		qmacfg.baseport,
 		qmacfg.dataport,
@@ -88,6 +89,8 @@ bool readConfigFile(char* stationcode)
 	        qmacfg.diagnostic,
                 qmacfg.startmsg,
 		qmacfg.statusinterval);
+  */
+  ConfigVO tcvo(qmacfg);
 
   if(g_verbosity.show(D_MAJOR,D_QMA_CONFIG))
   {
@@ -128,6 +131,7 @@ bool readConfigFile(char* stationcode)
                 qmacfg.statusinterval << std::endl;
 	    g_log << "--- Data Rate Interval : " <<
                 qmacfg.datarateinterval << std::endl;
+	    g_log << "--- Continuity File Directory : " << qmacfg.contFileDir << std::endl;
   }
   return true;
 }
