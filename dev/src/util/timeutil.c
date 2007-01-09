@@ -26,6 +26,10 @@ Edit History:
 #endif
 #include "quanstrc.h"
 
+#ifdef LINUX
+# include <time.h>
+#endif
+
 short VER_TIMEUTIL = 5 ;
 
 #define FIRST_YEAR_CONVERTED 1983
