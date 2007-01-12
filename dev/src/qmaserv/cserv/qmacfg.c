@@ -179,16 +179,17 @@ void clearConfig(struct qma_cfg* cfg)
   strcpy(cfg->serialnumber,"");
   strcpy(cfg->authcode,"");
   strcpy(cfg->verbosity,"");
+  strcpy(cfg->diagnostic, "");
   strcpy(cfg->startmsg,"");
   strcpy(cfg->statusinterval,"");
   strcpy(cfg->datarateinterval,"");
   strcpy(cfg->loglevel, "");
   strcpy(cfg->contFileDir, "");
-  strcpy(cfg->sourceport_control, "");
-  strcpy(cfg->sourceport_data, "");
+  strcpy(cfg->sourceport_control, "0");
+  strcpy(cfg->sourceport_data, "0");
   strcpy(cfg->failedRegistrationsBeforeSleep, "5");
   strcpy(cfg->minutesToSleepBeforeRetry, "1");
-  strcpy(cfg->dutycycle_maxConnectTime, "");
-  strcpy(cfg->dutycycle_sleepTime, "");
-  strcpy(cfg->dutycycle_bufferLevel, "");
+  strcpy(cfg->dutycycle_maxConnectTime, "0");
+  strcpy(cfg->dutycycle_sleepTime, "0");
+  strcpy(cfg->dutycycle_bufferLevel, "0");
 }

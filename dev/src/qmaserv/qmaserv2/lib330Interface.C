@@ -9,6 +9,7 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   tmodule *mod;
   int x;
 
+  this->currentLibState = LIBSTATE_IDLE;
   this->initializeCreationInfo(stationName, ourConfig);
   this->initializeRegistrationInfo(ourConfig);
 
@@ -229,8 +230,8 @@ void Lib330Interface::miniseed_callback(pointer p) {
 }
 
 void Lib330Interface::archival_miniseed_callback(pointer p) {
-  std::cout << "Archival Miniseed Callback Called" << std::endl;
-
+  //tminiseed_call *data = (tminiseed_call *) p;
+  //g_log << "Archival (" << data->channel << ") with timestamp: " << data->timestamp << " " << data->data_size << " bytes" << std::endl;
 }
 
 void Lib330Interface::msg_callback(pointer p) {
@@ -328,12 +329,13 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
   this->creationInfo.opt_secfilter = 0;
   this->creationInfo.opt_minifilter = OMF_ALL;
   this->creationInfo.opt_aminifilter = OMF_ALL;
+  this->creationInfo.amini_exponent = 0;
   this->creationInfo.amini_512highest = -1000;
   this->creationInfo.mini_embed = 0;
   this->creationInfo.mini_separate = 1;
   this->creationInfo.mini_firchain = 0;
   this->creationInfo.call_minidata = this->miniseed_callback;
-  this->creationInfo.call_aminidata = this->archival_miniseed_callback;
+  this->creationInfo.call_aminidata = NULL;
   this->creationInfo.resp_err = LIBERR_NOERR;
   this->creationInfo.call_state = this->state_callback;
   this->creationInfo.call_messages = this->msg_callback;
