@@ -510,7 +510,7 @@ int comserv_init (char* station_code)
       printf("Configuring qmaserv with station_code : %s\n",station_code);
       strncpy (station_name, station_code, 5) ;
       station_name[4] = '\0' ;
-      station.l = str_long (station_name) ;
+      station.l = 0;//str_long (station_name) ;
 
 /* Report versions of all modules */
 /*PJM - QMA change the input to a single string parameter - the station

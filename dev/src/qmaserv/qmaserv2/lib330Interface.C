@@ -222,9 +222,6 @@ void Lib330Interface::miniseed_callback(pointer p) {
       g_timestampOfLastRecord = data->timestamp;
     }
   }
-
-  // this should be queued up somewhere, and send to comserv in another thread, to prevent
-  // any blocking.
   comlink_send((char *)data->data_address, data->data_size, DATA_PACKET);
 
 }
