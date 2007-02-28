@@ -4,7 +4,7 @@ LIB330 = /home/hal/dev/cLib330/dev
 
 CXX	 = g++
 CLIBDIR	 = /usr/local/lib
-DEBUG	 = -g
+DEBUG	 = -g 
 COPT	 = 
 
 # lib330 and libutil both define some of the same functions.  We'll rely on lib330's implementations (newer)
@@ -19,7 +19,7 @@ LDFLAGS	 = $(DEBUG) $(LDLIBS)
 
 files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C BlockingQueue.C
 
-headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h\
+headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h BlockingQueue.h\
           lib330Interface.h BlockingQueue.h
 
 

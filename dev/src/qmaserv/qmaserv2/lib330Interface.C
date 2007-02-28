@@ -85,7 +85,7 @@ void Lib330Interface::startDataFlow() {
   this->changeState(LIBSTATE_RUN, LIBERR_NOERR);
 }
 
-int Lib330Interface::ping() {
+void Lib330Interface::ping() {
   lib_unregistered_ping(this->stationContext, &(this->registrationInfo));
 }
 
@@ -187,6 +187,9 @@ void Lib330Interface::miniseed_callback(pointer p) {
   short packetType = 0;
   /*
    * Handle non-data miniseed records
+   * this whole construct is bizarre looking and the if/else
+   * should be rolled into the switch.  The if/else once had a
+   * purpose but not anymore.
    */
   if(data->packet_class != PKC_DATA) {
     switch(data->packet_class) {
@@ -257,13 +260,10 @@ void Lib330Interface::archival_miniseed_callback(pointer p) {
 void Lib330Interface::msg_callback(pointer p) {
   tmsg_call *msg = (tmsg_call *) p;
   string95 msgText;
-  char currentTime[32];
   char dataTime[32];
 
   lib_get_msg(msg->code, &msgText);
   
-  // we don't need to worry about current time, the log system handles that
-  //jul_string(msg->timestamp, &currentTime);
   if(!msg->datatime) {
     g_log << "LOG {" << msg->code << "} " << msgText << " " << msg->suffix << std::endl;
   } else {

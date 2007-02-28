@@ -33,7 +33,7 @@ class Lib330Interface {
   void displayStatusUpdate();
   int waitForState(enum tlibstate, int, void(*)());
   enum tlibstate getLibState();
-  int ping();
+  void ping();
   int processBlockingQueue();
  
   static void state_callback(pointer p);

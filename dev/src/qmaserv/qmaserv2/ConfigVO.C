@@ -432,7 +432,7 @@ void ConfigVO::setVerbosity(char* input)
   int len = strlen (input);
   if(len > 0)
   {
-    qma_uint32 level = atoi(input);
+    qma_int32 level = atoi(input);
 
     if(level > D_EVERYTHING)
     {
