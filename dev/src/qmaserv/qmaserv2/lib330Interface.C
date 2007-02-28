@@ -242,7 +242,7 @@ int Lib330Interface::processBlockingQueue() {
 
   while(thisPacket.dataSize != 0) {
     comlink_send((char *)thisPacket.data, thisPacket.dataSize, thisPacket.packetType);
-    g_log << "XXX Sent queued packet" << std::endl;
+    g_log << "--- Sent queued packet" << std::endl;
     if(comlink_dataQueueBlocking()) {
       return 0;
     } else {

@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     // We may have gotten here if a client blocked, if so, wait until that
     // condition clears
     if(comlink_dataQueueBlocking()) {
-      g_log << "Client still blocking...  Sleeping for 5 seconds" << std::endl;
+      g_log << "XXX Client still blocking...  Sleeping for 5 seconds" << std::endl;
       struct timespec t;
       t.tv_sec = 0;
       t.tv_nsec = 250000000;
