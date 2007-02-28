@@ -13,13 +13,13 @@ LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl  -l330 -lutil -lp
 
 CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
 LD	 = $(CXX)
-INCL	 =  -I../cserv -I. -I$(LIB330)
+INCL	 =  -I../cserv -I. -I$(LIB330) 
 LDFLAGS	 = $(DEBUG) $(LDLIBS)
 
 
-files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C
+files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C BlockingQueue.C
 
-headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h\
+headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h BlockingQueue.h\
           lib330Interface.h
 
 

@@ -222,7 +222,26 @@ const int SP_CFGBLK      = 3;   /* Configuration Blockette */
 
 /* From DRM_SEISMO.h - Packet types for comserv_send() */
 
-const int DATA_PACKET    =  1;  /*From drm_seismo.h */
+//const int DATA_PACKET    =  1;  /*From drm_seismo.h */
+
+#define RECORD_HEADER_1 1
+#define RECORD_HEADER_2 2
+#define CLOCK_CORRECTION 3
+#define COMMENTS 4
+#define DETECTION_RESULT 5
+#define RECORD_HEADER_3 6
+#define BLOCKETTE 7
+#define FLOOD_PKT 8
+#define END_OF_DETECTION 9
+#define CALIBRATION 10
+#define FLUSH 11
+#define LINK_PKT 12
+#define SEED_DATA 13
+#define ULTRA_PKT 16
+#define DET_AVAIL 17
+#define CMD_ECHO 18
+#define UPMAP 19
+#define DOWNLOAD 20
 
 /* Clock Values */
 

@@ -22,4 +22,5 @@
 #define APP_VERSION_STRING "Qmaserv v2.0.0 $Rev$"
 extern Logger g_log;
 extern Lib330Interface *g_libInterface;
+extern bool g_reset;
 #endif

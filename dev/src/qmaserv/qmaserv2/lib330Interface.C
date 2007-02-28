@@ -1,6 +1,6 @@
 #include "global.h"
-#include "lib330Interface.h"
 #include "clink.h"
+#include "BlockingQueue.h"
 
 double g_timestampOfLastRecord = 0;
 
@@ -88,10 +88,14 @@ int Lib330Interface::ping() {
   lib_unregistered_ping(this->stationContext, &(this->registrationInfo));
 }
 
-int Lib330Interface::waitForState(enum tlibstate waitFor, int maxSecondsToWait) {
-  for(int i=0; i < maxSecondsToWait; i++) {
+int Lib330Interface::waitForState(enum tlibstate waitFor, int maxSecondsToWait, void(*funcToCallWhileWaiting)()) {
+  struct timespec t;
+  t.tv_sec = 0;
+  t.tv_nsec = 250000000;
+  for(int i=0; i < (maxSecondsToWait*4); i++) {
     if(this->getLibState() != waitFor) {
-      sleep(1);
+      nanosleep(&t, NULL);
+      funcToCallWhileWaiting();
     } else {
       return 1;
     }
@@ -178,52 +182,70 @@ void Lib330Interface::state_callback(pointer p) {
 
 void Lib330Interface::miniseed_callback(pointer p) {
   tminiseed_call *data = (tminiseed_call *) p;
-
+  int sendFailed;
+  short packetType = 0;
   /*
    * Handle non-data miniseed records
    */
   if(data->packet_class != PKC_DATA) {
-    char msgCopy[512];
-    char *msgStart;
-    char *newline;
     switch(data->packet_class) {
     case PKC_EVENT:
-      //g_log << "ooo PKC_EVENT" << std::endl;
+      packetType = DETECTION_RESULT;
       break;
     case PKC_CALIBRATE:
-      //g_log << "ooo PKC_CALIBRATE" << std::endl;
+      packetType = CALIBRATION;
       break;
     case PKC_TIMING:
-      //g_log << "ooo PKC_TIMING" << std::endl;
+      packetType = CLOCK_CORRECTION;
       break;
     case PKC_MESSAGE:
-      // lets not muck with memory that we didn't allocate
-      memcpy(msgCopy, data->data_address, 512);
-      newline = msgStart = msgCopy + 56;
-      // run through the message, printing one line at a time
-      for(int i=0; i < data->data_size-56; i++) {
-	newline = msgCopy + 56 + i;
-	if(*newline == '\0') {
-	  break;
-	} else if(*newline == '\n') {
-	  *(newline) = '\0';
-	  g_log << data->channel << " " << msgStart << std::endl;
-	  msgStart = newline + 1;
-	}
-      }
+      packetType = COMMENTS;
       break;
     case PKC_OPAQUE:
-      //g_log << "ooo PKC_OPAQUE" << std::endl;
+      packetType = BLOCKETTE;
       break;
     }
   } else {
+    packetType = RECORD_HEADER_1;
     if(data->timestamp < g_timestampOfLastRecord) {
       g_log << "XXX Packets being received out of order" << std::endl;
       g_timestampOfLastRecord = data->timestamp;
     }
   }
-  comlink_send((char *)data->data_address, data->data_size, DATA_PACKET);
 
+  sendFailed = comlink_send((char *)data->data_address, data->data_size, packetType);
+  
+  if(sendFailed) {
+    if(sendFailed == -1) {
+      // this means that there is something wrong with this packet
+      g_log << "XXX Malformed packet - failed to write to comserv (Size: " << data->data_size << ")" << std::endl;
+    } else if(sendFailed == 1) {
+      // this means that a client is blocking
+      g_log << "XXX Client blocking.  Queueing packet" << std::endl;
+      blockingQueue.enqueuePacket((char *)data->data_address, data->data_size, packetType);
+      g_reset = 1;
+    }
+  }
+
+}
+
+int Lib330Interface::processBlockingQueue() {
+  if(comlink_dataQueueBlocking()) {
+    return 0;
+  }
+
+  QueuedPacket thisPacket = blockingQueue.dequeuePacket();
+
+  while(thisPacket.dataSize != 0) {
+    comlink_send((char *)thisPacket.data, thisPacket.dataSize, thisPacket.packetType);
+    g_log << "XXX Sent queued packet" << std::endl;
+    if(comlink_dataQueueBlocking()) {
+      return 0;
+    } else {
+      thisPacket = blockingQueue.dequeuePacket();
+    }
+  }  
+  return 1;
 }
 
 void Lib330Interface::archival_miniseed_callback(pointer p) {
@@ -234,14 +256,26 @@ void Lib330Interface::archival_miniseed_callback(pointer p) {
 void Lib330Interface::msg_callback(pointer p) {
   tmsg_call *msg = (tmsg_call *) p;
   string95 msgText;
+  char currentTime[32];
+  char dataTime[32];
+
   lib_get_msg(msg->code, &msgText);
-  // g_log << "MSG: " <<  msgText << " " << msg->suffix << std::endl;
+  
+  // we don't need to worry about current time, the log system handles that
+  //jul_string(msg->timestamp, &currentTime);
+  if(!msg->datatime) {
+    g_log << "LOG {" << msg->code << "} " << msgText << " " << msg->suffix << std::endl;
+  } else {
+    jul_string(msg->datatime, (char *) (&dataTime));
+    g_log << "LOG {" << msg->code << "} " << " [" << dataTime << "] " << msgText << " "  << msg->suffix << std::endl;
+  }    
+
 }
 
 /**
  * For internal use only
  */
-int Lib330Interface::sendUserMessage(char *msg) {}
+int Lib330Interface::sendUserMessage(char *msg) { return 0;}
 
 /*
 ** Tell us what state the lib is currently in

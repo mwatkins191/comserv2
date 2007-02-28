@@ -13,10 +13,13 @@ extern "C" {
 #include <libclient.h>
 #include <libtypes.h>
 #include <libmsgs.h>
+#include <libsupport.h>
 }
 
 #include "ConfigVO.h"
+#include "BlockingQueue.h"
 
+PacketQueue blockingQueue;
 
 class Lib330Interface {
  public:
@@ -28,9 +31,10 @@ class Lib330Interface {
   void changeState(enum tlibstate, enum tliberr);
   void startDataFlow();
   void displayStatusUpdate();
-  int waitForState(enum tlibstate, int);
+  int waitForState(enum tlibstate, int, void(*)());
   enum tlibstate getLibState();
   int ping();
+  int processBlockingQueue();
  
   static void state_callback(pointer p);
   static void miniseed_callback(pointer p);

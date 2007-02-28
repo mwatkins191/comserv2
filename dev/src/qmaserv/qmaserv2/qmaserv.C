@@ -49,6 +49,7 @@ extern "C" {
 #include "qmacfg.h"
 #include "cserv.h"
 #include "clink.h"
+#include "srvc.h"
 }
 
 #ifdef linux
@@ -102,16 +103,45 @@ int main(int argc, char *argv[]) {
   nextStatusUpdate = time(NULL) + g_cvo.getStatusInterval();
   while(!g_done) {
     g_reset = 0;
-    if(g_libInterface) {
+
+    // Make sure we have a lib330 interface, create one if not
+    if(!g_libInterface) {
+      g_libInterface = new Lib330Interface(station_code, g_cvo);
+    }
+
+    // We may have gotten here if a client blocked, if so, wait until that
+    // condition clears
+    if(comlink_dataQueueBlocking()) {
+      g_log << "Client still blocking...  Sleeping for 5 seconds" << std::endl;
+      struct timespec t;
+      t.tv_sec = 0;
+      t.tv_nsec = 250000000;
+      for(int i=0; i <= 20; i++) {
+	nanosleep(&t, NULL);
+	scan_comserv_clients();
+      }
+      continue;
+    }
+
+    // Process the blocking queue if there's anything in it
+    if(!g_libInterface->processBlockingQueue()) {
+      // not only was there something in the queue, but we started blocking
+      // again before we finished emptying it.  back to square 1, waiting for
+      // the blocking to stop, then we'll try running the queue again
+      continue;
+    }
+
+    // register and wait for data to flow
+    g_libInterface->startRegistration();
+    if(!g_libInterface->waitForState(LIBSTATE_RUN, 120, scan_comserv_clients)) {
+      // we'll go from RUNWAIT to RUN automatically.  If we don't get there, we'll reset and try again.
       delete g_libInterface;
       g_libInterface = NULL;
-    }
-    g_libInterface = new Lib330Interface(station_code, g_cvo);
-    g_libInterface->startRegistration();
-    if(!g_libInterface->waitForState(LIBSTATE_RUN, 120)) {
-      // we'll go from RUNWAIT to RUN automatically.  If we don't get there, we'll reset and try again.
-      g_reset = 1;
+      continue;
     } 
+
+    // this is where we live for most of the life of the process.  Scan the clients
+    // and do what we're told
     while(!g_reset) {
       scan_comserv_clients();
       if(time(NULL) >= nextStatusUpdate) {
@@ -119,6 +149,10 @@ int main(int argc, char *argv[]) {
 	nextStatusUpdate = time(NULL) + g_cvo.getStatusInterval();
       }
     }
+
+    // we get here when g_reset is set to 1
+    g_libInterface->startDeregistration();
+    
   }
   cleanup(0);
   return 0;
@@ -175,20 +209,31 @@ void readOrRereadConfigFile(char* stationcode) {
   }
 }
 
-#define CSCM_SUSPEND 11
-#define CSCM_TERMINATE 14
-
 void scan_comserv_clients() {
-  int stat = comserv_scan();
-  if(stat != 0) {
-     g_log << "+++ Found signal from client: " << stat << std::endl;
-     switch(stat) {
+  int clientCmd = comserv_scan();
+  static int areSuspended = 0;
+
+  if(clientCmd != 0) {
+    //g_log << "+++ Found signal from client: " << clientCmd << std::endl;
+     switch(clientCmd) {
      case CSCM_SUSPEND:
-       cleanup(1);
+       //cleanup(1);
+       g_log << "--- Suspending link (Requested)" << std::endl;
+       g_libInterface->startDeregistration();
+       areSuspended = 1;
        break;
      case CSCM_TERMINATE:
+       g_log << "--- Terminating server (Requested)" << std::endl;
        cleanupAndExit(1);
        break;
+     case CSCM_RESUME:
+       if(areSuspended) {
+	 g_log << "--- Resuming link (Requested)" << std::endl;
+	 g_reset = 1;
+	 areSuspended = 0;
+       } else {
+	 g_log << "--- Asked to resume unsuspended link.  Ignoring." << std::endl;
+       }
      }
 	
   }
