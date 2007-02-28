@@ -1,8 +1,6 @@
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 
-
-
 #include "Logger.h"
 #include "lib330Interface.h"
 
