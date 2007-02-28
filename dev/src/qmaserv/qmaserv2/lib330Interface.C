@@ -1,6 +1,7 @@
 #include "global.h"
 #include "clink.h"
 #include "BlockingQueue.h"
+#include <unistd.h>
 
 double g_timestampOfLastRecord = 0;
 
