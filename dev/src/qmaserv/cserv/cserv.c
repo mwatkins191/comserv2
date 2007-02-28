@@ -655,35 +655,8 @@ int comserv_init (char* station_code)
               (sizeof(tdata_user) - 512) ;
       for (i = DATAQ ; i < NUMQ ; i++)
         {
-          switch (i)
-            {
-              case DATAQ : ;
-              case BLKQ :
-                {
-                  size = sizeof(tdata_user) ;               /* whole enchilada */
-                  break ;
-                }
-              case DETQ : 
-                {
-                  size = stemp + sizeof(murdock_detect) ;   /* just enough for detections */
-                  break ;
-                }
-              case CALQ : 
-                {
-                  size = stemp + sizeof(random_calibration) ; /* Just enough for calibrations */
-                  break ;
-                }
-              case TIMQ : 
-                {
-                  size = stemp + sizeof(timing) ;           /* just enough for timing */
-                  break ;
-                }
-              case MSGQ :
-                { 
-                  size = stemp + COMMENT_STRING_LENGTH + 2 ; /* just enough for messages */
-                  break ;
-                }
-            }
+	  size = sizeof(tdata_user);
+
           rings[i].xfersize = size ; /* number of bytes to transfer to client */
           size = (size + 31) & 0xfffffff8 ; /* add in overhead and double word align */
           bufsize = bufsize + size * rings[i].count ;
@@ -751,7 +724,6 @@ int comserv_init (char* station_code)
    which initializes the input port. The qma portion
    of this code will handle inputs from the Q330 
 */
-
 #ifndef QMA
 
       if (port[0] != '\0')

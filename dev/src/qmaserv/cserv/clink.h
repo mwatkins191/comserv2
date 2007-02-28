@@ -26,8 +26,8 @@
 extern "C" {
 #endif
 
-int comlink_send(char* buf,int len, int type);
-
+  int comlink_send(char* buf,int len, int type);
+  int comlink_dataQueueBlocking();
 #ifdef __cplusplus
 }
 #endif

@@ -827,6 +827,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       return t ;
     }
 
+/**
+ * HJS - Are we blocking on the data queue?
+ **/
+int comlink_dataQueueBlocking() {
+  return !bufavail(DATAQ);
+}
+
 /* PJM - QMA process routine was renamed to comlink_send and can */
 /* now be called externally.  */
 /* Comserv code shouldn't call process anymore, but this is provided */
@@ -839,8 +846,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 	
 /* PJM - QMA This routine was called process. Added parameters so data can
    be copied from main routine to input buffers along with the packet type.
+   
+   HJS - Return values (interpret as "Send Failed?"):
+    0  : Packet was sent into comserv memory
+    1  : Packet was not sent due to blocking
+   -1  : Packet wasn't recognised (nor sent into comserv)
 */
-  void comlink_send(char* buf,int len,int packettype)
+  int comlink_send(char* buf,int len,int packettype)
     {
       typedef char string5[6] ;
       typedef block_record *tpbr ;
@@ -927,7 +939,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       if (size > 512) 
           {
             fprintf(stderr, "Unknown packet size %d\n",size);
-            return;
+            return -1;
           }
 /* All received packets are considered valid (no checksum calc) */
 /* Because they were received by the calling program */
@@ -1014,9 +1026,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (DATAQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1026,9 +1039,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (BLKQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1037,9 +1051,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (MSGQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1048,9 +1063,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (TIMQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1059,9 +1075,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (DETQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1070,9 +1087,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (DATAQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
@@ -1081,16 +1099,17 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 freebuf = getbuffer (CALQ) ;    /* get free buffer */
 	        if(freebuf == NULL)
                 {
-                  fprintf(stderr,"Station blocked.\n");
-	          fprintf(stderr,"No blocking clients.\n");
-	          exit(12);
+                  //fprintf(stderr,"Station blocked.\n");
+	          //fprintf(stderr,"No blocking clients.\n");
+	          //exit(12);
+		  return 1;
                 }
                 break;
               }
               default :
               {
                 fprintf(stderr,"Unknown Packet Type %d\n",packet_type);
-                return;
+                return -1;
               }
             } /* End of Switch */
 
@@ -1108,7 +1127,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 
              memcpy (pseed,dest,512) ;
     
-             return;
+             return 0;
 
 /* All the other packet handling logic here is to sort packets that have a */
 /* QSL header. Mserv does not have the header, so this logic is stubbed out. */

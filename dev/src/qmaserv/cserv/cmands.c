@@ -238,6 +238,8 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
           }
 
 /* Have permission to proceed */
+      retVal = client->command;
+
       switch (client->command)
         {
           case CSCM_ATTACH : break ;
@@ -550,6 +552,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               pshort = (pvoid) ((long) svc + client->cominoffset) ;
               unblock (*pshort) ;
               clr_bit (&blockmask, *pshort) ;
+	      
               break ;
             }
           case CSCM_RECONFIGURE :
@@ -568,6 +571,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             {
               clr_bit (&noackmask, NUMQ) ;
               linkstat.suspended = FALSE ;
+	      retVal = CSCM_RESUME;
               break ;
             }
           case CSCM_CMD_ACK :
