@@ -15,7 +15,7 @@
 #
 BINDIR  = ../bin
 
-ALL     = utils msgs cserv qmaserv
+ALL     = cserv qmaserv2
 
 all: 
 	for dir in $(ALL) ; do \

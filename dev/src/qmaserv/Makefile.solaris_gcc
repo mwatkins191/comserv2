@@ -17,7 +17,7 @@
 
 MAKEFILE = Makefile.solaris_gcc
 
-ALL     = utils msgs cserv qmaserv
+ALL     = cserv qmaserv
 
 all: 
 	for dir in $(ALL) ; do \
