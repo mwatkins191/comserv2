@@ -1,6 +1,6 @@
 
 CSERV = ../cserv
-LIB330 = /home/hal/dev/cLib330/dev
+LIB330 = ../lib330 
 
 CXX	 = g++
 CLIBDIR	 = /usr/local/lib

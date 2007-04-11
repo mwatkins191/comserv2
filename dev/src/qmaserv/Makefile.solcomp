@@ -15,13 +15,14 @@
 #
 BINDIR  = ../bin
 
-ALL     = cserv qmaserv
+ALL     = cserv lib330 qmaserv
 
-all: 
+all:
 	for dir in $(ALL) ; do \
 		echo build for $$dir ... ; \
 		(cd $$dir; make -f Makefile.solcomp all); \
 	done
+
 clean:
 	for dir in $(ALL) ; do \
 		(cd $$dir; make -f Makefile.solcomp clean); \
