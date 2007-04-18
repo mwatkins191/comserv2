@@ -39,10 +39,12 @@ PacketQueue::~PacketQueue() {
   return;
 }
 
+
 void PacketQueue::enqueuePacket(char *data, int dataSize, short packetType) {
   pthread_mutex_lock(&(this->queueLock));
   this->queue[this->queueTail].update(data, dataSize, packetType);
   this->advanceTail();
+  //g_log << "ENQUEUE: head:" << this->queueHead << " tail:" << this->queueTail << std::endl;
   pthread_mutex_unlock(&(this->queueLock));
 }
 
@@ -57,6 +59,7 @@ QueuedPacket PacketQueue::dequeuePacket() {
     this->advanceHead();
   }  
   pthread_mutex_unlock(&(this->queueLock));
+  //g_log << "DEQUEUE: head:" << this->queueHead << " tail:" << this->queueTail << std::endl;
   return ret;
 }
 
@@ -69,7 +72,7 @@ void PacketQueue::advanceTail() {
   }
 
   if(this->queue[this->queueTail].dataSize != 0) {
-    std::cout << "XXX Packet queue lapped" << std::endl;
+    g_log << "XXX Packet queue lapped" << std::endl;
     // reset the head to where teh tail is now, since this
     // is the new head
     this->queueHead = this->queueTail;
