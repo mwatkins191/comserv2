@@ -123,8 +123,8 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // Process the blocking queue if there's anything in it
-    if(!g_libInterface->processBlockingQueue()) {
+    // Process the packet queue if there's anything in it
+    if(!g_libInterface->processPacketQueue()) {
       // not only was there something in the queue, but we started blocking
       // again before we finished emptying it.  back to square 1, waiting for
       // the blocking to stop, then we'll try running the queue again
@@ -143,10 +143,16 @@ int main(int argc, char *argv[]) {
     // this is where we live for most of the life of the process.  Scan the clients
     // and do what we're told
     while(!g_reset) {
+      int packetQueueEmptied;
       scan_comserv_clients();
       if(time(NULL) >= nextStatusUpdate) {
 	g_libInterface->displayStatusUpdate();
 	nextStatusUpdate = time(NULL) + g_cvo.getStatusInterval();
+      }
+      packetQueueEmptied = g_libInterface->processPacketQueue();
+      if(!packetQueueEmptied) {
+	g_log << "--- client blocking, halting dataflow." << std::endl;
+	g_reset = 1;
       }
     }
 
