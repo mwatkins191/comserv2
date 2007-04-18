@@ -17,9 +17,9 @@ INCL	 =  -I../cserv -I. -I$(LIB330)
 LDFLAGS	 = $(DEBUG) $(LDLIBS)
 
 
-files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C BlockingQueue.C
+files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C PacketQueue.C
 
-headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h BlockingQueue.h\
+headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h PacketQueue.h\
           lib330Interface.h
 
 
