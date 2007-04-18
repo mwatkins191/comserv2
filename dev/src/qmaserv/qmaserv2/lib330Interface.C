@@ -1,6 +1,6 @@
 #include "global.h"
 #include "clink.h"
-#include "BlockingQueue.h"
+#include "PacketQueue.h"
 #include <unistd.h>
 
 double g_timestampOfLastRecord = 0;
@@ -131,7 +131,7 @@ void Lib330Interface::displayStatusUpdate() {
   g_log << "--- BPS from Q330 (min/hour/day): ";
   for(int i=(int)AD_MINUTE; i <= (int)AD_DAY; i = i + 1) {
     if(libStatus.accstats[AC_READ][i] != INVALID_ENTRY) {
-      g_log << libStatus.accstats[AC_READ][i] << "Bps";
+      g_log << (int) libStatus.accstats[AC_READ][i] << "Bps";
     } else {
       g_log << "---";
     }
@@ -146,7 +146,7 @@ void Lib330Interface::displayStatusUpdate() {
   g_log << "--- Packets from Q330 (min/hour/day): ";
   for(int i=(int)AD_MINUTE; i <= (int)AD_DAY; i = i + 1) {
     if(libStatus.accstats[AC_PACKETS][i] != INVALID_ENTRY) {
-      g_log << libStatus.accstats[AC_PACKETS][i] << "Pkts";
+      g_log << (int) libStatus.accstats[AC_PACKETS][i] << "Pkts";
     } else {
       g_log << "---";
     }
@@ -217,6 +217,13 @@ void Lib330Interface::miniseed_callback(pointer p) {
     }
   }
 
+  // put the packet in the queue
+  packetQueue.enqueuePacket((char *)data->data_address, data->data_size, packetType);
+  
+  /*
+   * Sending to comserv is now done in the main thread, to avoid problems
+   * arising from comserv not being threadsafe
+
   sendFailed = comlink_send((char *)data->data_address, data->data_size, packetType);
   
   if(sendFailed) {
@@ -226,27 +233,33 @@ void Lib330Interface::miniseed_callback(pointer p) {
     } else if(sendFailed == 1) {
       // this means that a client is blocking
       g_log << "XXX Client blocking.  Queueing packet" << std::endl;
-      blockingQueue.enqueuePacket((char *)data->data_address, data->data_size, packetType);
+      packetQueue.enqueuePacket((char *)data->data_address, data->data_size, packetType);
       g_reset = 1;
     }
   }
+  */
 
 }
 
-int Lib330Interface::processBlockingQueue() {
+/**
+ * TODO - add interface to PacketQueue to check which queue we need
+ * next, and make sure it's not blocking before we dequeue
+ */
+int Lib330Interface::processPacketQueue() {
+  int sendFailed = 0;
+
   if(comlink_dataQueueBlocking()) {
     return 0;
   }
 
-  QueuedPacket thisPacket = blockingQueue.dequeuePacket();
+  QueuedPacket thisPacket = packetQueue.dequeuePacket();
 
   while(thisPacket.dataSize != 0) {
-    comlink_send((char *)thisPacket.data, thisPacket.dataSize, thisPacket.packetType);
-    g_log << "--- Sent queued packet" << std::endl;
-    if(comlink_dataQueueBlocking()) {
+    sendFailed = comlink_send((char *)thisPacket.data, thisPacket.dataSize, thisPacket.packetType);
+    if(sendFailed) {
       return 0;
     } else {
-      thisPacket = blockingQueue.dequeuePacket();
+      thisPacket = packetQueue.dequeuePacket();
     }
   }  
   return 1;

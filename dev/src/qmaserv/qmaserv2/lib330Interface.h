@@ -17,9 +17,9 @@ extern "C" {
 }
 
 #include "ConfigVO.h"
-#include "BlockingQueue.h"
+#include "PacketQueue.h"
 
-PacketQueue blockingQueue;
+PacketQueue packetQueue;
 
 class Lib330Interface {
  public:
@@ -34,7 +34,7 @@ class Lib330Interface {
   int waitForState(enum tlibstate, int, void(*)());
   enum tlibstate getLibState();
   void ping();
-  int processBlockingQueue();
+  int processPacketQueue();
  
   static void state_callback(pointer p);
   static void miniseed_callback(pointer p);
