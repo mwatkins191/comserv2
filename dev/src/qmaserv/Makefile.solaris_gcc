@@ -17,7 +17,7 @@
 
 MAKEFILE = Makefile.solaris_gcc
 
-ALL     = cserv lib330 qmaserv
+ALL     = cserv lib330 qmaserv2
 
 
 all: 	

@@ -17,7 +17,7 @@
 
 MAKEFILE = Makefile.solaris_cc
 
-ALL     = cserv lib330 qmaserv
+ALL     = cserv lib330 qmaserv2
 
 all:
 	for dir in $(ALL) ; do \
