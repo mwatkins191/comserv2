@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-const int QUEUE_SIZE = 128;
+const int QUEUE_SIZE = 512;
 
 class QueuedPacket {
  public:
