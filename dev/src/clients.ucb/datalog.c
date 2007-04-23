@@ -12,7 +12,7 @@
 static char sccsid[] = "@(#) $Id: datalog.c,v 1.1.1.1 2004/06/15 19:08:00 isti Exp $";
 #endif
 
-#define	VERSION		"1.4.6 (2004.119)"
+#define	VERSION		"1.4.9 (2007.073)"
 #define	CLIENT_NAME	"DLOG"
 
 #include <stdio.h>
@@ -74,6 +74,8 @@ double log2(double);
 DURLIST durhead[7];			/* Headers for duration lists.	*/
 char *extension[7];			/* Extention char for pkt types.*/
 char pidfile[1024];			/* pid file.			*/
+char gapfile[1024];			/* pid file.			*/
+int gapfd=-1;
 short data_mask = DEFAULT_DATA_MASK;	/* data mask for cs_setup.	*/
 
 char *cmdname;				/* Name of this program.	*/
@@ -106,7 +108,7 @@ main (int argc, char **argv)
     tstations_struc tstations;
     pclient_station this;
     short j, k, err;
-    int status;
+    int ret, status;
     boolean alert;
     pdata_user pdat;
     seed_record_header *pseed;
@@ -293,7 +295,17 @@ main (int argc, char **argv)
 			printf("hdrtime=%s\n", time_string(pdat->header_time));
 			fflush (stdout);
 		    }
-		    store_seed(pseed);
+		    ret = store_seed(pseed);
+                    if (ret == 2) {
+			printf("BAD MSEED HEADER %s [%-4.4s] <%2d> %s recvtime=%s ",
+			       localtime_string(dtime()),
+			       &this->name, k, 
+			       seednamestring(&pseed->channel_id,&pseed->location_id), 
+			       localtime_string(pdat->reception_time));
+			printf("hdrtime=%s\n", time_string(pdat->header_time));
+			fflush (stdout);
+			store_bad_block((char *) &pdat->data_bytes);
+                    }
 		    pdat = (pdata_user) ((long) pdat + this->dbufsize);
 		}
 	    }
@@ -355,6 +367,7 @@ int terminate_program (int error)
 
     if (strlen(pidfile)) unlink(pidfile);
     if (lockfd) close(lockfd);
+    if (gapfd > 0) close(gapfd);
     strcpy(time_str, localtime_string(dtime()));
     printf ("%s - Terminated\n", time_str);
     exit(error);

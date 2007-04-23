@@ -94,6 +94,7 @@ void update_durlist (char *str, int nhead);
 void verify_cfg();
 int write_vol(FINFO *fip, int blksize);
 int reduce_reclen (FINFO *fip, DATA_HDR *hdr, seed_record_header *pseed);
+void gap_check (FINFO *fip, DATA_HDR *hdr);
 int terminate_program (int error);
 char *channelstring(char *station, char *network, char *channel, char *location);
 int check_hdr_wordorder (DATA_HDR *hdr, SDR_HDR *pseed);
@@ -105,6 +106,8 @@ int fix_sncl (DATA_HDR *hdr, SDR_HDR *pseed);
 extern DURLIST durhead[6];	/* data, detection, calib, timing, log, opaque blk	*/
 extern char *extension[6];	/* data, detection, calib, timing, log, opaque blk	*/
 extern char pidfile[1024];	/* pid file.				*/
+extern char gapfile[1024];	/* gap file.				*/
+extern int gapfd;		/* set to -1 if no gaps written, an fd if gaps found in this run */
 extern short data_mask;		/* data mask for cs_setup.		*/
 extern char lockfile[160];	/* Name of optional lock file.		*/
 extern int verbosity;		/* verbosity setting.			*/
@@ -114,6 +117,7 @@ static char channel_format[256] = "%S.%N.%C.%L";
 static int trimreclen;		/* flag to reduce record length.	*/
 static FINFO *fhead;
 static char station_dir[256];
+static char bad_file[1024];
 static char filename_fmt[256];
 static char chandir_fmt[256] = "%C.%X";    /* backwards compatibility.	*/
 static seed_record_header *pseedblock;
@@ -123,8 +127,27 @@ static int close_offset = 0;
 static int mshdr_wordorder = -1;		/* default is ignore.		*/
 
 /************************************************************************/
+/* store_bad_block(char *) - stores bogus blocks for post mortem */
+int store_bad_block(char* data) {
+FILE *f;
+int ret;
+	sprintf(bad_file, "%s/bad-blocks", station_dir);
+	if ( (f = fopen(bad_file, "a")) == NULL) {
+		fprintf(stdout, "store_bad_block: failed to write bad data to %s\n", bad_file);
+		return (0);
+	}
+	ret = (int) fwrite((void *) data, (size_t) 512, (size_t) 1, f);
+	fprintf(stdout, "store_bad_block: wrote %d bytes to bad-blocks file\n", ret);
+	fclose(f);
+	return(1);	
+}
+/************************************************************************/
 /*  store_seed:								*/
 /*	Store SEED packet in the appropriate file.			*/
+/*    returns: 	1 on success, 
+		2 if packet is undecodable , or
+		terminates if major failure. 
+*/
 /************************************************************************/
 int store_seed (seed_record_header *pseed)
 {
@@ -149,7 +172,12 @@ int store_seed (seed_record_header *pseed)
     hdr = decode_hdr_sdr((SDR_HDR *)pseed, MAX_BLKSIZE);
     if (hdr == NULL) {
 	fprintf (info, "Unable to decode hdr\n");
+	/* previously this stopped the program
 	terminate_program (1);
+
+		Now it returns 2
+        */
+	return 2;
     }
     fix_sncl (hdr, (SDR_HDR *)pseed);
 
@@ -158,6 +186,8 @@ int store_seed (seed_record_header *pseed)
 	begtime = int_to_ext(hdr->begtime);
 	if ((fip = find_finfo(hdr)) == NULL) break;
 	if (trimreclen) reduce_reclen (fip, hdr, pseed);
+
+	if (fip->itype == DAT_INDEX && fip->begtime.year != 0) gap_check(fip, hdr);
 
 	/* Open current file if no file is open.  Read volume hdr (if any).	*/
 	if (fip->fd < 0) {
@@ -918,6 +948,11 @@ void parse_cfg (char *str1, char *str2)
 	strncpy(lockfile,str2,sizeof(lockfile));
 	lockfile[sizeof(lockfile)-1] = '\0';
     }
+    else if (strcmp(str1,"GAPFILE")==0) {
+	strncpy(gapfile,str2,sizeof(gapfile));
+	gapfile[sizeof(gapfile)-1] = '\0';
+	fprintf (info, "Gaps will be saved to gapfile: %s\n", gapfile);
+    }
     else if (strcmp(str1,"TRIMRECLEN")==0) {
 	trimreclen = boolean_value(str2);
     }
@@ -1417,6 +1452,70 @@ void dump_durlist (DURLIST *head)
 	fprintf (info, "channel = %s, duration = %s\n", sp->channel, sp->duration);
 	sp = sp->next;
     }
+}
+/************************************************************************/
+/*  gap_check:   							*/
+/*	create a gap file if there is a gap in the channel.		*/
+/************************************************************************/
+void gap_check (FINFO *fip, DATA_HDR *hdr)
+{
+
+long idiff;
+double srate, diff;
+INT_TIME last_endtime;
+char gapline[1024];
+int outbytes;
+
+	/* only check for gaps if this is a data packet and if gapfile is specified and this is not the first fip */
+	if (fip->itype != DAT_INDEX) return;
+	if (strlen(gapfile) == 0) return;
+	if (fip->begtime.year == 0) return;
+
+
+	last_endtime = ext_to_int(fip->endtime);
+	diff = tdiff(hdr->begtime, last_endtime);
+	srate = sps_rate(hdr->sample_rate, hdr->sample_rate_mult);
+	
+
+	/* if the diff is greater than 1 sample, flag it 
+		later we will want a gap tolerance
+	*/
+	diff = diff/1000000.;	/* convert diff to seconds */
+/*
+ 	fprintf(info, "DEBUG - gap checking of %s - tdiff %f\n",  
+                 channelstring(fip->station, fip->location, fip->channel, fip->network) , diff);
+ */
+	if (diff > 2.0/srate ) {
+		if(gapfd < 0) {
+     		    if((gapfd = open(gapfile, O_APPEND | O_RDWR | O_CREAT, 0666)) == -1 ) {
+        		fprintf (info, "Unable to open file %s for %s\n",
+                 		gapfile, channelstring(fip->station, fip->location, fip->channel, fip->network));
+        		return;
+		    }
+		}
+		idiff = (long) ceil(diff);
+/*
+		fprintf(info, "GAP %d secs found for %s\n", idiff, 
+			channelstring(fip->station, fip->location, fip->channel, fip->network));
+*/
+		sprintf(gapline,"%s-%s|%4d/%02d/%02d %02d:%02d:%02d|%ds|%s\n",
+			fip->network, fip->station, 
+			fip->endtime.year, fip->endtime.month, fip->endtime.day,
+			fip->endtime.hour, fip->endtime.minute, fip->endtime.second,
+			idiff, fip->channel);
+		outbytes = strlen(gapline);
+		if (xwrite(gapfd, gapline, outbytes) != outbytes) {
+			fprintf (info, "Unable to write gapline %s to file %s\n", 
+				gapline, gapfile);
+			close(gapfd);
+			gapfd=-1;
+			return;
+		}  else {
+			/* for now close the file after every write so it can be unlinked easily */
+			close(gapfd);
+			gapfd=-1;
+		}
+        }
 }
 
 /************************************************************************/
