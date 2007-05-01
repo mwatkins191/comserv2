@@ -37,6 +37,6 @@ veryclean:
 	done
 
 install:
-	for dir in qmaserv ; do \
+	for dir in qmaserv2 ; do \
 		(cd $$dir; make -f $(MAKEFILE) BINDIR=../$(BINDIR) install); \
 	done

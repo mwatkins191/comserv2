@@ -25,6 +25,7 @@ Edit History:
                     check against -1.
    14  4 Dec 96 WHO Fix sels[CHAN] not being initialized.
    15 11 Jun 97 WHO Fix Solaris2/OSK conditionals for sleeping.e
+   16 18 Feb 07 DSN Fix client detach from server shared memory.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -52,6 +53,7 @@ Edit History:
 #include <time.h>
 #endif
 
+  void cs_detach (pclient_struc client, short station_number);
 
 /* Try to put the structure pointed to by "client" into service queue for
    server pointed to by "srvr". Returns 0 if no error, -1 if cannot
@@ -125,6 +127,7 @@ Edit History:
 #endif
                 {
                   srvr->svcreqs[i].clientseg = NOCLIENT ;
+		  cs_detach (client, station_number);	/*:: DSN added */
                   curclient->base = (pserver_struc) NOCLIENT ;
                   curclient->status = CSCR_DIED ;
                   return CSCR_DIED ;
@@ -287,6 +290,7 @@ Edit History:
       shmid = shmget(curclient->seg_key, sizeof(tserver_struc), PERM) ;
       if (shmid == ERROR)
           {
+	    cs_detach (client, station_number);	/*:: DSN added */
             curclient->base = (pserver_struc) NOCLIENT ;
             curclient->status = CSCR_DIED ;
           }
@@ -306,6 +310,7 @@ Edit History:
 #endif
                       {
                         curclient->status = CSCR_DIED ;
+/*::			cs_detach (client, station_number);	/*:: DSN added */
                         shmdt ((pchar)srvr) ;
                         curclient->base = (pserver_struc) NOCLIENT ;
                       }
@@ -493,6 +498,7 @@ Edit History:
 #endif
                             {
                               curclient->status = CSCR_DIED ;
+/*::			      cs_detach (client, station_number);	/*:: DSN added */
                               shmdt ((pchar)srvr) ;
                               curclient->base = (pserver_struc) NOCLIENT ;
                             }

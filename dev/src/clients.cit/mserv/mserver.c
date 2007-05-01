@@ -63,7 +63,7 @@ Edit History:
 			LOGDIR should added to the station.ini for the directory
 			where logs are dumped. Otherwise, they are dumped in the
 			mserv run dir.
-
+   36 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
 
 
 	The intention of these changes to server are to create a version
@@ -993,6 +993,14 @@ void set_verb (int i) ;
                     if (cursvc == NULL)
                         {
                           cursvc = (pclient_struc) shmat(clientid, NULL, 0) ;
+/*:: DSN start add */
+			  /* If we cannot attach to client's shared memory, skip client. */
+			  if (cursvc == (pclient_struc) ERROR)
+			      {
+				clients[i].client_address = NULL;
+				continue;
+			      }
+/*:: DSN end add */
                           found = FALSE ;
                           for (i = 0 ; i < highclient ; i++)
                             if ((clients[i].client_name.l == cursvc->myname.l) &&

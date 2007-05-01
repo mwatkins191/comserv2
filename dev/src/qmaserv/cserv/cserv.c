@@ -87,6 +87,7 @@ Edit History:
        8 Sep 00 KIM Change timespec definition struct timespec var
        8 Sep 00 KIM Change ipaddr, ipaddr type conversion
        7 Dec 00 IGD Changes are incorporated into the root Linux version
+   33 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
 */           
 #include <stdio.h>
 #include <errno.h>
@@ -1073,6 +1074,14 @@ int comserv_init (char* station_code)
                     if (cursvc == NULL)
                         {
                           cursvc = (pclient_struc) shmat(clientid, NULL, 0) ;
+/*:: DSN start add */
+			  /* If we cannot attach to client's shared memory, skip client. */
+			  if (cursvc == (pclient_struc) ERROR)
+			      {
+				clients[i].client_address = NULL;
+				continue;
+			      }
+/*:: DSN end add */
                           found = FALSE ;
                           for (i = 0 ; i < highclient ; i++)
                             if ((clients[i].client_name.l == cursvc->myname.l) &&
