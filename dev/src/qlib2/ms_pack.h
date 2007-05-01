@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: ms_pack.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: ms_pack.h,v 1.3 2000/10/25 20:40:21 doug Exp $ 	*/
 
 #ifndef	__ms_pack_h
 #define	__ms_pack_h

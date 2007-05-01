@@ -37,7 +37,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: data_hdr.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: data_hdr.h,v 1.7 2005/06/29 20:22:42 doug Exp $ 	*/
 
 #ifndef	__data_hdr_h
 #define	__data_hdr_h
@@ -84,8 +84,8 @@ typedef struct	data_hdr {
     unsigned char activity_flags;	/* activity flags		*/
     unsigned char io_flags;		/* i/o flags			*/
     unsigned char data_quality_flags;	/* data quality flags		*/
-    unsigned char hdr_wordorder;	/* wordorder of header.		*/
-    unsigned char data_wordorder;	/* wordorder of data.		*/
+    signed char hdr_wordorder;		/* wordorder of header.		*/
+    signed char data_wordorder;		/* wordorder of data.		*/
     char	record_type;		/* record type (D,R,Q or V)	*/
     char	cextra[2];		/* future expansion.		*/
     int		x0;			/* first value (STEIM compress)	*/

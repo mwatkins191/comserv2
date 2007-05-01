@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2002 The Regents of the University of California.
+ * Copyright (c) 1996-2004 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -38,7 +38,7 @@
 
 /* Explicitly set overall qlib2 version here by hand.	*/
 #ifndef lint
-char *qlib2_version = "@(#)qlib2 version 1.31 (2004.098)";
+char *qlib2_version = "@(#)qlib2 version 1.37 (2007.114)";
 #endif
 
 /************************************************************************/
@@ -46,6 +46,24 @@ char *qlib2_version = "@(#)qlib2 version 1.31 (2004.098)";
 Modifications:
 Ver	Date and Action
 ------------------------------------------------------------------------
+1.37	2007.114
+	Added ifdefs for __MACH__ for MacOSX.
+1.36	2006.313
+	Change MALLOC_INCREMENT in ms_pack.c from 10 to 1000.
+1.35	2006.007
+	Changed init_leap_second to treat LEAPSECOND point to a directory
+	as an error.  Allow only files or char devices (for /dev/null).
+1.34	2005.180
+	Changed hdr_wordorder and data_wordorder in data_hdr.h from 
+	unsigned char to signed char to allow for negative error codes.
+	Fixed call to valid_span(span).
+1.33	2004.171
+	Modify read_ms_record(), read_ms_hdr(), and decode_fixed_data_hdr() 
+	to properly handle volume headers.
+	Modify ms_unpack() to properly set xm1 in data_hdr for STEIM 
+	compressed data.
+1.32	2004.145
+	Fixed "unsigned char = int" assigment from wordorder_from_time calls.
 1.31	2004.098
 	Changed extra field in data_hdr structure to rate_spsec to hold the
 	blockette 100 samples_per_second value if a blockette 100 is found.

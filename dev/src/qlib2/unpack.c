@@ -38,7 +38,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: unpack.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: unpack.c,v 1.4 2003/04/18 21:17:28 doug Exp $ ";
 #endif
 
 #include <stdio.h>

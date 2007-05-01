@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qsteim.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: qsteim.h,v 1.2 2000/10/25 20:40:23 doug Exp $ 	*/
 
 #ifndef	__qsteim_h
 #define	__qsteim_h

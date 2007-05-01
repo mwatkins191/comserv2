@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qdefines.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: qdefines.h,v 1.8 2007/04/24 20:00:12 doug Exp $ 	*/
 
 #ifndef	__qdefines_h
 #define	__qdefines_h
@@ -107,8 +107,10 @@ extern char *qlib2_version;
 #define M_LN2	    0.69314718055994530942
 #endif
 
+#ifndef	__MACH__
 #define	log2(x)	    ((double)(log(x)/M_LN2))
 #define	exp2(x)	    pow(2.,x)
+#endif
 
 #define	QLIB2_CLASSIC	(qlib2_op_mode == 0)
 #define	QLIB2_NOEXIT	(qlib2_op_mode == 1)

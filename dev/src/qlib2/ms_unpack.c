@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_unpack.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: ms_unpack.c,v 1.7 2004/06/20 01:19:05 doug Exp $ ";
 #endif
 
 #include <stdlib.h>
@@ -102,6 +102,7 @@ int ms_unpack
 	nsamples = unpack_steim1 ((FRAME *)dbuf, datasize, hdr->num_samples,
 				  max_num_points, (int *)data_buffer, diffbuff, 
 				  &hdr->x0, &hdr->xn, hdr->data_wordorder, NULL);
+	if (nsamples > 0) hdr->xm1 = hdr->x0 - diffbuff[0];
 	free ((char *)diffbuff);
 	break;
       case STEIM2:
@@ -113,6 +114,7 @@ int ms_unpack
 	nsamples = unpack_steim2 ((FRAME *)dbuf, datasize, hdr->num_samples,
 				  max_num_points, (int *)data_buffer, diffbuff, 
 				  &hdr->x0, &hdr->xn, hdr->data_wordorder, NULL);
+	if (nsamples > 0) hdr->xm1 = hdr->x0 - diffbuff[0];
 	free ((char *)diffbuff);
 	break;
       case INT_16:

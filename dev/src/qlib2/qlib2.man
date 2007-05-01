@@ -1,4 +1,4 @@
-.\$Id: qlib2.man,v 1.1.1.1 2004/06/15 19:08:02 isti Exp $ 
+.\$Id: qlib2.man,v 1.5 2003/06/28 00:31:48 doug Exp $ 
 .TH QLIB2 3 "27 June 2003" BDSN
 .SH NAME
 qlib2 - Subroutine library for Quanterra data and MiniSEED data manipulation

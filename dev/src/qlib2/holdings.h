@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: holdings.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: holdings.h,v 1.5 2000/10/26 13:39:49 doug Exp $ 	*/
 
 #define	HR_STATION_LEN		5
 #define	HR_NETWORK_LEN		2

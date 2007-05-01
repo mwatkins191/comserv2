@@ -36,13 +36,15 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: timedef.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: timedef.h,v 1.4 2006/01/07 22:08:12 doug Exp $ 	*/
 
 #ifndef	__timedef_h
 #define	__timedef_h
 
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 /*	Time structures.					*/
 

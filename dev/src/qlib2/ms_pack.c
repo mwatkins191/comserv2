@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_pack.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: ms_pack.c,v 1.11 2006/11/10 01:41:58 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -58,7 +58,7 @@ static char sccsid[] = "$Id: ms_pack.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 
 #include "ms_pack.h"
 #include "pack.h"
 
-#define	MALLOC_INCREMENT    10		/* # of Mini-SEED blocks to alloc*/
+#define	MALLOC_INCREMENT    1000		/* # of Mini-SEED blocks to alloc*/
 
 /************************************************************************/
 /*  ms_pack_data:							*/

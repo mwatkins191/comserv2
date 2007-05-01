@@ -36,12 +36,13 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qutils.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: qutils.h,v 1.7 2007/04/24 20:00:13 doug Exp $ 	*/
 
 #ifndef	__qutils_h
 #define	__qutils_h
 
 #include "stdio.h"
+#include "ctype.h"
 #include "sdr.h"
 
 #ifdef	__cplusplus

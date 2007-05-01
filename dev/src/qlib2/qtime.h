@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qtime.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: qtime.h,v 1.8 2007/04/24 20:00:13 doug Exp $ 	*/
 
 #ifndef	__qtime_h
 #define	__qtime_h
@@ -46,6 +46,8 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
+extern int init_leap_second_table ();
 
 extern void dy_to_mdy 
    (int		doy,		/* day of year (input).			*/

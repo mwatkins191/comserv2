@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qda_utils.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: qda_utils.c,v 1.8 2003/07/29 17:47:57 doug Exp $ ";
 #endif
 
 #include <stdio.h>

@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qutils.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: qutils.c,v 1.11 2007/04/24 20:00:13 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -54,6 +54,7 @@ static char sccsid[] = "$Id: qutils.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ "
 #include "data_hdr.h"
 #include "sdr.h"
 #include "qutils.h"
+#include "qtime.h"
 
 #define	N_NULL_CHECK    32
 extern int errno;

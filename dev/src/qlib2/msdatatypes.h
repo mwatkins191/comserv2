@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: msdatatypes.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: msdatatypes.h,v 1.2 2000/10/25 20:40:22 doug Exp $ 	*/
 
 #ifndef	SEED_BIG_ENDIAN
 

@@ -1,4 +1,18 @@
 ========================================================================
+2005/06/29	1.34	2005.180
+	Changed hdr_wordorder and data_wordorder in data_hdr.h from 
+	unsigned char to signed char to allow for negative error codes.
+	Fixed call to valid_span(span).
+========================================================================
+2004/06/20	1.33	2004.171
+	Modify read_ms_record(), read_ms_hdr(), and decode_fixed_data_hdr() 
+	to properly handle volume headers.
+	Modify ms_unpack() to properly set xm1 in data_hdr for STEIM 
+	compressed data.
+========================================================================
+2004/05/25	1.32	2004.145
+	Fixed "unsigned char = int" assigment from wordorder_from_time calls.
+========================================================================
 2004/04/07	2004.098 version 1.31
 Changed extra field in data_hdr structure to rate_spsec to hold the
 blockette 100 samples_per_second value if a blockette 100 is found.

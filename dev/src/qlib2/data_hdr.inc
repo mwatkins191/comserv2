@@ -37,7 +37,7 @@ C* CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT,
 C* UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 C*
 
-c $Id: data_hdr.inc,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 
+c $Id: data_hdr.inc,v 1.3 2004/04/08 00:45:15 doug Exp $ 
 
 c
 c Parameters for SEED data header data structures

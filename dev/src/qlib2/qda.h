@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qda.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: qda.h,v 1.2 2000/10/25 20:40:22 doug Exp $ 	*/
 
 #ifndef	__qda_h
 #define	__qda_h

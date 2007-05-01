@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qtime.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: qtime.c,v 1.21 2007/04/24 20:00:13 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -124,7 +124,7 @@ struct lstable {
 /************************************************************************/
 /*  init_leap_second_table:						*/
 /*	Initialize leap second table from external file.		*/
-/*  Return: 
+/*  Return: 0 on success, 1 on warning, -1 on error.			*/
 /************************************************************************/
 int init_leap_second_table ()
 {
@@ -136,6 +136,7 @@ int init_leap_second_table ()
     char    *ep;
     LSINFO  *p;
     EXT_TIME et;
+    struct stat stat_buf;
     static int status = 0;
 
     if (lstable.initialized) return (status);
@@ -152,9 +153,17 @@ int init_leap_second_table ()
     if ((ep=getenv("LEAPSECONDS"))!=NULL)
 	strcpy(leap_file,ep);
     else strcpy(leap_file, LEAPSECONDS);
+
+    /* Check to make leapsecond is either a file or char device.	*/
+    if (stat(leap_file, &stat_buf) == 0 && 
+	! (S_ISREG(stat_buf.st_mode) || S_ISCHR(stat_buf.st_mode))) {
+	fprintf (stderr, "Error: invalid leapsecond file %s\n", leap_file);
+	return (-1);
+    }
+
     if ((lf=fopen(leap_file, "r"))==NULL) {
 	fprintf (stderr, "Warning: unable to open leap second file: %s\n",leap_file);
-	return;
+	return (1);
     }
 
     while (fgets(line,LEAPLINELEN,lf)!=NULL) {
@@ -212,6 +221,11 @@ int init_leap_second_table ()
 	p->inttime.second += p->leap_value;
 	++lstable.nleapseconds;
     }
+    if (ferror(lf)) {
+	fprintf (stderr, "Error: reading leap second file: %s\n",leap_file);
+	status = -1;
+    }
+	
     fclose(lf);
     return (status);
 }
@@ -1334,7 +1348,7 @@ INT_TIME end_of_span
 
     et = int_to_ext (it);
 
-    if (! valid_span) {
+    if (! valid_span(span)) {
 	fprintf (stderr, "Error: invalid span value: %s\n", span);
 	fflush (stderr);
 	if (QLIB2_CLASSIC) exit(1);
@@ -1471,7 +1485,7 @@ time_t unix_time_from_ext_time
     tm.tm_wday = 0;
     tm.tm_yday = et.doy - 1;			/* 0-365	*/
     tm.tm_isdst =0;
-#if defined(SUNOS) || defined (MACOSX)
+#if defined(SUNOS) || defined (MACOSX) || defined(__MACH__)
     tm.tm_zone = "GMT";
     tm.tm_gmtoff = 0;
     gtime = timegm (&tm);

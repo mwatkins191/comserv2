@@ -37,7 +37,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: pack.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: pack.h,v 1.3 2002/05/21 19:07:00 doug Exp $ 	*/
 
 #ifndef	__pack_h
 #define	__pack_h

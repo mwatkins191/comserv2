@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: sdr.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: sdr.h,v 1.5 2000/10/25 20:40:24 doug Exp $ 	*/
 
 #ifndef	__sdr_h
 #define __sdr_h

@@ -37,7 +37,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: unpack.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: unpack.h,v 1.2 2000/10/25 20:40:24 doug Exp $ 	*/
 
 #ifndef	__unpack_h
 #define	__unpack_h

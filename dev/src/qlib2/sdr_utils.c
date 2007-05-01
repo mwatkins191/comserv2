@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: sdr_utils.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: sdr_utils.c,v 1.20 2004/05/24 18:52:50 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -153,6 +153,7 @@ DATA_HDR *decode_hdr_sdr
     int		itmp[2];
     short int	stmp[2];
     unsigned short int ustmp[2];
+    int		wo;
 
     qlib2_errno = 0;
     if (my_wordorder < 0) get_my_wordorder();
@@ -206,12 +207,12 @@ DATA_HDR *decode_hdr_sdr
     }
 
     /* Determine word order of the fixed record header.			*/
-    ohdr->hdr_wordorder = wordorder_from_time((unsigned char *)&(ihdr->time));
-    if (ohdr->hdr_wordorder < 0) {
+    if ((wo = wordorder_from_time((unsigned char *)&(ihdr->time))) < 0) {
 	qlib2_errno = 3;
 	free_data_hdr (ohdr);
 	return ((DATA_HDR *)NULL);
     }
+    ohdr->hdr_wordorder = wo;
     ohdr->data_wordorder = ohdr->hdr_wordorder;
     swapflag = (ohdr->hdr_wordorder != my_wordorder);
     charncpy (ohdr->station_id, ihdr->station_id, 5);

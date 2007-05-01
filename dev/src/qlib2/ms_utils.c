@@ -38,7 +38,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_utils.c,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ ";
+static char sccsid[] = "$Id: ms_utils.c,v 1.17 2004/06/20 01:19:05 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -132,15 +132,15 @@ int read_ms_record
     int blksize;		/* blksize of MiniSEED record.		*/
 
     status = offset = read_ms_hdr (phdr, pbuf, fp);
-    if (offset > 0) {
-	status = blksize = read_ms_data (*phdr, *pbuf, status, fp);
+    if (offset > 0 && ! is_vol_hdr_ind((*phdr)->record_type)) {
+	status = blksize = read_ms_data (*phdr, *pbuf, offset, fp);
     }
     return (status);
 }
 
 /************************************************************************/
 /*  read_ms_hdr:							*/
-/*	Routine to read Mini-SEED Fixed Data Header and blockettes.	*/
+/*	Routine to read MiniSEED Fixed Data Header and blockettes.	*/
 /*	Parses header into data_hdr structure, and writes raw header	*/
 /*	and blockettes into user-supplied buffer.			*/
 /*  returns:								*/
@@ -191,35 +191,47 @@ int read_ms_hdr
 	return (MS_ERROR);
     }
 
-    /* Read blockettes.  Mini-SEED should have at least blockette 1000.	*/
-    if (hdr->num_blockettes > 0) {
-	if (hdr->first_blockette < offset) {
+    if (is_vol_hdr_ind(hdr->record_type)) {
+	/* Read the rest of the header for full parsing.		*/
+	if (fread(buf+offset, hdr->blksize-offset, 1, fp) != 1) {
 	    if (alloc_buf) free(buf);
 	    free_data_hdr(hdr);
 	    return (MS_ERROR);
 	}
-	if (hdr->first_blockette > offset) {
-	    nskip = hdr->first_blockette - offset;
-	    if (fread (buf+offset, nskip, 1, fp) != 1) {
+	offset = hdr->blksize;
+    }
+
+    else {
+	/* Read blockettes.  MiniSEED should have at least blockette 1000. */
+	if (hdr->num_blockettes > 0) {
+	    if (hdr->first_blockette < offset) {
 		if (alloc_buf) free(buf);
 		free_data_hdr(hdr);
 		return (MS_ERROR);
 	    }
-	    offset += nskip;
+	    if (hdr->first_blockette > offset) {
+		nskip = hdr->first_blockette - offset;
+		if (fread (buf+offset, nskip, 1, fp) != 1) {
+		    if (alloc_buf) free(buf);
+		    free_data_hdr(hdr);
+		    return (MS_ERROR);
+		}
+		offset += nskip;
+	    }
+	    if ((offset = read_ms_bkt (hdr, buf, fp)) < 0) {
+		if (alloc_buf) free(buf);
+		free_data_hdr(hdr);
+		return (MS_ERROR);
+	    }
 	}
-	if ((offset = read_ms_bkt (hdr, buf, fp)) < 0) {
+
+	/* Determine blocksize and data format from the blockette 1000.	*/
+	/* If we don't have one, it is an error.			*/
+	if ((bs = find_blockette (hdr, 1000)) == NULL) {
 	    if (alloc_buf) free(buf);
 	    free_data_hdr(hdr);
 	    return (MS_ERROR);
 	}
-    }
-
-    /* Determine blocksize and data format from the blockette 1000.	*/
-    /* If we don't have one, it is an error.				*/
-    if ((bs = find_blockette (hdr, 1000)) == NULL) {
-	if (alloc_buf) free(buf);
-	free_data_hdr(hdr);
-	return (MS_ERROR);
     }
 
     /* Now reparse the header with all of the blockettes.		*/
@@ -232,34 +244,38 @@ int read_ms_hdr
 	return (MS_ERROR);
     }
 
-    /* If we allocated the buffer, ensure that it is large enough to	*/
-    /* hold the full record.						*/
-    if (alloc_buf && hdr->blksize > MAXBLKSIZE) {
-	if ((buf = realloc(buf, hdr->blksize * sizeof(char))) == NULL) {
-	    fprintf (stderr, "Error: Unable to allocate buffer in read_ms_hdr\n");
-	    fflush (stderr);
-	    if (QLIB2_CLASSIC) exit(1);
-	    if (alloc_buf) free(buf);
-	    free_data_hdr(hdr);
-	    return (QLIB2_MALLOC_ERROR);
-	}
+    if (is_vol_hdr_ind(hdr->record_type)) {
     }
+    else {
+	/* If we allocated the buffer, ensure that it is large enough	*/
+	/* to hold the full record.					*/
+	if (alloc_buf && hdr->blksize > MAXBLKSIZE) {
+	    if ((buf = realloc(buf, hdr->blksize * sizeof(char))) == NULL) {
+		fprintf (stderr, "Error: Unable to allocate buffer in read_ms_hdr\n");
+		fflush (stderr);
+		if (QLIB2_CLASSIC) exit(1);
+		if (alloc_buf) free(buf);
+		free_data_hdr(hdr);
+		return (QLIB2_MALLOC_ERROR);
+	    }
+	}
 
-    /* Skip over space between blockettes (if any) and data.		*/
-    bl_limit = (hdr->first_data) ? hdr->first_data : hdr->blksize;
-    if (bl_limit < offset) {
-	if (alloc_buf) free(buf);
-	free_data_hdr(hdr);
-	return(MS_ERROR);
-    }
-    if (bl_limit > offset) {
-	nskip = bl_limit - offset;
-	if (fread (buf+offset, nskip, 1, fp) != 1) {
+	/* Skip over space between blockettes (if any) and data.		*/
+	bl_limit = (hdr->first_data) ? hdr->first_data : hdr->blksize;
+	if (bl_limit < offset) {
 	    if (alloc_buf) free(buf);
 	    free_data_hdr(hdr);
-	    return (MS_ERROR);
+	    return(MS_ERROR);
 	}
-	offset += nskip;
+	if (bl_limit > offset) {
+	    nskip = bl_limit - offset;
+	    if (fread (buf+offset, nskip, 1, fp) != 1) {
+		if (alloc_buf) free(buf);
+		free_data_hdr(hdr);
+		return (MS_ERROR);
+	    }
+	    offset += nskip;
+	}
     }
 
     if (alloc_buf) *pbuf = buf;
@@ -484,6 +500,7 @@ DATA_HDR *decode_fixed_data_hdr
     int		itmp[2];
     short int	stmp[2];
     unsigned short int ustmp[2];
+    int		wo;
 
     if (my_wordorder < 0) get_my_wordorder();
 
@@ -512,12 +529,8 @@ DATA_HDR *decode_fixed_data_hdr
 	  case 8:
 	  case 10:
 	    ohdr->blksize = (int)pow(2.0,atoi(charncpy(tmp,p+11,2)));
-	    ok = add_blockette (ohdr, p, ohdr->data_type,
-				atoi(charncpy(tmp,p+3,4)), my_wordorder, 0);
-	    if (! ok) {
-		free_data_hdr(ohdr);
-		return ((DATA_HDR *)NULL);
-	    }
+	    /* Do not add the blockette here, since we are not		*/
+	    /* assured that the entire blockette is in this buffer.	*/
 	    break;
 	  default:
 	    break;
@@ -526,11 +539,11 @@ DATA_HDR *decode_fixed_data_hdr
     }
 
     /* Determine word order of the fixed record header.			*/
-    ohdr->hdr_wordorder = wordorder_from_time((unsigned char *)&(ihdr->time));
-    if (ohdr->hdr_wordorder < 0) {
+    if ((wo = wordorder_from_time((unsigned char *)&(ihdr->time)))< 0) {
 	free_data_hdr (ohdr);
 	return ((DATA_HDR *)NULL);
     }
+    ohdr->hdr_wordorder = wo;
     ohdr->data_wordorder = ohdr->hdr_wordorder;
     swapflag = (ohdr->hdr_wordorder != my_wordorder);
     charncpy (ohdr->station_id, ihdr->station_id, 5);

@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: ms_utils.h,v 1.1.1.1 2004/06/15 19:08:01 isti Exp $ 	*/
+/*	$Id: ms_utils.h,v 1.3 2003/04/18 21:17:28 doug Exp $ 	*/
 
 #ifndef	__ms_utils_h
 #define	__ms_utils_h
