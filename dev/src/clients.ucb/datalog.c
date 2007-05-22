@@ -12,7 +12,7 @@
 static char sccsid[] = "@(#) $Id: datalog.c,v 1.1.1.1 2004/06/15 19:08:00 isti Exp $";
 #endif
 
-#define	VERSION		"1.4.9 (2007.073)"
+#define	VERSION		"1.5.0 (2007.142)"
 #define	CLIENT_NAME	"DLOG"
 
 #include <stdio.h>

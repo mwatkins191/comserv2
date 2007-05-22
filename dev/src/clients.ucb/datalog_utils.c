@@ -1498,11 +1498,20 @@ int outbytes;
 		fprintf(info, "GAP %d secs found for %s\n", idiff, 
 			channelstring(fip->station, fip->location, fip->channel, fip->network));
 */
-		sprintf(gapline,"%s-%s|%4d/%02d/%02d %02d:%02d:%02d|%ds|%s\n",
+
+		if (fip->location == NULL || strcmp(fip->location, "  ")==0 || strlen(fip->location)==0) {
+		    sprintf(gapline,"%s-%s|%4d/%02d/%02d %02d:%02d:%02d|%ds|%s\n",
 			fip->network, fip->station, 
 			fip->endtime.year, fip->endtime.month, fip->endtime.day,
 			fip->endtime.hour, fip->endtime.minute, fip->endtime.second,
 			idiff, fip->channel);
+		} else {
+		    sprintf(gapline,"%s-%s-%s|%4d/%02d/%02d %02d:%02d:%02d|%ds|%s\n",
+			fip->network, fip->station, fip->location,
+			fip->endtime.year, fip->endtime.month, fip->endtime.day,
+			fip->endtime.hour, fip->endtime.minute, fip->endtime.second,
+			idiff, fip->channel);
+		}
 		outbytes = strlen(gapline);
 		if (xwrite(gapfd, gapline, outbytes) != outbytes) {
 			fprintf (info, "Unable to write gapline %s to file %s\n", 
