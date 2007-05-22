@@ -90,7 +90,8 @@ int classify_packet(seed_fixed_data_record_header* sh)
       }
       else
       {
-        fprintf(stderr,"Unknown packet type.\n");
+        fprintf(stderr,"Unknown packet type. Encoding format blockette_type = %d\n", 
+			sh->deb.blockette_type);
         return(BLOCKETTE);
       }
     }

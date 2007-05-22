@@ -71,6 +71,10 @@ Edit History:
 	the comserv ring buffers. The input messages are to be 512
 	byte SEED packets
 
+   37 22 May 07 PAF - fixed some logging code problems and 
+	fixed a comment to notify of encoding format if classify_packet() 
+	cannot ID the type.
+
 
 */
 #include <stdio.h>
@@ -129,7 +133,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 35
+#define EDITION 37
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -602,7 +606,7 @@ void set_verb (int i) ;
 	{
 		log_mode = CS_LOG_MODE_TO_LOGFILE;
 	} 
-        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL) 
+        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL || strcmp(log_dir,".")==0 || strlen(log_type)==0) 
 	{
 		log_mode = CS_LOG_MODE_TO_STDOUT;
 	} 
