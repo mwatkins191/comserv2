@@ -1,6 +1,6 @@
 			Datalog Documentation
 	Douglas Neuhauser, UC Berkeley Seismological Laboratory
-			Last updated:	2004/04/14
+			Last updated:	2007/05/22
 
 The datalog client is a comserv client that receives SEED data records from a
 single comserv server (and hence a single Quanterra station) and writes that
@@ -75,6 +75,7 @@ Detailed information on each configuration directive is shown below.
 dir=/home/aq01/data/MCC
 pidfile=/home/aq01/config/etc/pid/mcc.dlog
 lockfile=/home/aq01/config/etc/lock/mcc.lock
+gapfile=/home/aq01/config/etc/gaps/mcc.gap
 trimreclen=n
 channel_format=%S.%N.%C.%L
 mshdr_wordorder=-1
@@ -154,6 +155,18 @@ LOCKILE=pathname
 	opens the file an creates an exclusive lock on the entire file
 	while it is running.  This can be used to ensure that only one
 	copy of Datalog is running for this station.
+
+GAPFILE=pathname
+	is an optional directive that specifies the pathname of a file
+	where gap listing information (of the BalerAdmin format) is
+	written when datalog detects a gap in data. The format is:
+
+	NN-SSSS[-LL]|time of start of gap|gap in seconds|chan
+	
+	This file is openned each time a gap is written and then closed
+	so that truncating of the file may take place as gaps are
+	filled. Note  that this feature ONLY RECORDS GAPS OF DATA
+	WITHIN A RUN OF DATALOG (not across datalog runs).
 
 TRIMRECLEN=Y|N
 	is an optional directive that specifies that DATA for all channels
