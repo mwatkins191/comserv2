@@ -49,6 +49,9 @@ struct qma_cfg
   char dutycycle_maxConnectTime[10];
   char dutycycle_sleepTime[10];
   char dutycycle_bufferLevel[10];
+  char multicastPort[10];
+  char multicastHost[255];
+  char multicastEnabled[10];
 };
 
 #ifdef __cplusplus

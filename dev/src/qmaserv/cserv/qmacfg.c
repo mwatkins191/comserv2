@@ -158,10 +158,31 @@ int getQmacfg(struct qma_cfg* out_cfg)
 	  if (strcmp(str1, "DUTYCYCLE_BUFFERLEVEL") == 0) {
 	    strcpy(out_cfg->dutycycle_bufferLevel, str2);
 	  }
-
+	  if (strcmp(str1, "MULTICASTENABLED") == 0) {
+	    strcpy(out_cfg->multicastEnabled, str2);
+	    printf("***** enabled: %s", str2);
+	  }
 	  
       }
       while (1) ;
+      
+      if (open_cfg(&cfg, "/etc/network.ini", "mountainair")) {
+	return 1; //terminate ("xxx Could not find a valid mountainair station.ini\n") ;
+      }
+
+      do {
+          read_cfg(&cfg, str1, str2) ;
+          if (str1[0] == '\0')
+              break ;
+	  if (strcmp(str1, "MULTICASTPORT") == 0) {
+	    strcpy(out_cfg->multicastPort, str2);
+	    printf("***** port: %s", str2);
+	  }
+	  if (strcmp(str1, "MULTICASTHOST") == 0) {
+	    strcpy(out_cfg->multicastHost, str2);
+	    printf("***** host: %s", str2);
+	  }
+      } while (1);
 
       return 1;
 }
