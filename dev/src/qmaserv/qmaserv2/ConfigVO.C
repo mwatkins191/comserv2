@@ -94,6 +94,9 @@ ConfigVO::ConfigVO(qma_cfg cfg) {
   setDutyCycle_MaxConnectTime(cfg.dutycycle_maxConnectTime);
   setDutyCycle_BufferLevel(cfg.dutycycle_bufferLevel);
   setDutyCycle_SleepTime(cfg.dutycycle_sleepTime);
+  setMulticastEnabled(cfg.multicastEnabled);
+  setMulticastPort(cfg.multicastPort);
+  setMulticastHost(cfg.multicastHost);
   p_configured = true;
 }
 
@@ -282,6 +285,16 @@ qma_uint16 ConfigVO::getDutyCycle_SleepTime() const {
 }
 qma_uint16 ConfigVO::getDutyCycle_BufferLevel() const {
   return p_dutycycle_bufferLevel;
+}
+
+qma_int8 ConfigVO::getMulticastEnabled() const {
+  return p_multicast_enabled;
+}
+qma_uint16 ConfigVO::getMulticastPort() const {
+  return p_multicast_port;
+}
+char *ConfigVO::getMulticastHost() const {
+  return (char *)&p_multicast_host[0];
 }
 
 //
@@ -643,4 +656,27 @@ void ConfigVO::setDutyCycle_BufferLevel(char *input) {
   if(p_dutycycle_bufferLevel <= 0) {
     g_log << "xxx Error converting input to buffer level : " << input << std::endl;
   }
+}
+
+void ConfigVO::setMulticastEnabled(char *input) {
+  if(  !strcasecmp(input, "yes") ||
+       !strcasecmp(input, "1") || 
+       !strcasecmp(input, "true") ) {
+    p_multicast_enabled = 1;
+  } else {
+    p_multicast_enabled = 0;
+  }
+}
+
+void ConfigVO::setMulticastPort(char *input) {
+  int port = atoi(input);
+  if(port < 0) {
+    p_multicast_port = 0;
+  } else {
+    p_multicast_port = port;
+  }
+}
+
+void ConfigVO::setMulticastHost(char *input) {
+  strncpy(p_multicast_host, input, 255);
 }

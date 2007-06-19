@@ -2,6 +2,10 @@
 #include "clink.h"
 #include "PacketQueue.h"
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 double g_timestampOfLastRecord = 0;
 
@@ -33,6 +37,17 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   }
   g_log << std::endl;
   g_log << "+++ Initializing station thread" << std::endl;
+
+  if(ourConfig.getMulticastEnabled()) {
+    if( (mcastSocketFD = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+      ourConfig.setMulticastEnabled(0);
+      g_log << "XXX Unable to create multicast socket" << std::endl;
+    }
+    memset(&(mcastAddr), 0, sizeof(mcastAddr));
+    mcastAddr.sin_family = AF_INET;
+    mcastAddr.sin_addr.s_addr = inet_addr(ourConfig.getMulticastHost());
+    mcastAddr.sin_port = htons(ourConfig.getMulticastPort());
+  }
   lib_create_context(&(this->stationContext), &(this->creationInfo));
   if(this->creationInfo.resp_err == LIBERR_NOERR) {
     g_log << "+++ Station thread created" << std::endl;
@@ -40,6 +55,7 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
     this->handleError(creationInfo.resp_err);
   }
 
+  
 }
 
 
@@ -181,10 +197,24 @@ void Lib330Interface::state_callback(pointer p) {
   }
 }
 
+void Lib330Interface::onesec_callback(pointer p) {
+  tonesec_call msg;
+  int retval;
+  memcpy(&msg, (tonesec_call *) p, sizeof(msg));
+  
+  retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
+  if(retval < 0) {
+    g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
+  } else {
+    g_log << "+++ Wrote " << retval << " bytes to multicast" << std::endl;
+  }
+}
+
 void Lib330Interface::miniseed_callback(pointer p) {
   tminiseed_call *data = (tminiseed_call *) p;
   int sendFailed;
   short packetType = 0;
+
   /*
    * Handle non-data miniseed records
    * this whole construct is bizarre looking and the if/else
@@ -286,6 +316,7 @@ void Lib330Interface::msg_callback(pointer p) {
 
 }
 
+
 /**
  * For internal use only
  */
@@ -371,7 +402,7 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
   strcpy(this->creationInfo.opt_contfile, continuityFile);
   this->creationInfo.opt_verbose = ourConfig.getLogLevel();
   this->creationInfo.opt_zoneadjust = 1;
-  this->creationInfo.opt_secfilter = 0;
+  this->creationInfo.opt_secfilter = OSF_ALL;
   this->creationInfo.opt_minifilter = OMF_ALL;
   this->creationInfo.opt_aminifilter = OMF_ALL;
   this->creationInfo.amini_exponent = 0;
@@ -384,6 +415,10 @@ void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConf
   this->creationInfo.resp_err = LIBERR_NOERR;
   this->creationInfo.call_state = this->state_callback;
   this->creationInfo.call_messages = this->msg_callback;
-  this->creationInfo.call_secdata = NULL;
+  if(ourConfig.getMulticastEnabled()) {
+    this->creationInfo.call_secdata = this->onesec_callback;
+  } else {
+    this->creationInfo.call_secdata = NULL;
+   }
   this->creationInfo.call_lowlatency = NULL;
 }

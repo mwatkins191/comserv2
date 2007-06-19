@@ -21,6 +21,9 @@ extern "C" {
 
 PacketQueue packetQueue;
 
+struct sockaddr_in mcastAddr;
+int mcastSocketFD;
+
 class Lib330Interface {
  public:
   Lib330Interface(char *, ConfigVO configInfo);
@@ -40,6 +43,8 @@ class Lib330Interface {
   static void miniseed_callback(pointer p);
   static void archival_miniseed_callback(pointer p);
   static void msg_callback(pointer p);
+  static void onesec_callback(pointer p);
+
 
  private:
   int sendUserMessage(char *);
@@ -52,5 +57,6 @@ class Lib330Interface {
   tpar_register registrationInfo;
   tpar_create   creationInfo;
   enum tlibstate currentLibState;
+
 };
 #endif

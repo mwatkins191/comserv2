@@ -74,6 +74,9 @@ class ConfigVO {
   qma_uint16 getDutyCycle_MaxConnectTime() const;
   qma_uint16 getDutyCycle_SleepTime() const;
   qma_uint16 getDutyCycle_BufferLevel() const;
+  qma_int8   getMulticastEnabled() const;
+  qma_uint16 getMulticastPort() const;
+  char *     getMulticastHost() const;
 
   void setQ330BasePort(qma_uint32);
   void setQ330DataPortNumber(qma_uint32);
@@ -103,11 +106,9 @@ class ConfigVO {
   void setDutyCycle_MaxConnectTime(char *input);
   void setDutyCycle_SleepTime(char *input);
   void setDutyCycle_BufferLevel(char *input);
-
-  //
-  // For efficiency, make this an external variable, so no
-  // method call is required to access it.
-  //
+  void setMulticastEnabled(char * input);
+  void setMulticastPort(char * input);
+  void setMulticastHost(char *input);
  
  private:
 
@@ -131,6 +132,9 @@ class ConfigVO {
   qma_uint16 p_dutycycle_maxConnectTime;
   qma_uint16 p_dutycycle_sleepTime;
   qma_uint16 p_dutycycle_bufferLevel;
+  qma_int8   p_multicast_enabled;
+  qma_uint16 p_multicast_port;
+  char       p_multicast_host[256];
 };
 
 #endif
