@@ -77,6 +77,7 @@ class ConfigVO {
   qma_int8   getMulticastEnabled() const;
   qma_uint16 getMulticastPort() const;
   char *     getMulticastHost() const;
+  char **    getMulticastChannelList() const;
 
   void setQ330BasePort(qma_uint32);
   void setQ330DataPortNumber(qma_uint32);
@@ -109,7 +110,8 @@ class ConfigVO {
   void setMulticastEnabled(char * input);
   void setMulticastPort(char * input);
   void setMulticastHost(char *input);
- 
+  void setMulticastChannelList(char *input);
+
  private:
 
   char       p_q330_udpaddr[255];
@@ -135,6 +137,7 @@ class ConfigVO {
   qma_int8   p_multicast_enabled;
   qma_uint16 p_multicast_port;
   char       p_multicast_host[256];
+  char       p_multicast_channellist[256][5];
 };
 
 #endif

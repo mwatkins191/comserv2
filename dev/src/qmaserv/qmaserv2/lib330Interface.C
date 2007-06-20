@@ -47,6 +47,7 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
     mcastAddr.sin_family = AF_INET;
     mcastAddr.sin_addr.s_addr = inet_addr(ourConfig.getMulticastHost());
     mcastAddr.sin_port = htons(ourConfig.getMulticastPort());
+    multicastChannelList = ourConfig.getMulticastChannelList();
   }
   lib_create_context(&(this->stationContext), &(this->creationInfo));
   if(this->creationInfo.resp_err == LIBERR_NOERR) {
@@ -200,16 +201,22 @@ void Lib330Interface::state_callback(pointer p) {
 void Lib330Interface::onesec_callback(pointer p) {
   tonesec_call msg;
   int retval;
+  char *filterItem;
+
   memcpy(&msg, (tonesec_call *) p, sizeof(msg));
   
-  retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
-  if(retval < 0) {
-    g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
-  } 
-/*  else {
-    g_log << "+++ Wrote " << retval << " bytes to multicast" << std::endl;
+  for(int i=0; i < 255; i++) {
+    filterItem = multicastChannelList[i];
+    if(! *filterItem) {
+      break;
+    }
+    if(!strcmp(filterItem, msg->channel)) {
+      retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
+      if(retval < 0) {
+	g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
+      } 
+    }
   }
-*/
 }
 
 void Lib330Interface::miniseed_callback(pointer p) {

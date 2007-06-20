@@ -52,6 +52,7 @@ struct qma_cfg
   char multicastPort[10];
   char multicastHost[255];
   char multicastEnabled[10];
+  char multicastChannelList[512];
 };
 
 #ifdef __cplusplus

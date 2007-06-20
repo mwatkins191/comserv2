@@ -297,6 +297,10 @@ char *ConfigVO::getMulticastHost() const {
   return (char *)&p_multicast_host[0];
 }
 
+char **COnfigVO::getMulticastChannelList() const {
+  retun (char **)&p_multicast_channellist[0];
+}
+
 //
 // Set values
 // 
@@ -679,4 +683,26 @@ void ConfigVO::setMulticastPort(char *input) {
 
 void ConfigVO::setMulticastHost(char *input) {
   strncpy(p_multicast_host, input, 255);
+}
+
+void ConfigVO::setMulticastChannelList(char *input) {
+  char localInput[2048];
+  int itemNum = 0;
+  strcpy(localInput, input);
+
+  tok = strtok(localInput, ",");
+
+  for(int i=0; i<=256; i++) {
+    p_multicast_channellist[i][0] = 0;
+  }
+
+  while(tok != NULL) {
+    strcpy(p_multicast_channellist[itemNum], tok);
+
+    tok = strtok(localInput, ",");
+    // remove whitespace after the comma
+    while( tok && *tok && *tok == ' ') {
+      tok++;
+    }
+  }
 }
