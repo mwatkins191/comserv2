@@ -205,9 +205,11 @@ void Lib330Interface::onesec_callback(pointer p) {
   retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
   if(retval < 0) {
     g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
-  } else {
+  } 
+/*  else {
     g_log << "+++ Wrote " << retval << " bytes to multicast" << std::endl;
   }
+*/
 }
 
 void Lib330Interface::miniseed_callback(pointer p) {
