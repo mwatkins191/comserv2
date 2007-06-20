@@ -213,4 +213,5 @@ void clearConfig(struct qma_cfg* cfg)
   strcpy(cfg->dutycycle_maxConnectTime, "0");
   strcpy(cfg->dutycycle_sleepTime, "0");
   strcpy(cfg->dutycycle_bufferLevel, "0");
+  strcpy(cfg->multicastEnabled, "false");
 }
