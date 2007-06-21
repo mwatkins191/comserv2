@@ -23,7 +23,7 @@ PacketQueue packetQueue;
 
 struct sockaddr_in mcastAddr;
 int mcastSocketFD;
-char **multicastChannelList;
+char multicastChannelList[256][5];
 
 class Lib330Interface {
  public:

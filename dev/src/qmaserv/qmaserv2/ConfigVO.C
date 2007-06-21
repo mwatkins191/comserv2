@@ -97,6 +97,7 @@ ConfigVO::ConfigVO(qma_cfg cfg) {
   setMulticastEnabled(cfg.multicastEnabled);
   setMulticastPort(cfg.multicastPort);
   setMulticastHost(cfg.multicastHost);
+  setMulticastChannelList(cfg.multicastChannelList);
   p_configured = true;
 }
 
@@ -297,8 +298,8 @@ char *ConfigVO::getMulticastHost() const {
   return (char *)&p_multicast_host[0];
 }
 
-char **COnfigVO::getMulticastChannelList() const {
-  retun (char **)&p_multicast_channellist[0];
+char **ConfigVO::getMulticastChannelList() const {
+  return (char **)&p_multicast_channellist[0];
 }
 
 //
@@ -687,19 +688,21 @@ void ConfigVO::setMulticastHost(char *input) {
 
 void ConfigVO::setMulticastChannelList(char *input) {
   char localInput[2048];
+  char *tok;
   int itemNum = 0;
   strcpy(localInput, input);
 
   tok = strtok(localInput, ",");
+
 
   for(int i=0; i<=256; i++) {
     p_multicast_channellist[i][0] = 0;
   }
 
   while(tok != NULL) {
-    strcpy(p_multicast_channellist[itemNum], tok);
+    strcpy(p_multicast_channellist[itemNum++], tok);
 
-    tok = strtok(localInput, ",");
+    tok = strtok(NULL, ",");
     // remove whitespace after the comma
     while( tok && *tok && *tok == ' ') {
       tok++;

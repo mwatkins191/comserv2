@@ -39,15 +39,27 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   g_log << "+++ Initializing station thread" << std::endl;
 
   if(ourConfig.getMulticastEnabled()) {
+    g_log << "+++ Multicast Enabled:" << std::endl;
     if( (mcastSocketFD = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
       ourConfig.setMulticastEnabled(0);
       g_log << "XXX Unable to create multicast socket" << std::endl;
     }
+    
     memset(&(mcastAddr), 0, sizeof(mcastAddr));
     mcastAddr.sin_family = AF_INET;
     mcastAddr.sin_addr.s_addr = inet_addr(ourConfig.getMulticastHost());
     mcastAddr.sin_port = htons(ourConfig.getMulticastPort());
-    multicastChannelList = ourConfig.getMulticastChannelList();
+    memcpy(&multicastChannelList, (char *)ourConfig.getMulticastChannelList(), sizeof(multicastChannelList));
+    g_log << "+++    Multicast IP: " << ourConfig.getMulticastHost() << std::endl;
+    g_log << "+++    Multicast Port: " << ourConfig.getMulticastPort() << std::endl;
+    g_log << "+++    Multicast Channels:" << std::endl;
+    for(int c=0; c < 256; c++) {
+        char *chan = multicastChannelList[c];
+	if(! *chan) {
+            break;
+        }
+        g_log << "+++        " << (char *)chan << std::endl;
+    }
   }
   lib_create_context(&(this->stationContext), &(this->creationInfo));
   if(this->creationInfo.resp_err == LIBERR_NOERR) {
@@ -204,18 +216,18 @@ void Lib330Interface::onesec_callback(pointer p) {
   char *filterItem;
 
   memcpy(&msg, (tonesec_call *) p, sizeof(msg));
-  
+ 
   for(int i=0; i < 255; i++) {
-    filterItem = multicastChannelList[i];
+    filterItem = &(multicastChannelList[i][0]);
     if(! *filterItem) {
       break;
     }
-    if(!strcmp(filterItem, msg->channel)) {
+    if(!strcmp(filterItem, msg.channel)) {
       retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
       if(retval < 0) {
 	g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
       } 
-    }
+    } 
   }
 }
 
