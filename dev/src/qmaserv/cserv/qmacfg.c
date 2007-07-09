@@ -161,6 +161,15 @@ int getQmacfg(struct qma_cfg* out_cfg)
 	  if (strcmp(str1, "MULTICASTENABLED") == 0) {
 	    strcpy(out_cfg->multicastEnabled, str2);
 	  }
+	  if (strcmp(str1, "MULTICASTPORT") == 0) {
+	    strcpy(out_cfg->multicastPort, str2);
+	  }
+	  if (strcmp(str1, "MULTICASTHOST") == 0) {
+	    strcpy(out_cfg->multicastHost, str2);
+	  }
+	  if (strcmp(str1, "MULTICASTCHANNELLIST") == 0) {
+	    strcpy(out_cfg->multicastChannelList, str2);
+	  }
 	  
       }
       while (1) ;
@@ -173,13 +182,17 @@ int getQmacfg(struct qma_cfg* out_cfg)
           read_cfg(&cfg, str1, str2) ;
           if (str1[0] == '\0')
               break ;
-	  if (strcmp(str1, "MULTICASTPORT") == 0) {
-	    strcpy(out_cfg->multicastPort, str2);
-	  }
-	  if (strcmp(str1, "MULTICASTHOST") == 0) {
+
+          /* use network-wide defaults if the these weren't defined 
+           * specifically for the station
+           */
+          if (strcmp(str1, "MULTICASTPORT") == 0 && !strcmp(out_cfg->multicastPort, "")) {
+            strcpy(out_cfg->multicastPort, str2);
+          }
+	  if (strcmp(str1, "MULTICASTHOST") == 0 && !strcmp(out_cfg->multicastHost, "")) {
 	    strcpy(out_cfg->multicastHost, str2);
 	  }
-	  if (strcmp(str1, "MULTICASTCHANNELLIST") == 0) {
+	  if (strcmp(str1, "MULTICASTCHANNELLIST") == 0 && !strcmp(out_cfg->multicastChannelList, "")) {
 	    strcpy(out_cfg->multicastChannelList, str2);
 	  }
       } while (1);
@@ -214,7 +227,7 @@ void clearConfig(struct qma_cfg* cfg)
   strcpy(cfg->dutycycle_sleepTime, "0");
   strcpy(cfg->dutycycle_bufferLevel, "0");
   strcpy(cfg->multicastEnabled, "false");
-  strcpy(cfg->multicastPort, "8899");
-  strcpy(cfg->multicastHost, "224.0.0.1");
+  strcpy(cfg->multicastPort, "");
+  strcpy(cfg->multicastHost, "");
   strcpy(cfg->multicastChannelList, "");
 }
