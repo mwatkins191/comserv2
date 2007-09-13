@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: sdr_utils.c,v 1.20 2004/05/24 18:52:50 doug Exp $ ";
+static char sccsid[] = "$Id: sdr_utils.c,v 1.21 2007/06/12 21:13:00 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -1204,7 +1204,7 @@ int swab_blockette
     len -= 4;
     switch (type) {
       case 100:
-	swabf (p+0);
+	swabf ((float *)(p+0));
 	break;
       case 200:
       case 201:

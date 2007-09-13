@@ -38,7 +38,7 @@
 
 /* Explicitly set overall qlib2 version here by hand.	*/
 #ifndef lint
-char *qlib2_version = "@(#)qlib2 version 1.37 (2007.114)";
+char *qlib2_version = "@(#)qlib2 version 1.38 (2007.163)";
 #endif
 
 /************************************************************************/
@@ -46,6 +46,8 @@ char *qlib2_version = "@(#)qlib2 version 1.37 (2007.114)";
 Modifications:
 Ver	Date and Action
 ------------------------------------------------------------------------
+1.38	2007.163
+	Fixed misc type casts, function declarations.
 1.37	2007.114
 	Added ifdefs for __MACH__ for MacOSX.
 1.36	2006.313

@@ -118,6 +118,7 @@ extern char *qlib2_version;
 #define	MS_ERROR		-2
 #define	QLIB2_MALLOC_ERROR	-3
 #define	QLIB2_TIME_ERROR	-4
+#define	MS_COMPRESS_ERROR	-5
 
 #endif
 

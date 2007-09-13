@@ -152,6 +152,7 @@ int pack_steim1
     int		swapflag;
     int		nb;		/* number of minbits to compute.	*/
     int		max_samples_per_frame;
+    int		status = 0;
 
     if (my_wordorder < 0) get_my_wordorder();
     swapflag = (my_wordorder != data_wordorder);
@@ -219,7 +220,7 @@ int pack_steim1
     }
 
     /* Set new XN value in first frame.					*/
-    XN = data[(ns-1)-points_remaining];
+    if (points_remaining < ns) XN = data[(ns-1)-points_remaining];
     if (swapflag) swab4((int *)&XN);
 
     /* End of data.  Pad current frame and optionally rest of block.	*/
@@ -232,7 +233,7 @@ int pack_steim1
     }
     *pnsamples = ns - points_remaining;
     free ((char *)minbits);
-    return(0);
+    return(status);
 }
 
 /************************************************************************/
@@ -265,12 +266,14 @@ int pack_steim2
     int		swapflag;
     int		nb;		/* number of minbits to compute.	*/
     int		max_samples_per_frame;
+    int		terminate_record = 0;
+    int		status = 0;
 
     if (my_wordorder < 0) get_my_wordorder();
     swapflag = (my_wordorder != data_wordorder);
 
     max_samples_per_frame = 8 * VALS_PER_FRAME;	/* steim2 compression.	*/
-    nb = max_samples_per_frame * nf;
+    nb = max_samples_per_frame * nf ;
     if (nb > points_remaining) nb = points_remaining;
 
     minbits = NULL;
@@ -340,14 +343,14 @@ int pack_steim2
 	    fprintf (stderr, "Error: Unable to represent difference in <= 30 bits\n");
 	    fflush (stderr);
 	    if (QLIB2_CLASSIC) exit(1);
-	    return (MS_ERROR);
+	    status = MS_COMPRESS_ERROR;
 	}
 
 	/* Append mask for this word to current mask.			    */
-	p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
+	if (status == 0) p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
 
 	/* Check for full frame or full block.				*/
-	if (++wn >= VALS_PER_FRAME) {
+	if (status == 0 && ++wn >= VALS_PER_FRAME) {
 	    if (swapflag) swab4 ((int *)&p_sdf->f[fn].ctrl);
 	    /* Reset output index to beginning of frame.		*/
 	    wn = 0;
@@ -355,10 +358,17 @@ int pack_steim2
 	    if (++fn >= nf) break;
 	    p_sdf->f[fn].ctrl = 0;
 	}
+
+	/* Check for compression error.	*/
+	if (status == MS_COMPRESS_ERROR) {
+	    if (swapflag) swab4 ((int *)&p_sdf->f[fn].ctrl);
+	    /* Terminate data compression and packing. */
+	    break;
+	}
     }
 
     /* Set new XN value in first frame.					*/
-    XN = data[(ns-1)-points_remaining];
+    if (points_remaining < ns) XN = data[(ns-1)-points_remaining];
     if (swapflag) swab4((int *)&XN);
 
     /* End of data.  Pad current frame and optionally rest of block.	*/
@@ -371,7 +381,7 @@ int pack_steim2
     }
     *pnsamples = ns - points_remaining;
     free ((char *)minbits);
-    return(0);
+    return(status);
 }
 
 /************************************************************************/

@@ -1,5 +1,6 @@
 /************************************************************************/
 /*  Routines for packing MiniSEED records.				*/
+/*  THESE FUNCTIONS ARE DEPRICATED.  Use ms_pack2 functions.		*/
 /*									*/
 /*	Douglas Neuhauser						*/
 /*	Seismological Laboratory					*/
@@ -37,7 +38,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_pack.c,v 1.11 2006/11/10 01:41:58 doug Exp $ ";
+static char sccsid[] = "$Id: ms_pack.c,v 1.12 2007/06/12 21:13:00 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -56,6 +57,7 @@ static char sccsid[] = "$Id: ms_pack.c,v 1.11 2006/11/10 01:41:58 doug Exp $ ";
 #include "qutils.h"
 #include "sdr_utils.h"
 #include "ms_pack.h"
+#include "ms_pack2.h"
 #include "pack.h"
 
 #define	MALLOC_INCREMENT    1000		/* # of Mini-SEED blocks to alloc*/
@@ -111,7 +113,7 @@ int ms_pack_data
       case UNKNOWN_DATATYPE:
 	/* Unknown datatype is valid if sample_rate is 0. */
 	if (hdr->sample_rate == 0) {
-	    status = ms_pack_text (hdr, init_bs, data, num_samples,
+	    status = ms_pack_text (hdr, init_bs, (char *)data, num_samples,
 			     n_blocks, pp_ms, ms_len, p_errmsg);
 
 	    break;
@@ -194,47 +196,6 @@ int ms_pack_update_return_hdr
     else {
 	hdr->x0 = hdr->xn = hdr->xm1 = hdr->xm2 = 0;
     }
-    return (0);
-}
-
-/************************************************************************/
-/*  init_miniseed_hdr:							*/
-/*	Initialize a miniSEED header.					*/
-/*	Return 0 on success, QLIB2 error code on error.			*/
-/************************************************************************/
-int init_miniseed_hdr
-   (SDR_HDR	*sh,		/* ptr to space for miniSEED data hdr.	*/
-    DATA_HDR	*hdr,		/* initial DATA_HDR for miniSEED record.*/
-    BS		*extra_bs)	/* ptr to block-specific blockettes.	*/
-{
-    int status = 0;
-    int blockette_space;	/* # of bytes required for blockettes.	*/
-    int n_extra_bs;		/* # of extra blockettes.		*/
-    BS *bs;			/* ptr to blockette structure.		*/
-    BS *last_bs;		/* ptr to last permanent blockette.	*/
-    int align;			/* alignment in bytes required for data.*/
-    short int stmp[2];
-
-    /* Ensure that we have a blockette 1000, required by miniSEED.	*/
-    if (add_required_miniseed_blockettes (hdr) != 0) {
-	return (MS_ERROR);
-    }
-
-    status = init_sdr_hdr (sh, hdr, extra_bs);
-    /* Return status our miniSEED header creation.			*/
-    return (status);
-}
-
-/************************************************************************/
-/*  update_miniseed_hdr:						*/
-/*	Update a previously constructed miniSEED header.		*/
-/*	Return 0 on success, negative QLIB2 error code on error.	*/
-/************************************************************************/
-int update_miniseed_hdr
-   (SDR_HDR	*sh,		/* ptr to space for miniSEED data hdr.	*/
-    DATA_HDR	*hdr)		/* initial DATA_HDR for miniSEED record.*/
-{
-    update_sdr_hdr (sh, hdr);
     return (0);
 }
 

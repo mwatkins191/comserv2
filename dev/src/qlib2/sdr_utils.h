@@ -82,7 +82,7 @@ extern BS *find_blockette
    (DATA_HDR	*hdr,		/* pointer to DATA_HDR structure.	*/
     int		n);		/* blockette type to find.		*/
 
-BS *find_pblockette 
+extern BS *find_pblockette 
    (DATA_HDR	*hdr,		/* pointer to DATA_HDR structure.	*/
     BS		*bs,		/* BS* to start with.			*/
     int		n);		/* blockette type to find.		*/

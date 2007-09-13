@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qutils.h,v 1.7 2007/04/24 20:00:13 doug Exp $ 	*/
+/*	$Id: qutils.h,v 1.8 2007/06/12 21:13:00 doug Exp $ 	*/
 
 #ifndef	__qutils_h
 #define	__qutils_h
@@ -156,10 +156,10 @@ extern int set_hdr_wordorder
 extern int set_data_wordorder
    (int		wordorder);	/* desired wordorder for data.		*/
 
-char set_record_type
+extern char set_record_type
    (char	record_type);	/* desired default record_type.		*/
 
-int init_qlib2
+extern int init_qlib2
    (int		mode);		/* desired qlib2 operation mode.	*/
 
 extern int wordorder_from_time
@@ -180,11 +180,14 @@ extern void swab3
 extern void swab4
    (int		*in);		/* ptr to integer to byteswap.		*/
 
-void swab8
+extern void swab8
    (double	*in);		/* ptr to double to byteswap.		*/
 
-void swabt 
+extern void swabt 
    (SDR_TIME	*st);		/* ptr to SDR_TIME to byteswap.		*/
+
+extern void swabf
+   (float	*in);		/* ptr to double to byteswap.		*/
 
 #ifdef	qlib2_fortran
 

@@ -70,7 +70,7 @@ extern int pack_steim2
     int		*pnframes,	/* number of frames actually packed.	*/
     int		*pnsamples);	/* number of samples actually packed.	*/
 
-int pad_steim_frame
+extern int pad_steim_frame
    (SDF	    	*p_sdf,
     int		fn,	    	/* current frame number.		*/
     int	    	wn,		/* current work number.			*/
@@ -108,7 +108,7 @@ extern int pack_int_24
     int		*pnbytes,	/* number of bytes actually packed.	*/
     int		*pnsamples);	/* number of samples actually packed.	*/
 
-int pack_text 
+extern int pack_text 
    (char 	p_packed[],	/* output data array - packed.		*/
     char	data[],		/* input data array - unpacked.		*/
     int		ns,		/* desired number of samples to pack.	*/

@@ -72,16 +72,16 @@ extern EXT_TIME int_to_ext
 extern INT_TIME ext_to_int
    (EXT_TIME	et);		/* EXT_TIME to convert to INT_TIME.	*/
 
-double int_to_tepoch
+extern double int_to_tepoch
    (INT_TIME	it);		/* INT_TIME to convert to True epoch.	*/
 
-INT_TIME tepoch_to_int
+extern INT_TIME tepoch_to_int
    (double	tepoch);	/* True epoch to convert to INT_TIME.	*/
 
-double int_to_nepoch
+extern double int_to_nepoch
    (INT_TIME	it);		/* INT_TIME to convert to True epoch.	*/
 
-INT_TIME nepoch_to_int
+extern INT_TIME nepoch_to_int
    (double	nepoch);	/* Nominal epoch to convert to INT_TIME.*/
 
 extern int sec_per_year
