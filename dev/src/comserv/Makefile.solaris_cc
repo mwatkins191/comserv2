@@ -9,7 +9,7 @@
 #
 CC	 = cc
 CFLAGS	 = -I$(INCL) -DSOLARIS2  -DMYIPADDR $(DEBUG)
-DEBUG	 = 
+DEBUG	 = -g
 
 BINDIR	 = ../../bin/Solaris
 INCL	 = ../include

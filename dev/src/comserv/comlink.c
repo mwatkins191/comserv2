@@ -81,6 +81,8 @@ Edit History:
 		    endian-order in the shared memory if this compilation flag is set	 	
       17 Mar 01 IGD Header order bits (7 and 8) are in the I/O and clock flags byte (see comments for
                     set_byte_order_SEED_IO_BYTE() ).
+ 30   24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+		    Changed printf to LogMessage() calls.
  	 */
 #include <stdio.h>
 #include <errno.h>
@@ -109,11 +111,12 @@ Edit History:
 #include "cfgutil.h"
 #include "server.h"
 #include "timeutil.h"
+#include "logging.h"
 #ifdef _OSK
 #include "os9stuff.h"
 #endif
 
-#if defined (LINUX)
+#ifdef	LINUX
 #include "unistd.h"
 #ifndef FIRSTDATA       /* IGD 03/05/01 Add */
 #define FIRSTDATA 56
@@ -126,7 +129,7 @@ Edit History:
 #define SET_LITTLE_ENDIAN 0  /* of fixed SEED header */
 
 
-short VER_COMLINK = 29 ;
+short VER_COMLINK = 30 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -279,7 +282,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
         }
     }
 
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
   long gcrccalc (pchar b, short len)
     {
       complong crc ;
@@ -364,9 +367,9 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
           txwin-- ;
           if (insane)
               if (cur->cmd == ACK_MSG)
-                  printf ("Acking packet %d from slot %d, packets queued=%d\n", cur->ack, nextout, txwin) ;
+                  LogMessage(CS_LOG_TYPE_INFO, "Acking packet %d from slot %d, packets queued=%d", cur->ack, nextout, txwin) ;
                 else
-                  printf ("Sending command %d from slot %d, packets queued=%d\n", ord(cur->cmd), nextout, txwin) ;
+                  LogMessage(CS_LOG_TYPE_INFO, "Sending command %d from slot %d, packets queued=%d", ord(cur->cmd), nextout, txwin) ;
            nextout = ++nextout & 63 ;
            if ((path >= 0) && !udplink)
               {
@@ -402,7 +405,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 	  } ;
       txwin++ ;
       if (insane)
-          printf ("Placing outgoing packet in slot %d, total in window=%d\n", nextin, txwin) ;
+          LogMessage(CS_LOG_TYPE_INFO, "Placing outgoing packet in slot %d, total in window=%d", nextin, txwin) ;
       nextin = ++nextin & 63 ;
       if (txwin >= grpsize)
           send_window () ;
@@ -425,7 +428,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       mmsg.scs.cmd_type = ULTRA_REQ ;
       send_tx_packet (0, ULTRA_REQ, &mmsg) ;
       if (rambling)
-          printf ("Requesting ultra packet\n") ;
+          LogMessage(CS_LOG_TYPE_INFO, "Requesting ultra packet") ;
     }
 
   void request_link (void)
@@ -438,7 +441,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       mmsg.scs.cmd_type = LINK_REQ ;
       send_tx_packet (0, LINK_REQ, &mmsg) ;
       if (rambling)
-          printf ("Requesting link packet\n") ;
+          LogMessage(CS_LOG_TYPE_INFO, "Requesting link packet") ;
     }
 
   void request_map (void)
@@ -773,7 +776,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       long *pl ;
       char seedst[5] ;
       char s1[64], s2[64] ;
-# if (defined LINUX)
+#ifdef	LITTLE_ENDIAN
       pchar tmpa;          /* IGD tmp byte-swapping array */
       timing * tmp_timing; /* IGD 03/05/01 tmp Byte-swapping pointer for blockette 500 */
       murdock_detect *detm;
@@ -839,17 +842,17 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 curlink.grouptime = flip2(dbuf.data_buf.cl.grouptime) ;
                                 if (verbose)
                                     {
-                                      printf ("Window=%d  Modulus=%d  Start=%d  RC Echo=%c  Data Format=%s\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "Window=%d  Modulus=%d  Start=%d  RC Echo=%c  Data Format=%s",
                                              curlink.window_size, sequence_mod, last_packet_received,
 		  	                     rcelu[curlink.rcecho], lf[linkstat.data_format]) ;
 
-                                      printf ("Total Levels=%d  Msg=%d  Det=%d  Time=%d  Cal=%d  Sync Time=%d\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "Total Levels=%d  Msg=%d  Det=%d  Time=%d  Cal=%d  Sync Time=%d",
                                              curlink.total_prio - 1, curlink.msg_prio, curlink.det_prio,
                                              curlink.time_prio, curlink.cal_prio, curlink.synctime) ;
-                                      printf ("Resend Time=%d  Resend Pkts=%d  Group Pkt Size=%d  Group Timeout=%d\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "Resend Time=%d  Resend Pkts=%d  Group Pkt Size=%d  Group Timeout=%d",
                                              curlink.resendtime, curlink.resendpkts,
                                              curlink.groupsize, curlink.grouptime) ;
-                                      printf ("Net Restart Dly=%d  Net Conn. Time=%d  Net Packet Limit=%d\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "Net Restart Dly=%d  Net Conn. Time=%d  Net Packet Limit=%d",
                                              curlink.netdelay, curlink.nettime, curlink.netmax) ;
                                     }
                                 reconfigure (FALSE) ;
@@ -866,18 +869,18 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                       if (checkmask (-1))
                                           {
                                             if (verbose)
-                                                printf ("Packet Toss-Checkmask\n") ;
+                                                LogMessage(CS_LOG_TYPE_INFO, "Packet Toss-Checkmask") ;
                                             return ;
                                           }
                                       linkstat.seq_errors++ ;
                                       if (verbose)
-                                          printf ("SEQ EXP=%d  GOT=%d\n",
+                                          LogMessage(CS_LOG_TYPE_INFO, "SEQ EXP=%d  GOT=%d",
                                             ((unsigned int) last_packet_received + 1) % (unsigned int) sequence_mod, dbuf.seq) ;
                                       this_packet = last_packet_received ;
                                       send_ack () ;
                                       if (++con_seq > reconfig_on_err && reconfig_on_err > 0)
                                           {
-                                            printf ("%s reconfigure due to sequence errors\n",
+                                            LogMessage(CS_LOG_TYPE_INFO, "%s reconfigure due to sequence errors",
                                                     localtime_string(dtime())) ;
                                             reconfigure (TRUE) ;
                                           }
@@ -886,24 +889,23 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                   else
                                     {
                                       if (insane)
-                                          printf ("Sequence Correct\n") ;
+                                          LogMessage(CS_LOG_TYPE_INFO, "Sequence Correct") ;
                                       con_seq = 0 ;
                                     }
                               }
                           else if (linkstat.linkrecv && (dbuf.seq == last_packet_received))
                               {
                                 if (insane)
-                                    printf ("%s Sequence Now Valid\n",
-                                            localtime_string(dtime())) ;
+                                    LogMessage(CS_LOG_TYPE_INFO, "Sequence Now Valid");
                                 seq_valid = TRUE ;
                               }
                             else
                               {
                                 if (verbose)
-                                    printf ("Sequence Not Yet Valid\n") ;
+                                    LogMessage(CS_LOG_TYPE_INFO, "Sequence Not Yet Valid") ;
                                 if (++con_seq > reconfig_on_err && reconfig_on_err > 0)
                                     {
-                                      printf ("%s reconfigure due to sequence not yet valid\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "%s reconfigure due to sequence not yet valid",
                                               localtime_string(dtime())) ;
                                       reconfigure (TRUE) ;
                                     }
@@ -922,14 +924,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                   return ;
                               linkstat.seq_errors++ ;
                               if (verbose)
-                                  printf ("SEQ EXP=%d  GOT=%d\n",
+                                  LogMessage(CS_LOG_TYPE_INFO, "SEQ EXP=%d  GOT=%d",
                                        ((unsigned int) last_packet_received + 1) % (unsigned int) sequence_mod, dbuf.seq) ;
                               this_packet = last_packet_received ;
                               send_ack () ;
                               if (++con_seq > reconfig_on_err && reconfig_on_err > 0)
                                   {
-                                    printf ("%s reconfigure due to sequence errors\n",
-                                            localtime_string(dtime())) ;
+                                    LogMessage(CS_LOG_TYPE_INFO, "reconfigure due to sequence errors");
                                     reconfigure (TRUE) ;
                                   }
                               return ;
@@ -941,7 +942,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                       {
                         seq_valid = TRUE ;
                         if (verbose)
-                            printf ("Start=%d\n", this_packet) ;
+                            LogMessage(CS_LOG_TYPE_INFO, "Start=%d", this_packet) ;
                       }
                     else
                       {
@@ -1004,7 +1005,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &dbuf.data_buf.cr.h.station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &dbuf.data_buf.cr.h.station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s data received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s data received instead of %4.4s",
                            &dbuf.data_buf.cr.h.station, &station) ;
                     if (firstpacket)
                         {
@@ -1025,9 +1026,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedheader (&dbuf.data_buf.cr.h, pseed) ; /* convert header to SEED */
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
-#if defined (_BIG_ENDIAN_HEADER)	/* IGD 03/03/01 */
+#ifdef	LITTLE_ENDIAN
+#ifdef	_BIG_ENDIAN_HEADER	/* IGD 03/03/01 */
                    /*
-                    * If a user requested to store an MSEED header in big-endian byte order on Linux
+                    * If a user requested to store an MSEED header in big-endian byte order on little-endian
                     * system, we are going to swap back some variables to big-endian order
                     *	IGD 03/02-09/01
                     */
@@ -1035,14 +1037,14 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     pseed->deb.blockette_type = flip2(pseed->deb.blockette_type);
                     pseed->deb.next_offset  = flip2(pseed->deb.next_offset);
 #endif
+#endif
 		
                      if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", &dbuf.data_buf.cr.h.station) ;
-                          printf("%s Header time %s", seednamestring(&dbuf.data_buf.cr.h.seedname,
-                             &dbuf.data_buf.cr.h.location), time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                           LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%s Header time %s, received at %s", 
+			      &dbuf.data_buf.cr.h.station,
+                              seednamestring(&dbuf.data_buf.cr.h.seedname, &dbuf.data_buf.cr.h.location),
+			      time_string(freebuf->user_data.header_time),
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     p1 = (pvoid) ((long) pseed + 64) ;             /* skip header */
@@ -1065,7 +1067,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                         memcpy((pchar) &(pbr->hdr.station_ID_call_letters), (pchar) &seedst, 5) ;
                     else if ((!anystation) &&
                          (memcmp((pchar) &(pbr->hdr.station_ID_call_letters), (pchar) &seedst, 5) != 0))
-                        printf ("Station %4.4s data received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s data received instead of %4.4s",
                            &(pbr->hdr.station_ID_call_letters), &station) ;
               /* Unless an option is specified to override the station, an error should
                  be generated if the station does not agree. Same goes for network.
@@ -1077,29 +1079,30 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.header_time = seed_jul (&pbr->hdr.starting_time) ; /* convert SEED time to julian */
                     if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", (pchar) &(pbr->hdr.station_ID_call_letters)) ;
-                          printf("%s Header time %s", seednamestring(&(pbr->hdr.channel_id),
-                             &(pbr->hdr.location_id)), time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                           LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%s Header time %s, received at %s", 
+			      (pchar) &(pbr->hdr.station_ID_call_letters),
+                              seednamestring(&(pbr->hdr.channel_id), &(pbr->hdr.location_id)),
+			      time_string(freebuf->user_data.header_time),
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     pl = (pvoid) &pbr->hdr ;
                     seedsequence (&pbr->hdr, flip4(*pl) ) ; /*IGD 03/05/01 flip4 */
                     pseed = (pvoid) pbr;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	LITTLE_ENDIAN
 #ifndef _BIG_ENDIAN_HEADER
                     /* IGD 03/05/01
                      * If this code is executed on little-endian processor,
 		     * pbr->hdr structure here is all BIG_ENDIAN.
                      * We will byte-swap some members of pbr structure if:
-		     * 1) The program is compiled with -DLINUX flag;
+		     * 1) The program is compiled with -DLITTLE_ENDIAN flag;
                      * 2) It is not compiled with -D_BIG_ENDIAN_HEADER compilation flag
-                     * Note that the check for -DLINUX flag is done inside flip2()/flip4()
+                     * Note that the check for -DLITTLE_ENDIAN flag is done inside flip2()/flip4()
 		     */
                     flip_fixed_header(pseed);	   						
                     pbr->bmin.data_offset = flip2(pbr->bmin.data_offset);
                     pbr->bmin.record_num = flip4(pbr->bmin.record_num);
+#endif
 #endif
                     memcpy ((pchar) &freebuf->user_data.data_bytes, (pchar) pbr, 512) ; /* copy record into buffer */
                     break ;
@@ -1136,7 +1139,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &dbuf.data_buf.cc.cc_station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &dbuf.data_buf.cc.cc_station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s message received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s message received instead of %4.4s",
                            &dbuf.data_buf.cc.cc_station, &station) ;
                     if (linkstat.ultraon && (!linkstat.ultrarecv) &&
                        (strncasecmp((pchar) &dbuf.data_buf.cc.ct, "FROM AQSAMPLE: Acquisition begun", 32) == 0))
@@ -1145,9 +1148,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (rambling)
                         {
                           dbuf.data_buf.cc.ct[dbuf.data_buf.cc.ct[0]+1] = '\0' ;
-                          if (anystation)
-                              printf("%4.4s.", &dbuf.data_buf.cc.cc_station) ;
-                          printf ("%s\n", &dbuf.data_buf.cc.ct[1]) ;
+                          LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%s", &dbuf.data_buf.cc.cc_station,
+                              &dbuf.data_buf.cc.ct[1]) ;
 			} ;
                     freebuf = getbuffer (MSGQ) ;
                     pseed = (pvoid) &freebuf->user_data.data_bytes ;
@@ -1189,7 +1191,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &pce->cl_station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &pce->cl_station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s timing received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s timing received instead of %4.4s",
                            &pce->cl_station, &station) ;
                    /* put into blockette ring */
                     freebuf = getbuffer (TIMQ) ;
@@ -1215,11 +1217,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 #endif
                     if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", &pce->cl_station) ;
-                          printf("Clock time-mark %s",
-                              time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                           LogMessage(CS_LOG_TYPE_INFO, "%4.4s.Clock time-mark %s, received at %s", &pce->cl_station,
+                              time_string(freebuf->user_data.header_time), 
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     break ;
@@ -1243,7 +1242,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &ppick->ev_station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s detection received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s detection received instead of %4.4s",
                            &ppick->ev_station, &station) ;
                     /* put into blockette ring */
                     freebuf = getbuffer (DETQ) ;
@@ -1276,12 +1275,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 
                     if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", &ppick->ev_station) ;
-                          printf("%3.3s Detection   %s",
+                           LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%3.3s Detection   %s, received at %s", 
+			      &ppick->ev_station,
                               &dbuf.data_buf.ce.header_elog.det_res.pick.seedname,
-                              time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                              time_string(freebuf->user_data.header_time),
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     break ;
@@ -1306,7 +1303,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &ppick->ev_station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s end of detection received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s end of detection received instead of %4.4s",
                            &ppick->ev_station, &station) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
@@ -1321,12 +1318,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 
                     if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", &ppick->ev_station) ;
-                          printf("%3s Detect End  %s",
+                           LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%3s Detect End  %s, received at %s", 
+			      &ppick->ev_station,
                               &dbuf.data_buf.ce.header_elog.det_res.pick.seedname,
-                              time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                              time_string(freebuf->user_data.header_time),
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     break ;
@@ -1355,7 +1350,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     if (override)
                         memcpy((pchar) &pcal->cr_station, (pchar) &station, 4) ;
                     else if ((!anystation) && (memcmp((pchar) &pcal->cr_station, (pchar) &station, 4) != 0))
-                        printf ("Station %4.4s calibration received instead of %4.4s\n",
+                        LogMessage(CS_LOG_TYPE_INFO, "Station %4.4s calibration received instead of %4.4s",
                            &pcal->cr_station, &station) ;
                     /* store in blockette ring */
                     freebuf = getbuffer (CALQ) ;
@@ -1434,12 +1429,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 
                     if (rambling)
                         {
-                          if (anystation)
-                              printf("%4.4s.", &pcal->cr_station) ;
-                          printf("%3.3s Calibration %s",
+			   LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%3.3s Calibration %s, received at %s\n", 
+			      &pcal->cr_station,
                               &dbuf.data_buf.ce.header_elog.cal_res.cr_seedname,
-                              time_string(freebuf->user_data.header_time)) ;
-                          printf(", received at %s\n",
+                              time_string(freebuf->user_data.header_time),
                               time_string(freebuf->user_data.reception_time)) ;
                         }
                     break ;
@@ -1474,8 +1467,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 			  preply->total_seg = flip2(preply->total_seg);	 /*IGD flip2 back here */
                           if (full)
                               {
-				/* IGD Time to do byte swapping if we are with  LINUX*/
-#if defined (LINUX)
+				/* IGD Time to do byte swapping if we are with little-endian */
+#ifdef	LITTLE_ENDIAN
 				/* IGD: We are going to swap several elements of pultra here */
 				/* IGD 01/21/01 swapping of pultra header is moved here */
 				/* because at this place we are guaranteed to byteswap header only once */
@@ -1500,7 +1493,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 if (pultra->ultra_rev >= 1)
                                     comm_mask = pultra->comm_mask ;
                                 if (rambling)
-                                    printf("Ultra record received with %d bytes\n",
+                                    LogMessage(CS_LOG_TYPE_INFO, "Ultra record received with %d bytes",
                                            flip2(preply->total_bytes)) ;   /*IGD flip2 here */
                               }
                         }
@@ -1542,7 +1535,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 j++ ;
                           if (full)
                               {
-#if defined (LINUX) /* IGD Need to do byte swapping in memory */
+#ifdef	LITTLE_ENDIAN	/* IGD Need to do byte swapping in memory */
                                 flip_detectors(ta)  ;
 #endif
                                 detavail_loaded = TRUE ;
@@ -1671,7 +1664,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                           pcom = (pvoid) clients[combusy].outbuf ;
                           preply = &dbuf.data_buf.cy ;
                           memcpy ((pchar) &replybuf, (pchar) &preply->bytes, flip2(preply->byte_count)) ;  /*IGD flip2 here */
-#if defined(LINUX)
+#ifdef	LITTLE_ENDIAN
                           if ((replybuf.ces.dp_seq = pcom->command_tag) &&   /*here is a bug*/
                               (pcom->completion_status == CSCS_INPROGRESS))    /*pointed by*/
 #else /*IGD 09/03/01 Bug fixed : was elif */
@@ -1701,7 +1694,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 default :
                   {
                     linkstat.last_bad = dtime () ;
-                    printf ("INVALID RECORD TYPE=%d\n", dbuf.data_buf.cr.h.frame_type) ;
+                    LogMessage(CS_LOG_TYPE_ERROR, "INVALID RECORD TYPE=%d", dbuf.data_buf.cr.h.frame_type) ;
                     if (checkmask (-1))
                         return ;
                       else
@@ -1715,7 +1708,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
             linkstat.last_bad = dtime () ;
             linkstat.check_errors++ ;
             if (verbose)
-                printf ("CHECKSUM ERROR ON PACKET %d, BYTE COUNT=%d, CHECKSUM ERRORS=%d\n",
+                LogMessage(CS_LOG_TYPE_ERROR, "CHECKSUM ERROR ON PACKET %d, BYTE COUNT=%d, CHECKSUM ERRORS=%d",
                         last_packet_received, size, linkstat.check_errors) ;
           }
     }
@@ -1737,7 +1730,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                   path = accept(sockfd, (psockaddr) &cli_addr, &clilen) ;
                   netdly_cnt = 0 ;
                   if ((verbose) && (path >= 0))
-                      printf ("Network connection with DA opened\n") ;
+                      LogMessage(CS_LOG_TYPE_INFO, "Network connection with DA opened") ;
                   if (linkstat.ultraon)
                       {
                         linkstat.linkrecv = FALSE ;
@@ -1787,7 +1780,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
            if ((insane) /* && (numread > maxbytes) */)
                {
                  maxbytes = numread ;
-                 printf ("%d bytes read\n", numread) ;
+                 LogMessage(CS_LOG_TYPE_ERROR, "%d bytes read", numread) ;
                }
          }
       else if (numread < 0)
@@ -1959,7 +1952,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
     }
 
 /******************************************************************************
-                 BYTE-SWAPPING FUNCTIONS for LINUX vesion
+                 BYTE-SWAPPING FUNCTIONS for little-endian vesion
 		Ilya Dricker, (i.dricker@isti.com) ISTI
 *******************************************************************************/
 
@@ -2104,7 +2097,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
    ******************************************/
   char process_set_byte_order_SEED_IO_BYTE(char myByte)	
   {
-#ifndef LINUX
+#ifndef LITTLE_ENDIAN
 	myByte = set_byte_order_SEED_IO_BYTE(myByte, SET_BIG_ENDIAN);
 #else
 #ifdef _BIG_ENDIAN_HEADER

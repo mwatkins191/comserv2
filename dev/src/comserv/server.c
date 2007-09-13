@@ -62,6 +62,11 @@ Edit History:
        7 Dec 00 IGD Changes are incorporated into the root Linux version
    32 21 Apr 04 DSN Added myipaddr config directive.
    33 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
+   34 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+		    Change from SIG_IGN to signal handler for SIGALRM.
+		    Added in LogInit() and LogMessage() calls instead of to stdout.
+		    LOGDIR should added to the station.ini for the directory
+		    where logs are dumped. Otherwise, they are dumped in the comserv run dir.
 */           
 #include <stdio.h>
 #include <errno.h>
@@ -95,6 +100,7 @@ Edit History:
 #include "cfgutil.h"
 #include "server.h"
 #include "timeutil.h"
+#include "logging.h"
 #ifdef _OSK
 #include "os9stuff.h"
 #endif
@@ -122,7 +128,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 32
+#define EDITION 34
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -148,6 +154,9 @@ char myipaddr [SECWIDTH] = "" ;
 #endif
 #ifndef _OSK
 char lockfile[CFGWIDTH] = "" ;
+char log_basename[CFGWIDTH] = "" ;
+char log_dir[CFGWIDTH] = "." ;
+char log_type[CFGWIDTH] = "" ;
 #endif
 long baud = 19200 ;
 char parity = 'N' ; 
@@ -263,6 +272,9 @@ DP_to_DA_msg_type gmsg ;
 #ifdef _OSK
 mh_com *vopthdr ;
 voptentry *pvopt ;
+#else
+int log_mode = CS_LOG_MODE_TO_LOGFILE;
+int log_inited = 0;
 #endif
 
 string3 seed_names[20][7] =
@@ -331,13 +343,18 @@ void set_verb (int i) ;
             close(sockfd) ;
           }
       fflush (stdout) ;
-      fprintf(stderr, "%s Server terminated\n", localtime_string(dtime())) ;
+      LogMessage(CS_LOG_TYPE_ERROR, "Server terminated\n") ;
       exit(12) ;
     }
     
   void terminate (pchar s)
     {
-      fprintf(stderr, "%s %s", localtime_string(dtime()), s) ;
+#ifndef	_OSK
+      if (log_inited)
+      	LogMessage(CS_LOG_TYPE_ERROR, "%s", s) ;
+      else
+#endif
+        fprintf(stderr, "%s %s", localtime_string(dtime()), s) ;
       exit(12) ;
     }
 
@@ -397,28 +414,28 @@ void set_verb (int i) ;
       foreign_to = alive && (!sameuid) && ((curtime - pt->last_service) > NON_PRIVILEGED_TO)
                          && (combusy != clientpoll) ;
       if (timedout && verbose)
-          printf("Client %4.4s timed out at %s", &pt->client_name, time_string(dtime())) ;
+          LogMessage(CS_LOG_TYPE_INFO, "Client %4.4s timed out at %s", &pt->client_name, time_string(dtime())) ;
       else if (died && verbose)
-          printf("Client %4.4s has died at %s", &pt->client_name, time_string(dtime())) ;
+          LogMessage(CS_LOG_TYPE_INFO, "Client %4.4s has died at %s", &pt->client_name, time_string(dtime())) ;
       else if (foreign_to && verbose)
-          printf("Foreign Client %4.4s presumed dead at %s", &pt->client_name, time_string(dtime())) ;
+          LogMessage(CS_LOG_TYPE_INFO, "Foreign Client %4.4s presumed dead at %s", &pt->client_name, time_string(dtime())) ;
       if (died || timedout || foreign_to)
           {
             if (verbose)
                 {
                   if (timedout)
-                      printf(", unblocking") ;
+                      LogMessage(CS_LOG_TYPE_INFO, "unblocking") ;
                   if (clientpoll >= resclient)
-                      printf(", Removed from client table\n") ;
+                      LogMessage(CS_LOG_TYPE_INFO, "Removed from client table") ;
                     else
-                      printf(", Reserved client, not removed\n") ;
+                      LogMessage(CS_LOG_TYPE_INFO, "Reserved client, not removed") ;
                 }
             detach_client (clientpoll, timedout) ;
           }
       fflush (stdout) ;
     }
     
-  int main (int argc, char *argv[], char **envp)
+int main (int argc, char *argv[], char **envp)
     {
 #ifdef _OSK
       struct sgbuf sttynew ;
@@ -473,27 +490,12 @@ void set_verb (int i) ;
       station_name[4] = '\0' ;
       station.l = str_long (station_name) ;
 
-/* Report versions of all modules */
-      printf ("%s Comserv Edition %d started for station %s\n", 
-       localtime_string(dtime()), EDITION, &station_name) ;
-      printf ("      Quanstrc Ver=%d, DPstruc Ver=%d, Seedstrc Ver=%d, Timeutil Ver=%d\n",
-              VER_QUANSTRC, VER_DPSTRUC, VER_SEEDSTRC, VER_TIMEUTIL) ;
-      printf ("      Cfgutil Ver=%d, Seedutil Ver=%d, Stuff Ver=%d, Comlink Ver=%d\n",
-              VER_CFGUTIL, VER_SEEDUTIL, VER_STUFF, VER_COMLINK) ;
-      printf ("      Cscfg Ver=%d, Buffers Ver=%d, Commands Ver=%d",
-              VER_CSCFG, VER_BUFFERS, VER_COMMANDS) ;
-#ifdef _OSK
-      printf (", OS9stuff Ver=%d\n", VER_OS9STUFF) ;
-#else
-      printf ("\n") ;
-#endif
-
 /* for OS9, open a pointer into vopttable */
 #ifdef _OSK
       err = vopt_open (&vopthdr, &pvopt) ;
       if (err)
           {
-            fprintf (stderr, "Could not access VOPTTABLE module\n") ;
+            LogMessage(CS_LOG_TYPE_ERROR, "Could not access VOPTTABLE module") ;
             exit(err) ;
           }
       pvopt->verbosity = 0 ;
@@ -526,7 +528,6 @@ void set_verb (int i) ;
               {
                 strcpy(station_desc, str2) ;
                 station_desc[59] = '\0' ;
-                printf ("%s\n", station_desc) ;
               }
           else if (strcmp(str1, "SOURCE") == 0)
               strcpy(source, str2) ;
@@ -573,9 +574,43 @@ void set_verb (int i) ;
           rings[i].size = 0 ;
         }
 
+#ifndef	_OSK
+/* get the global log settings */
+      GetLogParamsFromNetwork(log_dir, log_type);
+	fprintf (stdout, "from network file LOGDIR=%s LOGTYPE=%s\n", log_dir, log_type);
 /* call routine to parse config file */
       readcfg () ;
       fflush (stdout) ;
+
+/* new logging initialization */
+	if (strcasecmp(log_type, "LOGFILE") == 0) 
+	{
+		log_mode = CS_LOG_MODE_TO_LOGFILE;
+	} 
+        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL) 
+	{
+		log_mode = CS_LOG_MODE_TO_STDOUT;
+	} 
+	sprintf(log_basename, "%s.comserv", station_name);
+	if (LogInit(log_mode, log_dir, log_basename, 2048) != 0)
+          {
+            fprintf (stderr, "LogInit() problems, Exiting Comserv Edition %d\n", EDITION) ;
+            exit(12) ;
+          }
+      log_inited=1;
+#endif
+
+/* Report versions of all modules */
+      LogMessage(CS_LOG_TYPE_INFO, "Comserv Edition %d started for station %s", EDITION, &station_name) ;
+      LogMessage(CS_LOG_TYPE_INFO, "Quanstrc Ver=%d, DPstruc Ver=%d, Seedstrc Ver=%d, Timeutil Ver=%d",
+              VER_QUANSTRC, VER_DPSTRUC, VER_SEEDSTRC, VER_TIMEUTIL) ;
+      LogMessage(CS_LOG_TYPE_INFO, "Cfgutil Ver=%d, Seedutil Ver=%d, Stuff Ver=%d, Comlink Ver=%d", 
+		VER_CFGUTIL, VER_SEEDUTIL, VER_STUFF, VER_COMLINK) ;
+      LogMessage(CS_LOG_TYPE_INFO, "Cscfg Ver=%d, Buffers Ver=%d, Commands Ver=%d", VER_CSCFG, 
+		VER_BUFFERS, VER_COMMANDS) ;
+#ifdef _OSK
+      LogMessage(CS_LOG_TYPE_INFO, "OS9stuff Ver=%d", VER_OS9STUFF) ;
+#endif
 
 #ifndef _OSK
 /* Open the lockfile for exclusive use if lockfile is specified.*/
@@ -585,13 +620,13 @@ void set_verb (int i) ;
           {
             if ((lockfd = open (lockfile, O_RDWR | O_CREAT, 0644)) < 0)
                 {
-                  fprintf (stderr, "Unable to open lockfile: %s\n", lockfile) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Unable to open lockfile: %s, exiting", lockfile) ;
                   exit (12) ;
                 }
             if ((status = lockf (lockfd, F_TLOCK, 0)) < 0)
                 {
-                  fprintf (stderr, "Unable to lock lockfile: "
-                           "%s status=%d errno=%d\n", lockfile, status, errno) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Unable to lock lockfile: "
+                           "%s status=%d errno=%d, exiting", lockfile, status, errno) ;
                   close (lockfd);
                   exit (12) ;
                 }
@@ -602,7 +637,7 @@ void set_verb (int i) ;
       semid = semget(segkey, 1, IPC_CREAT |  PERM) ;
       if (semid == ERROR)
           {
-            fprintf (stderr, "Could not create semaphore with key %d\n", segkey) ;
+            LogMessage(CS_LOG_TYPE_ERROR, "Could not create semaphore with key %d", segkey) ;
             exit (12) ;
           }
 
@@ -654,13 +689,13 @@ void set_verb (int i) ;
                      bufsize, IPC_CREAT |  PERM) ;
       if (shmid == ERROR)
           {
-            fprintf (stderr, "Could not create server segment with key %d\n", segkey) ;
+            LogMessage(CS_LOG_TYPE_ERROR, "Could not create server segment with key %d, exiting", segkey) ;
             exit (12) ;
           }
       base = (pserver_struc) shmat(shmid, NULL, 0) ;
       if (base == (pserver_struc) ERROR)
           {
-            fprintf (stderr, "Could not attach to server segment ID %d\n", shmid) ;
+            LogMessage(CS_LOG_TYPE_ERROR, "Could not attach to server segment ID %d, exiting", shmid) ;
             exit (12) ;
           }
       base->init = '\0' ;
@@ -695,10 +730,10 @@ void set_verb (int i) ;
 #if defined (LINUX)     
 	if (semop(semid, &notbusy, 1) == ERROR) 
 #else  /* IGD 03/09/01 bug fixed : was elif */
-	if (semop(semid, &notbusy, 0) == ERROR)
+	if (semop(semid, &notbusy, 1) == ERROR)
 #endif
           {
-            fprintf (stderr, "Could not set semaphore ID %d to not busy\n", semid) ;
+            LogMessage(CS_LOG_TYPE_ERROR, "Could not set semaphore ID %d to not busy, exiting", semid) ;
             exit (12) ;
           }
           
@@ -716,7 +751,7 @@ void set_verb (int i) ;
 #endif
             if (path < 0)
                 {
-                  fprintf (stderr, "Could not open serial port %s\n", port) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Could not open serial port %s", port) ;
                   exit (12) ;
                 }
 #ifdef _OSK
@@ -725,7 +760,7 @@ void set_verb (int i) ;
             if (ioctl(path, TCGETA, &sttyold) == ERROR)
 #endif
                 {
-                  fprintf (stderr, "Could not obtain settings for %s\n", port) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Could not obtain settings for %s", port) ;
                   exit (12) ;
                 }
 #ifdef _OSK
@@ -767,7 +802,7 @@ void set_verb (int i) ;
                   }
                 default :
                   {
-                    fprintf(stderr, "Invalid baudrate %d\n", baud) ;
+                    LogMessage(CS_LOG_TYPE_ERROR, "Invalid baudrate %d", baud) ;
                     exit(12) ;
                   }
               }
@@ -790,15 +825,15 @@ void set_verb (int i) ;
 /* Configure port using new settings */
             if (_ss_opt(path, &sttynew) == ERROR)
                 {
-                  fprintf (stderr, "Cound not configure port %s\n", port) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Cound not configure port %s", port) ;
                   exit (12) ;
                 }
             if (resetp (path, 4096) != 0)
-                fprintf (stderr, "Could not change serial input buffer size on port %s\n", port) ;
+                LogMessage(CS_TYPE_ERROR, "Could not change serial input buffer size on port %s", port) ;
             if (flow)
                 if (hardon (path) != 0)
                     {
-                      fprintf (stderr, "Hardware flow control not supported \n") ;
+                      LogMessage(CS_TYPE_ERROR, "Hardware flow control not supported") ;
                       exit (12) ;
                     }
 #else
@@ -833,7 +868,7 @@ void set_verb (int i) ;
                   }
                 default :
                   {
-                    fprintf(stderr, "Invalid baudrate %d\n", baud) ;
+                    LogMessage(CS_LOG_TYPE_ERROR, "Invalid baudrate %d", baud) ;
                     exit(12) ;
                   }
               }
@@ -860,7 +895,7 @@ void set_verb (int i) ;
 /* Configure port using new settings */
             if (ioctl(path, TCSETAW, &sttynew) == ERROR)
                 {
-                  fprintf (stderr, "Cound not configure port %s\n", port) ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Cound not configure port %s", port) ;
                   exit (12) ;
                 }
 #endif
@@ -868,7 +903,7 @@ void set_verb (int i) ;
           }
       else if (ipport[0] == '\0')
           {
-            fprintf (stderr, "No serial or IP port specified\n") ;
+            LogMessage(CS_LOG_TYPE_ERROR, "No serial or IP port specified") ;
             exit (12) ;
           }
         else
@@ -877,7 +912,7 @@ void set_verb (int i) ;
                 {
                   if (ipaddr[0] == '\0')
                       {
-                        fprintf (stderr, "No IP address specfied for UDP link\n") ;
+                        LogMessage(CS_LOG_TYPE_ERROR, "No IP address specfied for UDP link") ;
                         exit (12) ;
                       }
                   sockfd = socket(AF_INET, SOCK_DGRAM, 0) ;
@@ -886,7 +921,7 @@ void set_verb (int i) ;
                 sockfd = socket(AF_INET, SOCK_STREAM, 0) ;
             if (sockfd < 0)
                 {
-                  fprintf (stderr, "Could not open stream socket\n") ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Could not open stream socket") ;
                   exit (12) ;
                 }
             memset ((pchar) &serv_addr, sizeof(serv_addr), 0) ;
@@ -902,7 +937,7 @@ void set_verb (int i) ;
                         struct hostent *hp;
                         if ((hp=gethostbyname(myipaddr)) == NULL)
                             {
-                              fprintf (stderr, "Could not recognize ip address %s\n", myipaddr) ;
+                              LogMessage(CS_LOG_TYPE_ERROR, "Could not recognize ip address %s", myipaddr) ;
                               exit (12) ;
                             }
                           else
@@ -914,34 +949,29 @@ void set_verb (int i) ;
                 }
               else
 #endif
-#if defined (LINUX)                                   /* CHANGED BY KIM */
             serv_addr.sin_addr.s_addr = INADDR_ANY;
-            serv_addr.sin_port = flip2(atoi(ipport)) ;
-#else
-            serv_addr.sin_addr.s_addr = htonl(INADDR_ANY) ;
-            serv_addr.sin_port = htons(atoi(ipport)) ;
-#endif
+            serv_addr.sin_port = htons((unsigned short)atoi(ipport)) ;
 
 #ifdef MYIPADDR
-            printf ("Using myipaddr=%s\n",inet_ntoa(serv_addr.sin_addr)) ;
-            printf ("Using ipport=%hu\n",ntohs(serv_addr.sin_port)) ;
+            LogMessage(CS_LOG_TYPE_INFO, "Using myipaddr=%s",inet_ntoa(serv_addr.sin_addr)) ;
+            LogMessage(CS_LOG_TYPE_INFO, "Using ipport=%hu",ntohs(serv_addr.sin_port)) ;
             fflush(stdout);
 #endif
             ruflag = 1 ; /* turn on REUSE option */
-            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *) &ruflag, sizeof(ruflag)) < 0)
+            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *) &ruflag, sizeof(ruflag)) <    0)
                 {
-                  fprintf (stderr, "Could not set REUSEADDR socket option\n") ;
+		  LogMessage(CS_LOG_TYPE_ERROR, "Could not set REUSEADDR socket option\n") ;
                   exit (12) ;
                 }
             ruflag = 1 ; /* turn on KEEPALIVE optin */
             if (setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (char *) &ruflag, sizeof(ruflag)) < 0)
                 {
-                  fprintf (stderr, "Could not set KEEPALIVE socket option\n") ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Could not set KEEPALIVE socket option") ;
                   exit (12) ;
                 }
             if (bind(sockfd, (psockaddr) &serv_addr, sizeof(serv_addr)) < 0)
                 {
-                  fprintf (stderr, "Could not bind local address\n") ;
+                  LogMessage(CS_LOG_TYPE_ERROR, "Could not bind local address\n") ;
                   exit (12) ;
                 }
             path = -1 ;
@@ -958,13 +988,8 @@ void set_verb (int i) ;
                 { /* who to send packets to */
                   memset ((pchar) &cli_addr, sizeof(cli_addr), 0) ;
                   cli_addr.sin_family = AF_INET ;
- #ifdef LINUX                                    /* CHANGED BY KIM */
                   cli_addr.sin_addr.s_addr = (inet_addr(ipaddr)) ;
-                  cli_addr.sin_port = flip2(atoi(ipport)) ;
-#else
-                  cli_addr.sin_addr.s_addr = htonl(inet_addr(ipaddr)) ;
-                  cli_addr.sin_port = htons(atoi(ipport)) ;
-#endif
+                  cli_addr.sin_port = htons((unsigned short)atoi(ipport)) ;
                   path = sockfd ; /* fake it being opened */
                 }
               else
@@ -976,7 +1001,18 @@ void set_verb (int i) ;
 /* Client will send a SIGALRM signal to me when it puts it's segment ID into the
    service queue, So make sure we don't die on it, just exit sleep.
 */
-      signal (SIGALRM, SIG_IGN) ;
+#ifdef _OSK
+      signal (SIGALRM, SIG_IGN) ;*/
+#else
+      {
+      struct sigaction action;
+      /* Set up a permanently installed signal handler for SIG_ALRM. */
+      action.sa_handler = cs_sig_alrm;
+      action.sa_flags = 0;
+      sigemptyset (&(action.sa_mask));
+      sigaction (SIGALRM, &action, NULL);
+      }
+#endif
       signal (SIGPIPE, SIG_IGN) ; 
 /* Intercept various abort type signals so they close the socket, which the OS
    apparently doesn't do when the server is abnormally terminated
@@ -1078,12 +1114,12 @@ void set_verb (int i) ;
                                       {
                                         if (i < resclient)
                                             if (clients[i].timeout)
-                                                printf("Blocking") ;
+                                                LogMessage(CS_LOG_TYPE_INFO, "Blocking") ;
                                               else
-                                                printf("Reserved") ;
+                                                LogMessage(CS_LOG_TYPE_INFO, "Reserved") ;
                                           else
-                                            printf("Returning") ;
-                                        printf (" client %4.4s, with PID of %d with memory ID %d\n",
+                                            LogMessage(CS_LOG_TYPE_INFO, "Returning") ;
+                                        LogMessage(CS_LOG_TYPE_INFO," client %4.4s, with PID of %d with memory ID %d",
                                                 &clients[i].client_name,
                                                 cursvc->client_pid, clientid) ;
                                         fflush (stdout) ;
@@ -1124,11 +1160,11 @@ void set_verb (int i) ;
                                       if (verbose)
                                           {
                                             if (cursvc->client_uid == base->server_uid)
-                                                printf ("New client %4.4s, with PID %d and memory ID %d\n", 
+                                                LogMessage(CS_LOG_TYPE_INFO, "New client %4.4s, with PID %d and memory ID %d", 
                                                          &clients[i].client_name,
                                                          cursvc->client_pid, clientid) ;
                                               else
-                                                printf ("New Foreign client %4.4s, with PID %d, UID %d, and memory ID %d\n", 
+                                                LogMessage(CS_LOG_TYPE_INFO,"New Foreign client %4.4s, with PID %d, UID %d, and memory ID %d", 
                                                          &clients[i].client_name, cursvc->client_pid,
                                                          cursvc->client_uid, clientid) ;
                                             fflush (stdout) ;
@@ -1145,7 +1181,7 @@ void set_verb (int i) ;
                                 ct = cttotal / ctcount ;
                                 if (rambling)
                                     {
-                                      printf("%d CLient services, %d read calls, %d avg. time\n",
+                                      LogMessage(CS_LOG_TYPE_INFO, "%d CLient services, %d read calls, %d avg. time",
                                              services, ctcount, ct) ;
                                       fflush (stdout) ;
                                     }
@@ -1179,7 +1215,7 @@ void set_verb (int i) ;
                           if (netto_cnt++ >= netto)
                               {
                                 if (verbose)
-                                    printf("%d Second network timeout, closing connection to DA\n", netto) ;
+                                    LogMessage(CS_LOG_TYPE_INFO, "%d Second network timeout, closing connection to DA", netto) ;
                                 shutdown (path, 2) ;
                                 close (path) ;
                                 path = -1 ;
@@ -1190,7 +1226,7 @@ void set_verb (int i) ;
                         }
                     else if ((++netdly_cnt == netdly) && (rambling)
                              && !udplink)
-                        printf("Checking for pending network connection request from DA\n") ;
+                        LogMessage(CS_LOG_TYPE_INFO, "Checking for pending network connection request from DA") ;
                 if (path >= 0)
                     {
                       if (linkstat.ultraon && (!linkstat.linkrecv))
@@ -1226,9 +1262,9 @@ void set_verb (int i) ;
                   if (verbose && (test_bit(noackmask ^ oldackmask, i)))
                       {
                         if (test_bit(noackmask, i))
-                            printf("%s queue blocked at %s\n", queue_names[i], time_string(dtime())) ;
+                            LogMessage(CS_LOG_TYPE_INFO, "%s queue blocked at %s", queue_names[i], time_string(dtime())) ;
                           else
-                            printf("%s queue unblocked at %s\n", queue_names[i], time_string(dtime())) ;
+                            LogMessage(CS_LOG_TYPE_INFO, "%s queue unblocked at %s", queue_names[i], time_string(dtime())) ;
                         fflush (stdout) ;
                       }
                 oldackmask = noackmask ;

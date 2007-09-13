@@ -41,6 +41,7 @@ Edit History:
       17 Dec 99 IGD Implemented byte swapping for the messages sent to DA for case   CSCM_MASS_RECENTER
                     Implemented byte swapping for the messages sent to DA for case    CSCM_CAL
       18 Dec 99 IGD Number of changes ; presumably swapping for every case of handler()
+   22 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -63,7 +64,7 @@ Edit History:
 #include "os9stuff.h"
 #endif
 
-short VER_COMMANDS = 21 ;     /*IGD LINUX compatible */
+short VER_COMMANDS = 22 ;     /*IGD LINUX compatible */
 
 extern tuser_privilege user_privilege ;
 extern boolean verbose ;
@@ -730,7 +731,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               msg.las.dp_seq = cmd_seq ;
               memcpy ((pchar) &msg.las.la, (pchar) plac, sizeof(linkadj_com)) ;
 /* IGD Do byte swapping */
-#if defined (LINUX)  /*IGD #ifdef is redundant, but let it be here anyways */
+#ifdef	LITTLE_ENDIAN	/*IGD #ifdef is redundant, but let it be here anyways */
               msg.las.la.window_size = flip2(msg.las.la.window_size);
 	      msg.las.la.resendtime = flip2(msg.las.la.resendtime);
 	      msg.las.la.synctime = flip2(msg.las.la.synctime);
@@ -808,7 +809,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                     msg.ucs.dp_seq = cmd_seq ;
                     msg.ucs.rc_sp2 = flip2(0) ;   /*IGD flip2 here */
                     memcpy ((pchar) &msg.ucs.xc, (pchar) pcsc, sizeof(cal_start_com)) ;
-#if defined (LINUX)                  /*IGD flips here */
+#ifdef	LITTLE_ENDIAN                  /*IGD flips here */
                     msg.ucs.xc.calnum  = flip2 (msg.ucs.xc.calnum);
 	            msg.ucs.xc.duration  = flip4 (msg.ucs.xc.duration);
 		    msg.ucs.xc.amp  = flip2 (msg.ucs.xc.amp);
@@ -912,7 +913,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               msg.des.rc_sp4 = flip2(0) ;  /*IGD flip2 here just in case*/
               memcpy ((pchar) &msg.des.de, (pchar) pdec, sizeof(det_enable_com)) ;
 	      
-# if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
       	     for (ii = 1; ii < msg.des.de.count ; ii++)	{
 		msg.des.de.detectors[ii].detector_id = 	
 			flip2(msg.des.de.detectors[ii].detector_id );  /*IGD flip2 here */
