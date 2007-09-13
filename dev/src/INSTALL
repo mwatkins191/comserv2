@@ -1,7 +1,21 @@
 -----------------
 To make the new unified comserv under solaris, type:
 
-	make -f Makefile.solaris
+		make -f Makefile.solaris_cc
+
+	to use the Sun FORTE compilers
+
+	or 
+
+		make -f Makefile.solaris_gcc
+
+	to use the GCC compilers
+
+	or 
+
+		make -f Makefile.solaris_cc_x86 
+	
+	to build on a Solaris x86 platform
 
 To make the new unified comserv under linux type:
 
