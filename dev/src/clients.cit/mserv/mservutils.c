@@ -20,7 +20,9 @@ Usage Notes:
 
 
 Modification History:
-
+Ver   Date       WHO	What
+----------------------------------------------------------------------
+   2 24 Aug 2007 DSN	Ported to little_endian systems.
 
 **********************************************************/
 #include <stdio.h>
@@ -30,6 +32,8 @@ Modification History:
 
 int classify_packet(seed_fixed_data_record_header* sh)
 {
+
+  /*  WARNING - ASSUMPTION - ASSUME RECORD IS BIG_ENDIAN */
 
   if(sh->header.seed_record_type != 'D')
   {
@@ -57,28 +61,28 @@ int classify_packet(seed_fixed_data_record_header* sh)
     else if (sh->dob.encoding_format == 0)
     {
 
-      if ( (sh->dob.blockette_type == 1000) && 
+      if ( (ntohs(sh->dob.blockette_type) == 1000) && 
            (strncmp(sh->header.channel_id,"LOG",3) == 0))
       {
         return(COMMENTS);
       }
-      else if(sh->deb.blockette_type == 500)
+      else if(ntohs(sh->deb.blockette_type) == 500)
       {
         return(CLOCK_CORRECTION);
       }
-      else if ( (sh->deb.blockette_type == 200) ||
-		(sh->deb.blockette_type == 201))
+      else if ( (ntohs(sh->deb.blockette_type) == 200) ||
+		(ntohs(sh->deb.blockette_type) == 201))
       {
         return(DETECTION_RESULT);
       }
-      else if( (sh->deb.blockette_type == 300) ||
-	       (sh->deb.blockette_type == 310) ||
-		(sh->deb.blockette_type == 320) ||
-		(sh->deb.blockette_type == 395))
+      else if( (ntohs(sh->deb.blockette_type) == 300) ||
+	       (ntohs(sh->deb.blockette_type) == 310) ||
+		(ntohs(sh->deb.blockette_type) == 320) ||
+		(ntohs(sh->deb.blockette_type) == 395))
       {
         return(CALIBRATION);
       }
-      else if ( (sh->deb.blockette_type == 2000))
+      else if ( (ntohs(sh->deb.blockette_type) == 2000))
       {
         return(BLOCKETTE);
       }
@@ -90,8 +94,7 @@ int classify_packet(seed_fixed_data_record_header* sh)
       }
       else
       {
-        fprintf(stderr,"Unknown packet type. Encoding format blockette_type = %d\n", 
-			sh->deb.blockette_type);
+        fprintf(stderr,"Unknown packet type.\n");
         return(BLOCKETTE);
       }
     }

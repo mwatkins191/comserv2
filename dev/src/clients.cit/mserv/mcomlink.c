@@ -48,6 +48,8 @@ Edit History:
                     multicast reception by comlink.
    27 09 Aug 02 PAF cleaned up verbosity messages
    28 01 Dec 05 PAF changed printf to LogMessage() calls
+   29 24 Aug 07 DSN Ported to little_endian systems.
+		    Removed unused code.
 
     The changes from comlink.c to mcomlink.c were done to support reception
     of packets on a multicast interface by comserv. The packets are to be
@@ -93,6 +95,13 @@ Edit History:
 #include "os9stuff.h"
 #endif
 
+#ifdef	LINUX
+#include "unistd.h"
+#ifndef FIRSTDATA       /* IGD 03/05/01 Add */
+#define FIRSTDATA 56
+#endif
+#endif
+
 /* Include routines which extract information from the seed header */
 
 #include "mservutils.h"
@@ -103,7 +112,7 @@ Edit History:
 
 
 
-short VER_COMLINK = 27 ;
+short VER_COMLINK = 29 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -280,233 +289,42 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       complong ltemp ;
       byte b ;
       txbuf_type *cur ;
-
       return;
-/* To prevent mserv from sending information, this routine is stubbed out */
-
-#ifndef MSERV
-
-      while (txwin > 0)
-        {
-          cur = &txbuf[nextout] ;
-          temp_pkt.c.cmd = cur->cmd ;
-          temp_pkt.c.ack = cur->ack ;
-          temp_pkt.msg = cur->buf ;
-          temp_pkt.msg.scs.dp_seq = cur->dpseq ;
-          transmit_buf[0] = cur->leadin ;
-          len = cur->len ;
-          ta = (pchar) ((long) &temp_pkt + 6) ;
-          temp_pkt.c.chksum = checksum(ta, len - 6) ;
-          ltemp.l = gcrccalc(ta, len - 6) ;
-          temp_pkt.c.crc = ltemp.s[0] ;
-          temp_pkt.c.crc_low = ltemp.s[1] ;
-          if (udplink)
-              numwrit = sendto (path, (pchar) &temp_pkt, len, 0,
-                        (psockaddr) &cli_addr, sizeof(cli_addr)) ;
-            else
-              {
-                tstr = &transmit_buf[1] ;
-                ta = (pchar) &temp_pkt ;
-                for (i = 0 ; i < len ; i++)
-                  {
-                    b = (*ta >> 4) & 15 ;
-                    if (b > 9)
-                        *tstr++ = b + 55 ;
-                      else
-                        *tstr++ = b + 48 ;
-                    b = *ta++ & 15 ;
-                    if (b > 9)
-                        *tstr++ = b + 55 ;
-                      else
-                        *tstr++ = b + 48 ;
-                  }
-                }
-          txwin-- ;
-          if (insane)
-              if (cur->cmd == ACK_MSG)
-                  LogMessage (CS_LOG_TYPE_INFO, "Acking packet %d from slot %d, packets queued=%d", cur->ack, nextout, txwin) ;
-                else
-                  LogMessage (CS_LOG_TYPE_INFO, "Sending command %d from slot %d, packets queued=%d", ord(cur->cmd), nextout, txwin) ;
-           nextout = ++nextout & 63 ;
-           if ((path >= 0) && !udplink)
-              {
-                numwrit = write(path, (pchar) &transmit_buf, len * 2 + 1) ;
-                if ((numwrit < 0) && (verbose))
-                    LogMessage (CS_LOG_TYPE_ERROR, "Error writing to port : %s", strerror(errno)) ;
-              }
-          last_sent = dtime () ;
-        }
-
-#endif
-
     }
 
   void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg)
     {
       txbuf_type *cur ;
-
-/* To prevent the mserv from sending acks, or link establishment requests, */
-/* this routine with TX's is stubbed out. */
-
       return; 
-
-#ifndef MSERV
-
-      cur = &txbuf[nextin] ;
-      if (cmd_var == ACK_MSG)
-          {
-            cur->cmd = cmd_var ;
-            cur->ack = nr ;
-            cur->leadin = LEADIN_ACKNAK ;
-            cur->len = DP_TO_DA_LENGTH_ACKNAK ;
-            cur->dpseq = 0 ;
-          }
-        else
-          {
-            cur->cmd = cmd_var ;
-            cur->ack = last_packet_received ;
-            cur->buf = *msg ;
-            cur->dpseq = cmd_seq++ ;
-            cur->len = DP_TO_DA_LENGTH_CMD ;
-            cur->leadin = LEADIN_CMD ;
-          } ;
-      txwin++ ;
-      if (insane)
-          LogMessage (CS_LOG_TYPE_INFO, "Placing outgoing packet in slot %d, total in window=%d", nextin, txwin) ;
-      nextin = ++nextin & 63 ;
-      if (txwin >= grpsize)
-          send_window () ;
-
-#endif
-
     }
     
   void send_ack (void)
     {
       DP_to_DA_msg_type msg ;
-
       return;
-/* To prevent mserv from sending acks, this routine is stubbed out . */
-
-#ifndef MSERV
-
-      last_packet_received = this_packet ;
-      send_tx_packet (this_packet, ACK_MSG, &msg) ;
-
-#endif
-
     }
 
   void request_ultra (void)
     {
       DP_to_DA_msg_type mmsg ;
-
-/* To prevent mserv from sending requests, this routine is stubbed out */
-
       return;
-
-#ifndef MSERV
-
-      if (path < 0)
-          return ;
-      mmsg.scs.cmd_type = ULTRA_REQ ;
-      send_tx_packet (0, ULTRA_REQ, &mmsg) ;
-      if (rambling)
-          LogMessage (CS_LOG_TYPE_INFO, "Requesting ultra packet") ;
-
-#endif
-
     }
 
   void request_link (void)
     {
       DP_to_DA_msg_type mmsg ;
-
-/* To prevent mserv from sending requests, this routine is stubbed out */
-
       return;
-
-#ifndef MSERV
-
-      linkpoll = 0 ;
-      if (path < 0)
-          return ;
-      mmsg.scs.cmd_type = LINK_REQ ;
-      send_tx_packet (0, LINK_REQ, &mmsg) ;
-      if (rambling)
-          LogMessage (CS_LOG_TYPE_INFO,"Requesting link packet") ;
-
-#endif
-
     }
 
   void request_map (void)
     {
       DP_to_DA_msg_type mmsg ;
-
-/* To prevent mserv from requesting maps, this routine is stubbed out. */
-
       return;
-
-#ifndef MSERV
-
-      mmsg.us.cmd_type = UPLOAD ;
-      mmsg.us.dp_seq = cmd_seq ;
-      mmsg.us.return_map = TRUE ;
-      if (upphase == WAIT_CREATE_OK)
-          {
-            mmsg.us.upload_control = CREATE_UPLOAD ;
-            mmsg.us.up_union.up_create.file_size = xfer_size ;
-            memcpy (mmsg.us.up_union.up_create.file_name, xfer_destination, 60) ;
-          }
-        else
-          mmsg.us.upload_control = MAP_ONLY ;
-      send_tx_packet (0, UPLOAD, &mmsg) ;
-      mappoll = 30 ;
-
-#endif
-
     }
 
   void reconfigure (boolean full)
     {
       short i ;
-
-/* To prevent mserv from reconfiguring a link, this routine is stubbed out. */
-
-
-#ifndef MSERV
-
-      if (full)
-          {
-            linkstat.linkrecv = FALSE ;
-            seq_valid = FALSE ;
-            lowest_seq = 300 ;
-            con_seq = 0 ;
-            linkpoll = 0 ;
-            request_link () ;
-          }
-       if (linkstat.ultraon)
-          {
-            linkstat.ultrarecv = FALSE ;
-            ultra_seg_empty = TRUE ;
-            for (i = 0 ; i < 14 ; i++)
-              ultra_seg[i] = 0 ;
-            if (ultra_size)
-                {
-                  free(pultra) ;
-                  ultra_size = 0 ;
-                }
-            ultra_percent = 0 ;
-            if (!full)
-                request_ultra () ;
-          }
-        else
-          for (i = 0 ; i < DEFAULT_WINDOW_SIZE ; i++)
-            seq_seen[i] = 0 ;
-
-#endif
-
     }
 
   void clearmsg (DP_to_DA_msg_type *m)
@@ -862,23 +680,10 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 /* a correct time of data sample. However I could not find a use for */
 /* this time stamp, and the conversion from seed to time_array was */
 /* non trivial, so I'll time stamp the packets with time of reception */
-/* I though dataspy used this header time of sample, but when I look */
+/* I thought dataspy used this header time of sample, but when I look */
 /* I see it decodes the seed header itself. So until I find a need */
-/* for an actual data time stamp in this header, I'll use recpetion time. */
+/* for an actual data time stamp in this header, I'll use reception time. */
 
-#ifndef MSERV
-
-            res =         header_to_double_time(&my_seed_header,
-						&packet_time);
-            if(res != TRUE)
-            { 
-	      if(verbose)
-              {	
-                LogMessage(CS_LOG_TYPE_ERROR,"Error converting SEED time.");
-              }
-              packet_time = dtime();
-            }
-#endif
 
 /* The following commented out stuff is information on packets received. */
 /* It was in the original comserv, and available if you turned */
@@ -1025,557 +830,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 /* All the other packet handling logic here is to sort packets that have a */
 /* QSL header. Mserv does not have the header, so this logic is stubbed out. */
 
-#ifndef MSERV
-
-            switch (dbuf.data_buf.cr.h.frame_type)
-              {
-                case RECORD_HEADER_1 : ;
-                case RECORD_HEADER_2 : ;
-                case RECORD_HEADER_3 :
-                  {
-                    if (linkstat.data_format == CSF_Q512)
-                        dbuf.data_buf.cr.h.frame_count = 7 ;
-                    if (checkmask (DATAQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (!linkstat.ultraon)
-                        {
-                          setseed(dbuf.data_buf.cr.h.component, dbuf.data_buf.cr.h.stream,
-                                  &dbuf.data_buf.cr.h.seedname, &dbuf.data_buf.cr.h.location) ;
-                          memcpy((pchar) &dbuf.data_buf.cr.h.seednet, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &dbuf.data_buf.cr.h.station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &dbuf.data_buf.cr.h.station, (pchar) &station, 4) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO, "Station %4.4s data received instead of %4.4s", 
-                           &dbuf.data_buf.cr.h.station, &station) ;
-                    if (firstpacket)
-                        {
-                          firstpacket = FALSE ;
-                          if (linkstat.ultraon)
-                              {
-                                if (!linkstat.linkrecv)
-                                    request_link () ;
-                              }
-                        }
-              /* Unless an option is specified to override the station, an error should
-                 be generated if the station does not agree. Same goes for network.
-              */
-              /* put into data buffer ring */
-                    freebuf = getbuffer (DATAQ) ;                  /* get free buffer */
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seedheader (&dbuf.data_buf.cr.h, pseed) ; /* convert header to SEED */
-                    if (rambling)
-                        {
-                          if (anystation)
-                          LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%s Header time %s, received at %s", &dbuf.data_buf.cr.h.station, 
-				seednamestring(&dbuf.data_buf.cr.h.seedname,
-                             	&dbuf.data_buf.cr.h.location), time_string(freebuf->user_data.header_time),
-				time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    p1 = (pvoid) ((long) pseed + 64) ;             /* skip header */
-                    memcpy (p1, (pchar) &dbuf.data_buf.cr.frames, 448) ;   /* and copy data portion */
-                    break ;
-                  }
-                case BLOCKETTE :
-                  {
-                    if (checkmask (BLKQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    pbr = (tpbr) &dbuf.data_buf ;
-                    strcpy ((pchar)&seedst, "     ") ; /* initialize to spaces */
-                    j = 0 ;
-                    for (i = 0 ; i <= 3 ; i++)
-                      if (station.b[i] != ' ')
-                          seedst[j++] = station.b[i] ; /* move in non space characters */
-                    if (override)
-                        memcpy((pchar) &(pbr->hdr.station_ID_call_letters), (pchar) &seedst, 5) ;
-                    else if ((!anystation) &&
-                         (memcmp((pchar) &(pbr->hdr.station_ID_call_letters), (pchar) &seedst, 5) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO, "Station %4.4s data received instead of %4.4s", 
-                           &(pbr->hdr.station_ID_call_letters), &station) ;
-              /* Unless an option is specified to override the station, an error should
-                 be generated if the station does not agree. Same goes for network.
-              */
-              /* put into data buffer ring */
-                    freebuf = getbuffer (BLKQ) ;                  /* get free buffer */
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seed_jul (&pbr->hdr.starting_time) ; /* convert SEED time to julian */
-                    if (rambling)
-                        {
-                          if (anystation)
-                          LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%s Header time %s, received at %s", 
-				(pchar) &(pbr->hdr.station_ID_call_letters), 
-				seednamestring(&(pbr->hdr.channel_id),
-                             	&(pbr->hdr.location_id)), time_string(freebuf->user_data.header_time),
-				time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    pl = (pvoid) &pbr->hdr ;
-                    seedsequence (&pbr->hdr, *pl) ;
-                    memcpy ((pchar) &freebuf->user_data.data_bytes, (pchar) pbr, 512) ; /* copy record into buffer */
-                    break ;
-                  }
-                 case EMPTY : ;
-                 case FLOOD_PKT :
-                  if (checkmask (-1))
-                      return ;
-                    else
-                      {
-                        send_ack () ;
-                        linkstat.sync_packets++ ;
-                        break ;
-                      }
-                case COMMENTS :
-                  {
-                    if (checkmask (MSGQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (linkstat.ultraon)
-                        {
-                          p1 = (pchar) &dbuf.data_buf.cc.ct ;
-                          p1 = (pchar) ((long) p1 + (unsigned long) *p1 + 1) ;
-                          p2 = (pchar) &dbuf.data_buf.cc.cc_station ;
-                          memcpy(p2, p1, sizeof(long) + sizeof(seed_net_type) +
-                                    sizeof(location_type) + sizeof(seed_name_type)) ;
-                        }
-                    if (!linkstat.ultraon)
-                        {
-                          memcpy((pchar) &dbuf.data_buf.cc.cc_station, (pchar) &station, 4) ;
-                          memcpy((pchar) &dbuf.data_buf.cc.cc_net, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &dbuf.data_buf.cc.cc_station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &dbuf.data_buf.cc.cc_station, (pchar) &station, 4) != 0))
-                        LogMessage ("Station %4.4s message received instead of %4.4s", 
-                           &dbuf.data_buf.cc.cc_station, &station) ;
-                    if (linkstat.ultraon && (!linkstat.ultrarecv) &&
-                       (strncasecmp((pchar) &dbuf.data_buf.cc.ct, "FROM AQSAMPLE: Acquisition begun", 32) == 0))
-                        request_ultra () ;
-                  /* Put into blockette ring */
-                    if (rambling)
-                        {
-                          dbuf.data_buf.cc.ct[dbuf.data_buf.cc.ct[0]+1] = '\0' ;
-                          if (anystation)
-                              LogMessage(CS_LOG_TYPE_INFO, "%4.4s.", &dbuf.data_buf.cc.cc_station) ;
-                          LogMessage (CS_LOG_TYPE_INFO, "%s", &dbuf.data_buf.cc.ct[1]) ;
-                        } ;
-                    freebuf = getbuffer (MSGQ) ;
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
-                    break ;
-                  }
-                case CLOCK_CORRECTION :
-                  {
-                    if (checkmask (TIMQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (vcovalue < 0)
-                        if (linkstat.ultraon)
-                            vcovalue = dbuf.data_buf.ce.header_elog.clk_exc.vco ;
-                          else
-                            {
-                              ptqd = (pvoid) &dbuf.data_buf.ce.header_elog.clk_exc.correction_quality ;
-                              vcovalue = (unsigned short) ptqd->time_base_VCO_correction * 16 ;
-                            }
-                    pce = &dbuf.data_buf.ce.header_elog.clk_exc ;
-                    if (!linkstat.ultraon)
-                        {
-                          memcpy((pchar) &pce->cl_station, (pchar) &station, 4) ;
-                          memcpy((pchar) &pce->cl_net, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &pce->cl_station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &pce->cl_station, (pchar) &station, 4) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO, "Station %4.4s timing received instead of %4.4s", 
-                           &pce->cl_station, &station) ;
-                   /* put into blockette ring */
-                    freebuf = getbuffer (TIMQ) ;
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
-                    if (rambling)
-                        {
-                         if (anystation)
-                         LogMessage(CS_LOG_TYPE_INFO,"%4.4s.Clock time-mark %s, received at %s", &pce->cl_station,
-                              time_string(freebuf->user_data.header_time),
-				time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    break ;
-                  }
-                case DETECTION_RESULT :
-                  {
-                    if (checkmask (DETQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    ppick = &dbuf.data_buf.ce.header_elog.det_res.pick ;
-                    if (!linkstat.ultraon)
-                        {
-                          setseed (ppick->component, ppick->stream,
-                                   &ppick->seedname, &ppick->location) ;
-                          memset((pchar) &ppick->detname, ' ', 24) ;
-                          ppick->sedr_sp1 = 0 ;
-                          memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
-                          memcpy((pchar) &ppick->ev_network, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &ppick->ev_station, (pchar) &station, 4) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO, "Station %4.4s detection received instead of %4.4s", 
-                           &ppick->ev_station, &station) ;
-                    /* put into blockette ring */
-                    freebuf = getbuffer (DETQ) ;
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;
-                    freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
-                    if (rambling)
-                        {
-                          if (anystation)
-                          LogMessage(CS_LOG_TYPE_INFO, "%4.4s.%3.3s Detection   %s, received at %s", &ppick->ev_station,
-                              &dbuf.data_buf.ce.header_elog.det_res.pick.seedname,
-                              time_string(freebuf->user_data.header_time,
-                              time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    break ;
-                  }
-                case END_OF_DETECTION :
-                  {
-                    if (checkmask (DATAQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    freebuf = getbuffer (DATAQ) ;                  /* get free buffer */
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    ppick = &dbuf.data_buf.ce.header_elog.det_res.pick ;
-                    if (!linkstat.ultraon)
-                        {
-                          setseed (ppick->component, ppick->stream,
-                                   &ppick->seedname, &ppick->location) ;
-                          ppick->sedr_sp1 = 0 ;
-                          memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
-                          memcpy((pchar) &ppick->ev_network, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &ppick->ev_station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &ppick->ev_station, (pchar) &station, 4) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO, "Station %4.4s end of detection received instead of %4.4s", 
-                           &ppick->ev_station, &station) ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
-                    if (rambling)
-                        {
-                          if (anystation)
-                              LogMessage(CS_LOG_TYPE_INFO, "%4.4s.", &ppick->ev_station) ;
-                          LogMessage(CS_LOG_TYPE_INFO, "%3s Detect End  %s, received at %s", 
-                              &dbuf.data_buf.ce.header_elog.det_res.pick.seedname,
-                              time_string(freebuf->user_data.header_time),
-                              time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    break ;
-                  }
-                case CALIBRATION :
-                  {
-                    if (checkmask (CALQ))
-                        return ;
-                      else
-                        send_ack () ;
-                    pcal = &dbuf.data_buf.ce.header_elog.cal_res ;
-                    if (!linkstat.ultraon)
-                        {
-                          setseed (pcal->cr_component, pcal->cr_stream,
-                                   &pcal->cr_seedname, &pcal->cr_location) ;
-                          setseed (pcal->cr_input_comp, pcal->cr_input_strm,
-                                   &pcal->cr_input_seedname, &pcal->cr_input_location) ;
-                          pcal->cr_flags2 = 0 ;
-                          pcal->cr_0dB = 0 ;
-                          pcal->cr_0dB_low = 0 ;
-                          pcal->cr_sfrq = Hz1_0000 ;
-                          pcal->cr_filt = 0 ;
-                          memcpy ((pchar) &pcal->cr_station, (pchar) &station, 4) ;
-                          memcpy ((pchar) &pcal->cr_network, (pchar) &network, 2) ;
-                        }
-                    if (override)
-                        memcpy((pchar) &pcal->cr_station, (pchar) &station, 4) ;
-                    else if ((!anystation) && (memcmp((pchar) &pcal->cr_station, (pchar) &station, 4) != 0))
-                        LogMessage (CS_LOG_TYPE_INFO,"Station %4.4s calibration received instead of %4.4s", 
-                           &pcal->cr_station, &station) ;
-                    /* store in blockette ring */
-                    freebuf = getbuffer (CALQ) ;
-                    pseed = (pvoid) &freebuf->user_data.data_bytes ;
-                    freebuf->user_data.reception_time = dtime () ;    /* reception time */
-                    freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
-                    if (rambling)
-                        {
-                          if (anystation)
-                              LogMessage(CS_LOG_TYPE_INFO, "%4.4s.", &pcal->cr_station) ;
-                          LogMessage(CS_LOG_TYPE_INFO,"%3.3s Calibration %s, received at %s",
-                              &dbuf.data_buf.ce.header_elog.cal_res.cr_seedname, 
-                              time_string(freebuf->user_data.header_time),
-                              time_string(freebuf->user_data.reception_time)) ;
-                        }
-                    break ;
-                  }
-                case ULTRA_PKT :
-                  {
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (!linkstat.ultrarecv)
-                        {
-                          preply = &dbuf.data_buf.cy ;
-                          full = TRUE ;
-                          if (ultra_seg_empty)
-                              {
-                                ultra_seg_empty = FALSE ;
-                                pultra = (pvoid) malloc(preply->total_bytes) ;
-                              }
-                          ultra_seg[preply->this_seg / 8] = ultra_seg[preply->this_seg / 8] |
-                                          (byte) (1 << (preply->this_seg % 8))  ;
-                          ta = (pchar) ((long) pultra + preply->byte_offset) ;
-                          memcpy(ta, (pchar) &preply->bytes, preply->byte_count) ;
-                          j = 0 ;
-                          for (i = 1 ; i <= preply->total_seg ; i++)
-                            if ((ultra_seg[i / 8] & ((byte) (1 << (i % 8)))) == 0)
-                                full = FALSE ;
-                              else
-                                j++ ;
-                          ultra_percent = (float) ((j / preply->total_seg) * 100.0) ;
-                          if (full)
-                              {
-                                linkstat.ultrarecv = TRUE ;
-                                vcovalue = pultra->vcovalue ;
-                                if (pultra->ultra_rev >= 1)
-                                    comm_mask = pultra->comm_mask ;
-                                if (rambling)
-                                    LogMessage(CS_LOG_TYPE_INFO, "Ultra record received with %d bytes",
-                                           preply->total_bytes) ;
-                              }
-                        }
-                    break ;
-                  }
-                case DET_AVAIL :
-                  {
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (detavail_ok && (!detavail_loaded))
-                        {
-                          preply = &dbuf.data_buf.cy ;
-                          full = TRUE ;
-                          pdetavail = NULL ;
-                          /* Make sure there is a valid client for this data */
-                          if (checkbusy ())
-                              {
-                                pcr = (pvoid) clients[combusy].outbuf ;
-                                if ((unsigned int) clients[combusy].outsize >= (unsigned int) preply->total_bytes)
-                                    pdetavail = (pvoid) &pcr->moreinfo ;
-                              }
-                          if (pdetavail == NULL)
-                              {
-                                detavail_ok = FALSE ;
-                                combusy = NOCLIENT ;
-                                break ;
-                              }
-                          detavail_seg[preply->this_seg / 8] = detavail_seg[preply->this_seg / 8] |
-                                          (byte) (1 << (preply->this_seg % 8))  ;
-                          ta = (pchar) ((long) pdetavail + preply->byte_offset) ;
-                          memcpy (ta, (pchar) &preply->bytes, preply->byte_count) ;
-                          j = 0 ;
-                          for (i = 1 ; i <= preply->total_seg ; i++)
-                            if ((detavail_seg[i / 8] & ((byte) (1 << (i % 8)))) == 0)
-                                full = FALSE ;
-                              else
-                                j++ ;
-                          if (full)
-                              {
-                                detavail_loaded = TRUE ;
-                                pcr->completion_status = CSCS_FINISHED ;
-                                combusy = NOCLIENT ;
-                              }
-                        }
-                    break ;
-                  }
-                case DOWNLOAD :
-                  {
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (xfer_down_ok && checkbusy ())
-                        {
-                          preply = &dbuf.data_buf.cy ;
-                          pcom = (pvoid) clients[combusy].outbuf ;
-                          pdr = (pvoid) &pcom->moreinfo ;
-                          if (preply->this_seg == 1)
-                              {
-                                pds = (pvoid) &preply->bytes ;
-                                xfer_total = pds->file_size ;
-                                pdr->fsize = xfer_total ;
-                                strpcopy (s1, pds->file_name) ;
-                                strpcopy (s2, xfer_source) ;
-                                if (strcasecmp((pchar) &s1, (pchar) &s2) != 0)
-                                    {
-                                      do_abort () ;
-                                      break ;
-                                   }
-                                if (!pds->filefound)
-                                    {
-                                      pcom->completion_status = CSCS_NOTFOUND ;
-                                      do_abort () ;
-                                      break ;
-                                    }
-                                if (pds->toobig)
-                                    {
-                                      pcom->completion_status = CSCS_TOOBIG ;
-                                      break ;
-                                    }
-                              }
-                          if (xfer_size == 0)
-                              {
-                                xfer_size = preply->total_bytes ;
-                                pdr->dpshmid = shmget(IPC_PRIVATE, xfer_size, IPC_CREAT | PERM) ;
-                                if (pdr->dpshmid == ERROR)
-                                    {
-                                      pcom->completion_status = CSCR_PRIVATE ;
-                                      do_abort () ;
-                                      break ;
-                                    }
-                                pdownload = (pvoid) shmat (pdr->dpshmid, NULL, 0) ;
-                                if ((int) pdownload == ERROR)
-                                    {
-                                      pcom->completion_status = CSCR_PRIVATE ;
-                                      do_abort () ;
-                                      break ;
-                                    }
-                                xfer_segments = preply->total_seg ;
-                              }
-/* Isolate client from header, start the data module with the actual file contents */
-                          xfer_offset = sizeof(download_struc) - 65000 ; /* source bytes to skip */
-                          ta = (pchar) ((long) pdownload + preply->byte_offset - xfer_offset) ; /* destination */
-                          p1 = (pchar) &preply->bytes ; /* source */
-                          bc = preply->byte_count ; /* number of bytes */
-                          if (preply->this_seg == 1)
-                              {
-                                bc = bc - xfer_offset ; /* first record contains header */
-                                p1 = p1 + xfer_offset ;
-                                ta = ta + xfer_offset ;
-                              }
-                          memcpy (ta, p1, bc) ;
-                          i = preply->this_seg - 1 ;
-                          j = i / 8 ;
-                          k = (byte) (1 << (i % 8)) ;
-                          if ((xfer_seg[j] & k) == 0)
-                              pdr->byte_count = pdr->byte_count + bc ;  /* not already received */
-                          xfer_seg[j] = xfer_seg[j] | k ;
-                          l = 0 ;
-                          for (i = 0 ; i <= 127 ; i++)
-                            {
-                              k = xfer_seg[i] ;
-                              for (j = 0 ; j <= 7 ; j++)
-                                if ((k & (byte) (1 << j)) != 0)
-                                    l++ ;
-                            }
-                          if ((unsigned int) l >= (unsigned int) xfer_segments)
-                              {
-                                xfer_down_ok = FALSE ;
-                                down_count = 0 ;
-                                pdr->byte_count = xfer_total ;
-                                shmdt((pchar)pdownload) ;
-                                pcom->completion_status = CSCS_FINISHED ;
-                                combusy = NOCLIENT ;
-                                xfer_size = 0 ;
-                              }
-                        }
-                    else if (++down_count > 5)
-                        {
-                          xfer_down_ok = TRUE ;
-                          do_abort () ;
-                        }
-                    break ;
-                  }
-                case UPMAP :
-                  {
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (xfer_up_ok)
-                        process_upmap () ;
-                    break ;
-                  }
-                case CMD_ECHO : 
-                  {
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    if (checkbusy ())
-                        {
-                          pcom = (pvoid) clients[combusy].outbuf ;
-                          preply = &dbuf.data_buf.cy ;
-                          memcpy ((pchar) &replybuf, (pchar) &preply->bytes, preply->byte_count) ;
-                          if ((replybuf.ces.dp_seq == pcom->command_tag) &&
-                              (pcom->completion_status == CSCS_INPROGRESS))
-                              if (follow_up)
-                                  { /* Set AUTO DAC, now send prepared ACCURATE DAC */
-                                    if (++cmd_seq == 0)
-                                        cmd_seq = 1 ;
-                                    gmsg.mmc.dp_seq = cmd_seq ;
-                                    send_tx_packet (0, gmsg.mmc.cmd_type, &gmsg) ;
-                                    pcom->command_tag = cmd_seq ;
-                                    follow_up = FALSE ;
-                                  }
-                                else
-                                  {
-                                    pcom->completion_status = CSCS_FINISHED ;
-                                    combusy = NOCLIENT ;
-                                  }
-                        } 
-                    break ;
-                  }
-                default :
-                  {
-                    linkstat.last_bad = dtime () ;
-                    LogMessage (CS_LOG_TYPE_ERROR, "INVALID RECORD TYPE=%d", dbuf.data_buf.cr.h.frame_type) ;
-                    if (checkmask (-1))
-                        return ;
-                      else
-                        send_ack () ;
-                    break ;
-                  }
-              }
-
-#endif
-
           }
-
-
-/* This else part is a remant of checking the packet for a checksum error. */
-/* In the mserv version, all packets are accepted, and the UDP unreliable */
-/* but valid if delivered principle is used as packet validation. */
-
-#ifndef MSERV
-
-        else
-          {
-            linkstat.last_bad = dtime () ;
-            linkstat.check_errors++ ;
-            if (verbose)
-                LogMessage (CS_LOG_TYPE_ERROR,"CHECKSUM ERROR ON PACKET %d, BYTE COUNT=%d, CHECKSUM ERRORS=%d",
-                        last_packet_received, size, linkstat.check_errors) ;
-          }
-#endif
-
-
     }
 
   void fillbuf (void)
@@ -1798,76 +1053,6 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 /* This should be the common return from all parts of the if statement. */
 
     return;
-
-/* The serial code should never be executed, so it is stubbed out. */
-
-#ifndef MSERV
-
-      if (src == srcend)
-          fillbuf () ;
-      switch (inphase)
-        {
-          case SOHWAIT :
-            dest = (pchar) &dbuf.seq ;
-          case SYNWAIT :
-            {
-              while (inphase != INBLOCK)
-                {
-                  lastchar = NUL ;
-                  err = inserial(&b) ;
-                  if (err != 1)
-                      return ;
-                  if ((b == SOH))
-                      inphase = SYNWAIT ;
-                  else if ((b == SYN) && (inphase == SYNWAIT))
-                      inphase = INBLOCK ;
-                    else 
-                      inphase = SOHWAIT ;
-                }
-            }
-          case INBLOCK :
-            {
-              if (src == srcend)
-                  fillbuf ;
-              if (src != srcend)
-                  {
-                    dlestrip () ;
-                    if (dest == destend)
-                        inphase = ETXWAIT ;
-                    else if (term != NULL)
-                        {
-                          inphase = SOHWAIT ;
-                          process () ;
-                          break ;
-                        }
-                      else
-                        break ;
-                  }
-                else
-                  break ;
-            }
-          case ETXWAIT :
-            {
-              if (src == srcend)
-                  fillbuf ;
-              err = inserial (&b) ;
-              if (err == 1)
-                  if (b == ETX)
-                      {
-                        inphase = SOHWAIT ;
-                        term = dest ;
-                        process () ;
-                        break ;
-                      }
-                    else
-                      {
-                        inphase = SOHWAIT ;
-                        break ;
-                      }
-            }
-        }
-
-#endif
 
     }
 

@@ -64,18 +64,13 @@ Edit History:
 			where logs are dumped. Otherwise, they are dumped in the
 			mserv run dir.
    36 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
-
+   37 24 Aug 07 DSN Port to LINUX, and separate LITTLE_ENDIAN from LINUX logic.
+		    Change from SIG_IGN to signal handler for SIGALRM.
 
 	The intention of these changes to server are to create a version
 	of comserv that receives multicast messages and puts them into
 	the comserv ring buffers. The input messages are to be 512
 	byte SEED packets
-
-   37 22 May 07 PAF - fixed some logging code problems and 
-	fixed a comment to notify of encoding format if classify_packet() 
-	cannot ID the type.
-
-
 */
 #include <stdio.h>
 #include <errno.h>
@@ -122,6 +117,10 @@ Edit History:
           long          tv_nsec;/* and nanoseconds */
      } timespec ;
 #endif
+#ifdef LINUX
+#include <time.h>
+#endif
+/* LINUX supports timespec structure */
 
 /* Define mserv and use it to comment out unwanted sections of code */
 
@@ -453,8 +452,8 @@ void set_verb (int i) ;
           }
       fflush (stdout) ;
     }
-    
-  int main (int argc, char *argv[], char **envp)
+
+int main (int argc, char *argv[], char **envp)
     {
 #ifdef _OSK
       struct sgbuf sttynew ;
@@ -484,7 +483,9 @@ void set_verb (int i) ;
 #ifdef _OSK
       unsigned pollslp ;
 #endif
-
+#ifdef	LINUX
+      struct timespec rqtp, rmtp ;
+#endif
 
        
       char filename[CFGWIDTH] ;
@@ -606,7 +607,7 @@ void set_verb (int i) ;
 	{
 		log_mode = CS_LOG_MODE_TO_LOGFILE;
 	} 
-        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL || strcmp(log_dir,".")==0 || strlen(log_type)==0) 
+        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL) 
 	{
 		log_mode = CS_LOG_MODE_TO_STDOUT;
 	} 
@@ -744,7 +745,16 @@ void set_verb (int i) ;
       setupbuffers () ;
    
 /* Allow access to service queue */
-      if (semop(semid, &notbusy, 0) == ERROR)
+	/*IGD -> was  if (semop(semid, &notbusy, 1) == ERROR)
+	 * The third argument is the number of elements in the structure
+	 *  of the third argument. Setting it to zero causes
+	 * system EINVAL under Linux
+	 **************************************************/    
+#if defined (LINUX)     
+	if (semop(semid, &notbusy, 1) == ERROR) 
+#else  /* IGD 03/09/01 bug fixed : was elif */
+	if (semop(semid, &notbusy, 1) == ERROR)
+#endif
           {
             LogMessage (CS_LOG_TYPE_ERROR, "Could not set semaphore ID %d to not busy, exiting", semid) ;
             exit (12) ;
@@ -829,8 +839,8 @@ void set_verb (int i) ;
 
             memset ((pchar) &serv_addr, '\0',sizeof(serv_addr)) ;
             serv_addr.sin_family = AF_INET ;
-            serv_addr.sin_port = htons( (unsigned short)atoi(ipport)) ;
-            serv_addr.sin_addr.s_addr = htonl(INADDR_ANY) ;
+            serv_addr.sin_port =  htons((unsigned short)atoi(ipport)) ;
+            serv_addr.sin_addr.s_addr = INADDR_ANY ;
 
             if (bind(sockfd, (psockaddr) &serv_addr, sizeof(serv_addr)) < 0)
                 {
@@ -914,7 +924,18 @@ void set_verb (int i) ;
    service queue, So make sure we don't die on it, just exit sleep.
 */
 
-      signal (SIGALRM, SIG_IGN) ;
+#ifdef _OSK
+      signal (SIGALRM, SIG_IGN) ;*/
+#else
+      {
+      struct sigaction action;
+      /* Set up a permanently installed signal handler for SIG_ALRM. */
+      action.sa_handler = cs_sig_alrm;
+      action.sa_flags = 0;
+      sigemptyset (&(action.sa_mask));
+      sigaction (SIGALRM, &action, NULL);
+      }
+#endif
       signal (SIGPIPE, SIG_IGN) ; 
 
 /* Intercept various abort type signals so they close the socket, which the OS
@@ -959,6 +980,10 @@ void set_verb (int i) ;
       if (linkstat.ultraon)
           request_link () ;
 #ifdef SOLARIS2
+      rqtp.tv_sec = (1000 * polltime) / 1000000000 ;
+      rqtp.tv_nsec = (1000 * polltime) % 1000000000 ;
+#endif
+#ifdef LINUX
       rqtp.tv_sec = (1000 * polltime) / 1000000000 ;
       rqtp.tv_nsec = (1000 * polltime) % 1000000000 ;
 #endif
@@ -1186,6 +1211,8 @@ void set_verb (int i) ;
               }
 #ifdef SOLARIS2
           nanosleep (&rqtp, &rmtp) ; 
+#elif defined LINUX
+	  nanosleep (&rqtp, &rmtp) ;
 #elif defined _OSK
           tsleep (pollslp) ;
 #else
