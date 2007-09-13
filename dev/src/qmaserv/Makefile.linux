@@ -13,7 +13,7 @@
 #       veryclean
 #       install
 #
-BINDIR  = ../bin
+BINDIR  = ../bin/Linux
 
 ALL     = cserv lib330 qmaserv2 
 
@@ -34,6 +34,6 @@ veryclean:
 	done
 
 install:
-	for dir in qmaserv ; do \
+	for dir in qmaserv2 ; do \
 		(cd $$dir; make -f Makefile.linux BINDIR=../$(BINDIR) install); \
 	done
