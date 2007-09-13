@@ -16,6 +16,7 @@
  *
  * Modifications:
  *   13 Nov 2006 - HJS - Ripped out all QMA related code
+ *   24 Aug 2007 - DSN - Change from SIG_IGN to signal handler for SIGALRM.
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -50,6 +51,7 @@ extern "C" {
 #include "cserv.h"
 #include "clink.h"
 #include "srvc.h"
+void cs_sig_alrm (int signo);
 }
 
 #ifdef linux
@@ -184,7 +186,13 @@ void initializeSignalHandlers() {
   // service queue. Make sure we don't die on it, just exit sleep.
   //
 
-  signal (SIGALRM, SIG_IGN) ;
+      struct sigaction action;
+      /* Set up a permanently installed signal handler for SIG_ALRM. */
+      action.sa_handler = cs_sig_alrm;
+      action.sa_flags = 0;
+      sigemptyset (&(action.sa_mask));
+      sigaction (SIGALRM, &action, NULL);
+
   signal (SIGPIPE, SIG_IGN) ;
 
   //
