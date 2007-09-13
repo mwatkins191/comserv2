@@ -19,24 +19,24 @@ ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
 ALL	 =  $(ALLLIBS) $(ALLPROGS)
 
 all: 	
-	for dir in $(ALL) ; do \
+	for dir in $(ALLPROGS) ; do \
 		echo BUILD for $$dir ... ; \
 		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
 
 solaris: 	
-	for dir in $(ALL) ; do \
+	for dir in $(ALLPROGS) ; do \
 		echo BUILD for $$dir ... ; \
 		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
 
 clean:
-	for dir in $(ALL) ; do \
+	for dir in $(ALLPROGS) ; do \
 		(cd $$dir; make -f $(MAKEFILE) clean); \
 	done
 
 veryclean:
-	for dir in $(ALL) ; do \
+	for dir in $(ALLPROGS) ; do \
 		(cd $$dir; make -f $(MAKEFILE) veryclean); \
 	done
 
