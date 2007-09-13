@@ -1,20 +1,28 @@
 #include "linux.h"
 
+/*
+Edit History:
+   Ed Date      By  Changes
+   -- --------- --- ---------------------------------------------------
+    1 ?? ??? ?? ??? Initial coding.
+    2 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+*/
+
 short flip2( short shToFlip ) {
 
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
  short shSave1, shSave2;
 
         shSave1 = ((shToFlip & 0xFF00) >> 8);
         shSave2 = ((shToFlip & 0x00FF) << 8);
         return( shSave1 | shSave2 );
-#else   /*if it is not LINUX-ported version just return input*/
+#else   /*if it is not little-endian version just return input*/
        return (shToFlip);
 #endif
 }
 
 int flip4( int iToFlip ) {
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
 int iSave1, iSave2, iSave3, iSave4;
 
         iSave1 = ((iToFlip & 0xFF000000) >> 24);
@@ -23,7 +31,7 @@ int iSave1, iSave2, iSave3, iSave4;
         iSave4 = ((iToFlip & 0x000000FF) << 24);
 
         return( iSave1 | iSave2 | iSave3 | iSave4 );
-#else    /*if it is not LINUX-ported version just return input*/
+#else    /*if it is not little-endian version just return input*/
        return (iToFlip);
 #endif
 }

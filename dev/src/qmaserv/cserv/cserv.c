@@ -6,7 +6,6 @@
  * Purpose  :
  *   This is a port of the comserv main program (server.c) to a subroutine
  *   function. The subroutine version should be callable from a C++ program.
- *   that program.
  *
  * Author   :
  *  Phil Maechling
@@ -81,13 +80,14 @@ Edit History:
    29  8 Jan 98 WHO lockfile stuff doesn't apply to OS9 version.
    30 23 Jan 98 WHO Add link_retry variable to use with linkpoll.
    31  9 Nov 99 IGD Porting to SuSE 6.1 LINUX begins
-      10 Nov 99 IGD A third parameter in semop set to 1 instead of 0
-       6 Dec 00 IGD The above change is #ifdef'ed for Linux only for full compatibility
+   32 10 Nov 99 IGD A third parameter in semop set to 1 instead of 0
+   33  6 Dec 00 IGD The above change is #ifdef'ed for Linux only for full compatibility
 			with the Solaris version with the version 30	
-       8 Sep 00 KIM Change timespec definition struct timespec var
-       8 Sep 00 KIM Change ipaddr, ipaddr type conversion
-       7 Dec 00 IGD Changes are incorporated into the root Linux version
-   33 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
+   34  8 Sep 00 KIM Change timespec definition struct timespec var
+   35  8 Sep 00 KIM Change ipaddr, ipaddr type conversion
+   36  7 Dec 00 IGD Changes are incorporated into the root Linux version
+   37 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
+   38 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
 */           
 #include <stdio.h>
 #include <errno.h>
@@ -147,7 +147,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 2
+#define EDITION 37
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -711,7 +711,7 @@ int comserv_init (char* station_code)
 #if defined (LINUX)     
 	if (semop(semid, &notbusy, 1) == ERROR) 
 #else  /* IGD 03/09/01 bug fixed : was elif */
-	if (semop(semid, &notbusy, 0) == ERROR)
+	if (semop(semid, &notbusy, 1) == ERROR)
 #endif
           {
             fprintf (stderr, "Could not set semaphore ID %d to not busy\n", semid) ;
@@ -913,13 +913,8 @@ int comserv_init (char* station_code)
                 }
             memset ((pchar) &serv_addr, sizeof(serv_addr), 0) ;
             serv_addr.sin_family = AF_INET ;
-#if defined (LINUX)                                   /* CHANGED BY KIM */
             serv_addr.sin_addr.s_addr = INADDR_ANY;
-            serv_addr.sin_port = flip2(atoi(ipport)) ;
-#else
-            serv_addr.sin_addr.s_addr = htonl(INADDR_ANY) ;
-            serv_addr.sin_port = htons(atoi(ipport)) ;
-#endif
+            serv_addr.sin_port = htons((unsigned short)atoi(ipport));
             ruflag = 1 ; /* turn on REUSE option */
             if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *) &ruflag, sizeof(ruflag)) < 0)
                 {
@@ -951,13 +946,8 @@ int comserv_init (char* station_code)
                 { /* who to send packets to */
                   memset ((pchar) &cli_addr, sizeof(cli_addr), 0) ;
                   cli_addr.sin_family = AF_INET ;
- #ifdef LINUX                                    /* CHANGED BY KIM */
-                  cli_addr.sin_addr.s_addr = (inet_addr(ipaddr)) ;
-                  cli_addr.sin_port = flip2(atoi(ipport)) ;
-#else
-                  cli_addr.sin_addr.s_addr =htonl(inet_addr(ipaddr)) ;
-                  cli_addr.sin_port = htons(atoi(ipport)) ;
-#endif
+                  cli_addr.sin_addr.s_addr = inet_addr(ipaddr) ;
+                  cli_addr.sin_port = htons((unsigned short)atoi(ipport)) ;
                   path = sockfd ; /* fake it being opened */
                 }
               else

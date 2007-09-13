@@ -108,6 +108,7 @@ Edit History:
 		    endian-order in the shared memory if this compilation flag is set	 	
       17 Mar 01 IGD Header order bits (7 and 8) are in the I/O and clock flags byte (see comments for
                     set_byte_order_SEED_IO_BYTE() ).
+ 30   24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
  	 */
 #include <stdio.h>
 #include <errno.h>
@@ -150,7 +151,7 @@ Edit History:
 /* PJM - QMA Use this label to comment out unwanted sections */
 #define QMA
 
-#if defined (LINUX)
+#ifdef	LINUX
 #include "unistd.h"
 #ifndef FIRSTDATA       /* IGD 03/05/01 Add */
 #define FIRSTDATA 56
@@ -163,7 +164,7 @@ Edit History:
 #define SET_LITTLE_ENDIAN 0  /* of fixed SEED header */
 
 
-short VER_COMLINK = 29 ;
+short VER_COMLINK = 30 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -316,7 +317,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
         }
     }
 
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
   long cserv_crccalc (pchar b, short len)
     {
       complong crc ;
@@ -888,7 +889,7 @@ int comlink_dataQueueBlocking() {
       long *pl ;
       char seedst[5] ;
       char s1[64], s2[64] ;
-# if (defined LINUX)
+#ifdef	LITTLE_ENDIAN
       pchar tmpa;          /* IGD tmp byte-swapping array */
       timing * tmp_timing; /* IGD 03/05/01 tmp Byte-swapping pointer for blockette 500 */
       murdock_detect *detm;
@@ -1376,15 +1377,17 @@ int comlink_dataQueueBlocking() {
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedheader (&dbuf.data_buf.cr.h, pseed) ; /* convert header to SEED */
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
-#if defined (_BIG_ENDIAN_HEADER)	/* IGD 03/03/01 */
+#ifdef	LITTLE_ENDIAN
+#ifdef	_BIG_ENDIAN_HEADER	/* IGD 03/03/01 */
                    /*
-                    * If a user requested to store an MSEED header in big-endian byte order on Linux
+                    * If a user requested to store an MSEED header in big-endian byte order on little_endian
                     * system, we are going to swap back some variables to big-endian order
                     *	IGD 03/02-09/01
                     */
                     flip_fixed_header(pseed);	   	
                     pseed->deb.blockette_type = flip2(pseed->deb.blockette_type);
                     pseed->deb.next_offset  = flip2(pseed->deb.next_offset);
+#endif
 #endif
 		
                      if (rambling)
@@ -1439,18 +1442,20 @@ int comlink_dataQueueBlocking() {
                     seedsequence (&pbr->hdr, flip4(*pl) ) ; /*IGD 03/05/01 flip4 */
                     pseed = (pvoid) pbr;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	LITTLE_ENDIAN
 #ifndef _BIG_ENDIAN_HEADER
                     /* IGD 03/05/01
                      * If this code is executed on little-endian processor,
 		     * pbr->hdr structure here is all BIG_ENDIAN.
                      * We will byte-swap some members of pbr structure if:
-		     * 1) The program is compiled with -DLINUX flag;
+		     * 1) The program is compiled with -DLITTLE_ENDIAN flag;
                      * 2) It is not compiled with -D_BIG_ENDIAN_HEADER compilation flag
-                     * Note that the check for -DLINUX flag is done inside flip2()/flip4()
+                     * Note that the check for -DLITTLE_ENDIAN flag is done inside flip2()/flip4()
 		     */
                     flip_fixed_header(pseed);	   						
                     pbr->bmin.data_offset = flip2(pbr->bmin.data_offset);
                     pbr->bmin.record_num = flip4(pbr->bmin.record_num);
+#endif
 #endif
                     memcpy ((pchar) &freebuf->user_data.data_bytes, (pchar) pbr, 512) ; /* copy record into buffer */
                     break ;
@@ -1825,8 +1830,8 @@ int comlink_dataQueueBlocking() {
 			  preply->total_seg = flip2(preply->total_seg);	 /*IGD flip2 back here */
                           if (full)
                               {
-				/* IGD Time to do byte swapping if we are with  LINUX*/
-#if defined (LINUX)
+				/* IGD Time to do byte swapping if we are with little-endian */
+#ifdef	LITTLE_ENDIAN
 				/* IGD: We are going to swap several elements of pultra here */
 				/* IGD 01/21/01 swapping of pultra header is moved here */
 				/* because at this place we are guaranteed to byteswap header only once */
@@ -1893,7 +1898,7 @@ int comlink_dataQueueBlocking() {
                                 j++ ;
                           if (full)
                               {
-#if defined (LINUX) /* IGD Need to do byte swapping in memory */
+#ifdef	LITTLE_ENDIAN	/* IGD Need to do byte swapping in memory */
                                 flip_detectors(ta)  ;
 #endif
                                 detavail_loaded = TRUE ;
@@ -2022,7 +2027,7 @@ int comlink_dataQueueBlocking() {
                           pcom = (pvoid) clients[combusy].outbuf ;
                           preply = &dbuf.data_buf.cy ;
                           memcpy ((pchar) &replybuf, (pchar) &preply->bytes, flip2(preply->byte_count)) ;  /*IGD flip2 here */
-#if defined(LINUX)
+#ifdef	LITTLE_ENDIAN
                           if ((replybuf.ces.dp_seq = pcom->command_tag) &&   /*here is a bug*/
                               (pcom->completion_status == CSCS_INPROGRESS))    /*pointed by*/
 #else /*IGD 09/03/01 Bug fixed : was elif */
@@ -2350,7 +2355,7 @@ int comlink_dataQueueBlocking() {
     }
 
 /******************************************************************************
-                 BYTE-SWAPPING FUNCTIONS for LINUX vesion
+                 BYTE-SWAPPING FUNCTIONS for little-endian vesion
 		Ilya Dricker, (i.dricker@isti.com) ISTI
 *******************************************************************************/
 
@@ -2495,7 +2500,7 @@ int comlink_dataQueueBlocking() {
    ******************************************/
   char process_set_byte_order_SEED_IO_BYTE(char myByte)	
   {
-#ifndef LINUX
+#ifndef LITTLE_ENDIAN
 	myByte = set_byte_order_SEED_IO_BYTE(myByte, SET_BIG_ENDIAN);
 #else
 #ifdef _BIG_ENDIAN_HEADER
