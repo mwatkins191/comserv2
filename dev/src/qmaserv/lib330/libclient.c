@@ -21,6 +21,8 @@ Edit History:
    Ed Date       By  Changes
    -- ---------- --- ---------------------------------------------------
     0 2006-09-10 rdr Created
+    1 2007-07-16 rdr Fix physical interface status comparisons.
+    2 2007-09-04 rdr Fix size of tstat_log memcpy.
 */
 #ifndef q330types_h
 #include "q330types.h"
@@ -230,26 +232,26 @@ begin
           case SRB_LOG4 :
             if (bitnum == ((longword)SRB_LOG1 + q330->par_create.q330id_dataport))
               then
-                memcpy(buf, addr(q330->share.stat_log), sizeof(tlog)) ; /* MY logical port status */
+                memcpy(buf, addr(q330->share.stat_log), sizeof(tstat_log)) ; /* MY logical port status */
               else
                 result = LIBERR_INVSTAT ;
             break ;
           case SRB_SER1 :
-            if (q330->q330phy == 1)
+            if (q330->q330phy == PP_SER1)
               then
                 memcpy(buf, addr(q330->share.stat_serial), sizeof(tstat_serial)) ;
               else
                 result = LIBERR_INVSTAT ; /* Serial Port 1 Status */
             break ;
           case SRB_SER2 :
-            if (q330->q330phy == 2)
+            if (q330->q330phy == PP_SER2)
               then
                 memcpy(buf, addr(q330->share.stat_serial), sizeof(tstat_serial)) ;
               else
                 result = LIBERR_INVSTAT ; /* Serial Port 2 Status */
             break ;
           case SRB_ETH :
-            if (q330->q330phy == 0)
+            if (q330->q330phy == PP_ETH)
               then
                 memcpy(buf, addr(q330->share.stat_ether), sizeof(tstat_ether)) ;
               else

@@ -27,7 +27,7 @@ Edit History:
 #ifndef libclient_h
 /* Flag this file as included */
 #define libclient_h
-#define VER_LIBCLIENT 2
+#define VER_LIBCLIENT 4
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

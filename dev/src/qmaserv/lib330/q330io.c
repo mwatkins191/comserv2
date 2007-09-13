@@ -27,6 +27,10 @@ Edit History:
     3 2006-10-31 rdr Add setting of current_ip and current_port for serial operation.
     4 2006-12-18 rdr Use ctrlport and dataport to store current port numbers instead of
                      host_ctrlport and host_dataport.
+    5 2007-06-26 rdr Fix mask conversion in function decode for base-96.
+    6 2007-06-27 rdr Fix return type of cksum function. Change method of setting serial baud.
+                     Initialize control character array. Add conditional for flow control
+                     constants.
 */
 #ifndef q330io_h
 #include "q330io.h"
@@ -388,10 +392,10 @@ typedef byte tenc[4] ;
   m = *pmask++ ;
   if ((m >= '0') land (m <= '9'))
     then
-      mask = (mask * 10) + (m - 0x30) ;
+      mask = (mask shl 4) + (m - 0x30) ;
   else if ((m >= 'A') land (m <= 'F'))
     then
-      mask = (mask * 10) + (m - 0x37) ;
+      mask = (mask shl 4) + (m - 0x37) ;
     else
       return -1 ; /* not valid */
   psrc = (pointer) pmask ; /* skipped over encoding */
@@ -526,7 +530,7 @@ begin
 end
 
 #ifndef OMIT_SERIAL
-static integer cksum(ppsuedo psuedo, pointer data, integer count)
+static word cksum(ppsuedo psuedo, pointer data, integer count)
 begin
   word *pw ;
   longint csum ;
@@ -906,6 +910,7 @@ begin
   struct termios sttynew ;
   struct termios sttyold ;
   longword cflag ;
+  integer err ;
 #endif
   word port ;
   boolean isd ;
@@ -977,15 +982,19 @@ begin
         cflag = 0 ;
         if (q330->par_register.serial_flow)
           then
+#ifdef CCTS_OFLOW
             cflag = cflag or CCTS_OFLOW or CRTS_IFLOW ;
+#else
+            cflag = cflag or CRTSCTS ;
+#endif
         sttynew.c_cflag = CS8 or CREAD or CLOCAL or cflag ;
         sttynew.c_lflag = NOFLSH ;
+        memset (addr(sttynew.c_cc), _POSIX_VDISABLE, NCCS) ;
         sttynew.c_cc[VMIN] = 0 ;
         sttynew.c_cc[VTIME] = 0 ;
-        sttynew.c_ispeed = q330->par_register.serial_baud ;
-        sttynew.c_ospeed = q330->par_register.serial_baud ;
+        err = cfsetspeed(addr(sttynew), q330->par_register.serial_baud) ;
 /* Configure port using new settings */
-        tcsetattr(q330->comid, TCSANOW, addr(sttynew)) ;
+        err = tcsetattr(q330->comid, TCSANOW, addr(sttynew)) ;
 #endif
         q330->escpend = FALSE ;
         q330->bufptr = addr(q330->commands.cmsgin.headers) ;

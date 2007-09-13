@@ -25,6 +25,7 @@ Edit History:
     2 2006-11-28 rdr For Apple version lseek only seems to return 0 for success rather
                      than the new file position. For all versions if creating a flle,
                      truncate length to zero.
+    3 2007-07-05 rdr Add some bulletproffing to zpad and jul_string.
 */
 #ifndef libsupport_h
 #include "libsupport.h"
@@ -88,7 +89,7 @@ begin
 
   len = strlen(s) ;
   diff = lth - len ;
-  if (diff)
+  if (diff > 0)
     then
       begin
         memmove (addr(s[diff]), addr(s[0]), len + 1) ; /* shift existing string right */
@@ -223,34 +224,35 @@ begin
   tsystemtime g ;
   string7 s1 ;
 
-  lib330_gregorian (jul, addr(g)) ;
-/* Original Pascal:
-  jul_string = inttostr(g.wyear) + '-' + zpad(inttostr(g.wmonth), 2) +
-    '-' + zpad(inttostr(g.wday), 2) + ' ' + zpad(inttostr(g.whour), 2) +
-    ':' + zpad(inttostr(g.wminute), 2) + ':' + zpad(inttostr(g.wsecond), 2)
-*/
-  result[0] = 0 ;
-  sprintf(result, "%d", g.wyear) ;
-  strcat(result, "-") ;
-  sprintf(s1, "%d", g.wmonth) ;
-  zpad(s1, 2) ;
-  strcat(result, s1) ;
-  strcat(result, "-") ;
-  sprintf(s1, "%d", g.wday) ;
-  zpad(s1, 2) ;
-  strcat(result, s1) ;
-  strcat(result, " ") ;
-  sprintf(s1, "%d", g.whour) ;
-  zpad(s1, 2) ;
-  strcat(result, s1) ;
-  strcat(result, ":") ;
-  sprintf(s1, "%d", g.wminute) ;
-  zpad(s1, 2) ;
-  strcat(result, s1) ;
-  strcat(result, ":") ;
-  sprintf(s1, "%d", g.wsecond) ;
-  zpad(s1, 2) ;
-  strcat(result, s1) ;
+  if (jul < 0)
+    then
+      strcpy(result, "Invalid Time       ") ;
+    else
+      begin
+        lib330_gregorian (jul, addr(g)) ;
+        result[0] = 0 ;
+        sprintf(result, "%d", g.wyear) ;
+        strcat(result, "-") ;
+        sprintf(s1, "%d", g.wmonth) ;
+        zpad(s1, 2) ;
+        strcat(result, s1) ;
+        strcat(result, "-") ;
+        sprintf(s1, "%d", g.wday) ;
+        zpad(s1, 2) ;
+        strcat(result, s1) ;
+        strcat(result, " ") ;
+        sprintf(s1, "%d", g.whour) ;
+        zpad(s1, 2) ;
+        strcat(result, s1) ;
+        strcat(result, ":") ;
+        sprintf(s1, "%d", g.wminute) ;
+        zpad(s1, 2) ;
+        strcat(result, s1) ;
+        strcat(result, ":") ;
+        sprintf(s1, "%d", g.wsecond) ;
+        zpad(s1, 2) ;
+        strcat(result, s1) ;
+      end
   return result ;
 end
 
@@ -457,7 +459,7 @@ begin
       flags or O_RDONLY ;
   rwmode = S_IRUSR or S_IWUSR or S_IRGRP or S_IROTH ;
   cf = open (path, flags, rwmode) ;
-  return cf ; 
+  return cf ;
 end
 
 void lib_file_close (tfile_handle desc)

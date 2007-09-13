@@ -26,6 +26,11 @@ Edit History:
                      for this data source
     3 2006-12-18 rdr Use dataport instead of host_dataport.
     4 2007-03-12 rdr Purge continuity when first start of second blockette is received.
+    5 2007-06-26 rdr Change data record debugging to show DSN instead of ACK. If get a
+                     sequence gap then set data_timetag to -1 to avoid processing blockettes
+                     before a timing blockette is received.
+    6 2007-07-06 rdr Data_timetag set to 0 instead of -1, anything less than +1 is considered
+                     not yet set. Clear lasttime at the same time.
 */
 #ifndef libtypes_h
 #include "libtypes.h"
@@ -301,6 +306,8 @@ begin
                         seqgap_occurred = TRUE ;
                       end
                 end
+            q330->lasttime = 0 ;
+            paqs->data_timetag = 0 ;
           end
       else if (q330->lastseq == 0)
         then
@@ -1128,6 +1135,8 @@ begin
   integer i, j, k ;
   string95 s, s1 ;
   ppkt_buf pbuf ;
+  pbyte p ;
+  longword dsn ;
 
   if (lnot q330->link_recv)
     then
@@ -1149,8 +1158,10 @@ begin
         packet_time (now(), addr(s)) ;
         command_name (q330->recvhdr.command, addr(s1)) ;
         strcat (s, s1) ;
-        sprintf(s1, ", Lth=%d Seq=%d Ack=%d", q330->recvhdr.datalength, q330->recvhdr.sequence,
-                q330->recvhdr.acknowledge) ;
+        p = (pointer) ((integer)(addr(q330->datain.qdp)) + QDP_HDR_LTH) ;
+        dsn = loadlongword(addr(p)) ;
+        sprintf(s1, ", Lth=%d Seq=%d DSN=%d", q330->recvhdr.datalength, q330->recvhdr.sequence,
+                dsn) ;
         strcat(s, s1) ;
         if (good)
           then
