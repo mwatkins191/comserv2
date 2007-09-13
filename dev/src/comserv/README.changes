@@ -1,3 +1,20 @@
+24 August 2007 - DOug Neuhauser:
+
+  Changes made to handle SIGALRM between client and servers.
+    The nanosleep() call in Solaris is not interrupted and terminated
+    when SIGALRM is ignored.  Therefore, the client and server were
+    only handling requestes from the other when their nanosleep()
+    normally terminated, NOT when the process received a SIGALRM.
+
+    Instead of ignoring SIGALRM (which apparently did work under
+    SUNOS and perhaps earlier Solaris versions, or versions with 
+    usleep()), I added signal handling for SIGLARM so that nanosleep()
+    would be interrupted and return EINTR instead of waiting for the
+    entire sleep time to finish.  Note that I used sigaction() instead
+    signal(), since I was able to demonstrate that signal() really IS
+    unreliable, and that it cannot properly handle all signals in 
+    an SVR4 environment (eg Solaris).
+
 15 June 2004 - Paul Friberg removed the PASCAL code entirely
 05 May 2004 - Paul Friberg - merged comserv and comserv4linux to one code base.
 
