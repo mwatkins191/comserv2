@@ -27,6 +27,7 @@ Edit History:
    15 11 Jun 97 WHO Fix Solaris2/OSK conditionals for sleeping.e
    16 18 Feb 07 DSN Fix client detach from server shared memory.
    17 24 Aug 07 DSN Change from SIG_IGN to signal handler for SIGALRM.
+   18 13 Sep 07 PAF moved DSN's signal handler to beginning of file
 */
 #include <stdio.h>
 #include <errno.h>
@@ -53,6 +54,15 @@ Edit History:
 #ifdef SOLARIS2
 #include <time.h>
 #endif
+
+#ifndef	_OSK
+void cs_sig_alrm (int signo)
+{
+    /* nothing to do, just returning wakes up nanosleep. */
+}
+#endif
+
+
 
   void cs_detach (pclient_struc client, short station_number);
 
@@ -586,12 +596,4 @@ Edit History:
       while (client->curstation != old_station) ;
       return NOCLIENT ;      
     }
-
-#ifndef	_OSK
-void cs_sig_alrm (int signo)
-{
-    /* nothing to do, just returning wakes up nanosleep. */
-}
-#endif
-
 
