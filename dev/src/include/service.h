@@ -23,6 +23,7 @@ Edit History:
     8  3 Dec 96 WHO Add CSIM_BLK, BLKQ, and change CHAN.
     9 27 Jul 97 WHO Add CSCM_FLOOD_CTRL.
    10  3 Nov 97 WHO More stations for Unix version, add c++ cond.
+   11 24 Aug 07 DSN Added cs_sig_alrm function.
 */
 /* NOTE : SEED data structure definitions (seedstrc.h) are not required
    to be used for gaining access to the server. This allows a client
@@ -346,6 +347,13 @@ extern "C" {
 /* try to send an attach request to the server */
   void cs_attach (pclient_struc client, short station_number) ;
 
+#ifndef	_OSK
+/* handle SIGARM signals. */
+  void cs_sig_alrm (int signo);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
+
+
