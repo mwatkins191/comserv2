@@ -2,6 +2,13 @@
 #define __GLOBAL_H__
 
 
+/* 
+
+	2007-09-13 - added DSN mods for signal trapping, cserv little endian changes from DSN
+			and new lib330 from Bob R.
+
+
+*/
  
 #include "Logger.h"
 #include "lib330Interface.h"
