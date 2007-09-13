@@ -14,17 +14,18 @@ Edit History:
     3 28 Feb 95 WHO Start of conversion to run on OS9.
     4 17 Oct 97 WHO Add VER_STUFF
     5  9 Nov 99 IGD Porting to SuSE 6.1 LINUX begins
-      12 Nov 99 IGD Add up byte-swapping calls fip2 and flip4 required for
+    6 12 Nov 99 IGD Add up byte-swapping calls fip2 and flip4 required for
                     i386 architecture porting (calls are derived from version
                     3 of timeutil.c modified for Linux by Hanka et al.) 
-      17 Nov 99 IGD Modified flip2() and flip4() so that flipX() does it
+    7 17 Nov 99 IGD Modified flip2() and flip4() so that flipX() does it
                     flipping job if LINUX flag is defined and returns input
                     unchanged otherwise. This is done in order not to mess up
                     the rest of the code with #ifdefs   
-      29 Nov 99 IGD Modified str_long (if LINUX flag is defined)    
-       9 Dec 99 IGD Add up  flip4array(long *in, short bytes) to swap long and int 
+    8 29 Nov 99 IGD Modified str_long (if LINUX flag is defined)    
+    9  9 Dec 99 IGD Add up  flip4array(long *in, short bytes) to swap long and int 
 		    data arrays 4 byte data array in case of NUXI problem
-    6   5 Mar 01 IGD Add float flip_float(float) byte-swapping routine
+   10  5 Mar 01 IGD Add float flip_float(float) byte-swapping routine
+   11 24 Aug 07 DSN Port to LINUX, and separate LITTLE_ENDIAN from LINUX logic.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -41,7 +42,7 @@ Edit History:
 #endif
 #include "dpstruc.h"
 
-short VER_STUFF = 6 ;
+short VER_STUFF = 11 ;
 
 /* Return seconds (and parts of a second) since 1970 */
   double dtime (void) 
@@ -74,7 +75,7 @@ short VER_STUFF = 6 ;
       for (i = 0 ; i < 4 ; i++)
         if (i < strlen(name))
             { /* move characters left, add on right */
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
               temp.l = temp.l >> 8 ; /*IGD - that how it should work for little-endian machines */
 #else
               temp.l = temp.l << 8 ;
@@ -198,19 +199,19 @@ short VER_STUFF = 6 ;
 
 short flip2( short shToFlip ) {
 
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
  short shSave1, shSave2;
  
  	shSave1 = ((shToFlip & 0xFF00) >> 8);
  	shSave2 = ((shToFlip & 0x00FF) << 8); 	
  	return( shSave1 | shSave2 );
-#else   /*if it is not LINUX-ported version just return input*/
+#else   /*if it is not little-endian version just return input*/
        return (shToFlip);
 #endif
 }
 
 int flip4( int iToFlip ) {
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
 int iSave1, iSave2, iSave3, iSave4;
 
 	iSave1 = ((iToFlip & 0xFF000000) >> 24);
@@ -219,7 +220,7 @@ int iSave1, iSave2, iSave3, iSave4;
 	iSave4 = ((iToFlip & 0x000000FF) << 24); 
 
 	return( iSave1 | iSave2 | iSave3 | iSave4 );
-#else    /*if it is not LINUX-ported version just return input*/
+#else    /*if it is not little-endian version just return input*/
        return (iToFlip);
 #endif
 }
@@ -229,7 +230,7 @@ int iSave1, iSave2, iSave3, iSave4;
  * Modified on 03/09/01
  */
 float flip_float(float fToFlip)	{
-#if defined (LINUX)
+#ifdef	LITTLE_ENDIAN
     union {
 		float fl;		
 		char p[4];

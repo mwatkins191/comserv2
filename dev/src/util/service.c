@@ -26,6 +26,7 @@ Edit History:
    14  4 Dec 96 WHO Fix sels[CHAN] not being initialized.
    15 11 Jun 97 WHO Fix Solaris2/OSK conditionals for sleeping.e
    16 18 Feb 07 DSN Fix client detach from server shared memory.
+   17 24 Aug 07 DSN Change from SIG_IGN to signal handler for SIGALRM.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -105,16 +106,16 @@ Edit History:
            ((srvr->svcreqs[i].clientname.l == 0) |
             (srvr->svcreqs[i].clientname.l == client->myname.l)))
             {
-              semop (srvr->server_semid, &busy, 0) ;
+              semop (srvr->server_semid, &busy, 1) ;
               if (srvr->svcreqs[i].clientseg == NOCLIENT)
                   {
                     srvr->svcreqs[i].clientseg = client->client_shm ;
-                    semop (srvr->server_semid, &notbusy, 0) ; /* now in queue */
+                    semop (srvr->server_semid, &notbusy, 1) ; /* now in queue */
                     found = TRUE ;
                     break ;
                   }
                 else
-                  semop (srvr->server_semid, &notbusy, 0) ; /* Somebody filled my slot, try another */
+                  semop (srvr->server_semid, &notbusy, 1) ; /* Somebody filled my slot, try another */
             }
       if (! found)
           return CSCR_ENQUEUE ;
@@ -169,10 +170,10 @@ Edit History:
         }
       if (! client->done)
           {
-            semop (srvr->server_semid, &busy, 0) ;
+            semop (srvr->server_semid, &busy, 1) ;
             if (srvr->svcreqs[i].clientseg == client->client_shm) /* still valid */
                 srvr->svcreqs[i].clientseg = NOCLIENT ;
-            semop (srvr->server_semid, &notbusy, 0) ;
+            semop (srvr->server_semid, &notbusy, 1) ;
             return CSCR_TIMEOUT ;
           }
       curclient->last_good = dtime () ;
@@ -352,7 +353,16 @@ Edit History:
       seltype *psel ;
       comstat_rec *pcr ;
 
+#ifdef _OSK
       signal (SIGALRM, SIG_IGN) ;
+#else
+      struct sigaction action;
+      /* Set up a permanently installed signal handler for SIG_ALRM. */
+      action.sa_handler = cs_sig_alrm;
+      action.sa_flags = 0;
+      sigemptyset (&(action.sa_mask));
+      sigaction (SIGALRM, &action, NULL);
+#endif
 /* Figure out how large it needs to be for all stations, all values are double word aligned */  
       total = (sizeof(tclient_struc) + 7) & 0xFFFFFFF8 ;
       dsize = (sizeof(tdata_user) + 7) & 0xFFFFFFF8 ;
@@ -576,4 +586,12 @@ Edit History:
       while (client->curstation != old_station) ;
       return NOCLIENT ;      
     }
+
+#ifndef	_OSK
+void cs_sig_alrm (int signo)
+{
+    /* nothing to do, just returning wakes up nanosleep. */
+}
+#endif
+
 
