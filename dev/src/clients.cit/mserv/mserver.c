@@ -67,6 +67,8 @@ Edit History:
    37 24 Aug 07 DSN Port to LINUX, and separate LITTLE_ENDIAN from LINUX logic.
 		    Change from SIG_IGN to signal handler for SIGALRM.
 
+   38 19 Sep 07 PAF fixed some mods that got out of sync from version 35 from DSN
+
 	The intention of these changes to server are to create a version
 	of comserv that receives multicast messages and puts them into
 	the comserv ring buffers. The input messages are to be 512
@@ -132,7 +134,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 37
+#define EDITION 38
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -607,7 +609,8 @@ int main (int argc, char *argv[], char **envp)
 	{
 		log_mode = CS_LOG_MODE_TO_LOGFILE;
 	} 
-        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL) 
+        else if (strcasecmp(log_type, "STDOUT") == 0 || log_type==NULL || log_dir == NULL || strcmp(log_dir,".")==0 || strlen(
+log_type)==0) 
 	{
 		log_mode = CS_LOG_MODE_TO_STDOUT;
 	} 
