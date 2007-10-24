@@ -22,12 +22,18 @@ Edit History:
    -- ---------- --- ---------------------------------------------------
     0 2006-09-10 rdr Created
     1 2006-11-01 hjs Added support for linux and solaris
+    2 2007-03-14 fcs Added platform ENDIAN for slate computer
+    3 2007-10-11 paf Encapsulated endian.h include for Linux only
 */
 #ifndef platform_h
 #define platform_h
 
 #include <stdio.h>
 #include <math.h>
+
+#if defined(linux)
+#include <endian.h>
+#endif
 
 #if defined(__SVR4) && defined(__sun)
 #  define solaris
@@ -48,7 +54,12 @@ Edit History:
 #  define OMIT_SERIAL
 #endif
 
-
+//2 2007-03-14 fcs Added platform ENDIAN for slate computer
+#ifndef ENDIAN_LITTLE
+#  if __BYTE_ORDER == __LITTLE_ENDIAN
+#    define ENDIAN_LITTLE
+#  endif
+#endif
 
 
 #if defined (X86_WIN32)
