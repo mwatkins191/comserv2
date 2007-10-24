@@ -7,6 +7,7 @@
 	2007-09-13 - added DSN mods for signal trapping, cserv little endian changes from DSN
 			and new lib330 from Bob R.
 
+	2007-10-24 - added in slate computer endian inclusions and other changes from Frank Shelly
 
 */
  
