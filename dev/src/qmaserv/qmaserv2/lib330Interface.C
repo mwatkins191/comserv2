@@ -9,6 +9,12 @@
 
 double g_timestampOfLastRecord = 0;
 
+PacketQueue packetQueue;
+
+struct sockaddr_in mcastAddr;
+int mcastSocketFD;
+char multicastChannelList[256][5];
+
 Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   pmodules mods;
   tmodule *mod;

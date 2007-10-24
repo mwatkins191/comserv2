@@ -19,12 +19,6 @@ extern "C" {
 #include "ConfigVO.h"
 #include "PacketQueue.h"
 
-PacketQueue packetQueue;
-
-struct sockaddr_in mcastAddr;
-int mcastSocketFD;
-char multicastChannelList[256][5];
-
 class Lib330Interface {
  public:
   Lib330Interface(char *, ConfigVO configInfo);
