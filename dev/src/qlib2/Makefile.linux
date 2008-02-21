@@ -11,7 +11,7 @@ TARGET	= $(TARGET1)
 
 DIR	= qlib2
 
-SRCS	= qlib2_version.c drm_utils.c ms_utils.c ms_pack.c ms_unpack.c pack.c \
+SRCS	= qlib2_version.c drm_utils.c ms_utils.c ms_pack.c ms_pack2.c ms_unpack.c pack.c \
 	qda_utils.c qtime.c sdr_utils.c unpack.c qutils.c 
 
 
@@ -20,7 +20,7 @@ HDR =	qlib2.h
 HDRS =	qdefines.h msdatatypes.h timedef.h \
 	qsteim.h sdr.h qda.h seismo.h data_hdr.h \
 	qtime.h qutils.h qda_utils.h drm_utils.h sdr_utils.h \
-	ms_utils.h ms_pack.h pack.h ms_unpack.h unpack.h
+	ms_utils.h ms_pack.h ms_pack2.h pack.h ms_unpack.h unpack.h
 	
 FHDR =	qlib2.inc
 
