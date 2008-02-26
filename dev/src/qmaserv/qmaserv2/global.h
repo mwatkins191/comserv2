@@ -9,6 +9,8 @@
 
 	2007-10-24 - added in slate computer endian inclusions and other changes from Frank Shelly
 
+	2008-02-26 - added in new cLib330 from Certsoft (2008-02-25 version)
+
 */
  
 #include "Logger.h"
