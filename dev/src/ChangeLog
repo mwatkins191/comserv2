@@ -1,3 +1,12 @@
+
+New version 2008-02-26 Paul Friberg, Bob Busby, Bob Reimiller
+
+This new version uses qmaserv2 which uses the Certsoft cLib330 library and is
+much more robust than the older MountainAir (called qmaserv).
+
+
+----------------------------------
+
 Unified comserv distribution: 25 June 2004 - Paul Friberg, Doug Neuhauser, Bob Busby
 
 This version of comserv includes a unified version of the comserv
