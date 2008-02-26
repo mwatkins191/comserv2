@@ -1,5 +1,9 @@
 Sept 13, 2007  - updated with Doug Neuhauser's modifications, and latest C-lib330
 
+The version of cLib330 that was included with this build was 2007-09-04
+
+-----------------------older 2005 notes----------------------------
+
 This unified COMSERV bundle contains the comserv server and several clients
 which together provide a communication/data link with Quanterra Inc. digitizers.
 
