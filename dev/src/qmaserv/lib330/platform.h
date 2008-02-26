@@ -1,5 +1,5 @@
 /*   Platform specific system includes and definitions
-     Copyright 2006 Certified Software Corporation
+     Copyright 2006-2008 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -24,6 +24,7 @@ Edit History:
     1 2006-11-01 hjs Added support for linux and solaris
     2 2007-03-14 fcs Added platform ENDIAN for slate computer
     3 2007-10-11 paf Encapsulated endian.h include for Linux only
+    4 2008-02-25 rdr Make integer same size as pointer. Reworked Apple defs.
 */
 #ifndef platform_h
 #define platform_h
@@ -54,8 +55,8 @@ Edit History:
 #  define OMIT_SERIAL
 #endif
 
-//2 2007-03-14 fcs Added platform ENDIAN for slate computer
-#ifndef ENDIAN_LITTLE
+/* 2 2007-03-14 fcs Added platform ENDIAN for slate computer */
+#if ! defined(ENDIAN_LITTLE) && defined(linux)
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
 #    define ENDIAN_LITTLE
 #  endif
@@ -75,7 +76,8 @@ Edit History:
 #define word unsigned __int16 /* 16 bit unsigned */
 #define longint __int32 /* 32 bit signed */
 #define longword unsigned __int32 /* 32 bit unsigned */
-#define integer int /* 32 bit or larger signed, native type */
+#define integer __int32 /* 32 bit signed */
+#define uninteger unsigned __int32 /* 32 bit unsigned */
 #define single float /* 32 bit floating point */
 typedef HANDLE tfile_handle ;
 typedef struct _stat tfile_state ;
@@ -113,7 +115,13 @@ typedef struct _stat tfile_state ;
 #define word uint16_t /* 16 bit unsigned */
 #define longint int32_t /* 32 bit signed */
 #define longword uint32_t /* 32 bit unsigned */
-#define integer int /* 32 bit or larger signed, native type */
+#if defined(X86_UNIX64) || defined(__x86_64__)
+#define integer int64_t /* 64 bit signed, same size as pointer */
+#define uninteger uint64_t /* 64 bit unsigned, same size as pointer */
+#else
+#define integer int32_t /* 32 bit signed, same size as pointer */
+#define uninteger uint32_t /* 32 bit unsigned, same size as pointer */
+#endif
 #define single float /* 32 bit floating point */
 typedef integer tfile_handle ;
 typedef struct stat tfile_state ;
@@ -140,14 +148,20 @@ typedef struct stat tfile_state ;
 #include <sys/termios.h>
 #endif
 
-#define boolean unsigned char /* 8 bit unsigned, 0 or non-zero */
-#define shortint signed char /* 8 bit signed */
-#define byte unsigned char /* 8 bit unsigned */
-#define int16 short /* 16 bit signed */
-#define word unsigned short /* 16 bit unsigned */
-#define longint long /* 32 bit signed */
-#define longword unsigned long /* 32 bit unsigned */
-#define integer int /* 32 bit or larger signed, native type */
+#define boolean uint8_t /* 8 bit unsigned, 0 or non-zero */
+#define shortint int8_t /* 8 bit signed */
+#define byte uint8_t /* 8 bit unsigned */
+#define int16 int16_t /* 16 bit signed */
+#define word uint16_t /* 16 bit unsigned */
+#define longint int32_t /* 32 bit signed */
+#define longword uint32_t /* 32 bit unsigned */
+#if defined(__x86_64__)
+#define integer int64_t /* 64 bit signed, same size as pointer */
+#define uninteger uint64_t /* 64 bit unsigned, same size as pointer */
+#else
+#define integer int32_t /* 32 bit signed, same size as pointer */
+#define uninteger uint32_t /* 32 bit unsigned, same size as pointer */
+#endif
 #define single float /* 32 bit floating point */
 typedef integer tfile_handle ;
 typedef struct stat tfile_state ;
@@ -158,6 +172,7 @@ typedef struct stat tfile_state ;
 #ifdef __LITTLE_ENDIAN__
 #define ENDIAN_LITTLE
 #endif
+
 #endif
 
 /* at least on solaris, this is undefined */

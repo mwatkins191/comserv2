@@ -21,8 +21,11 @@ Edit History:
    Ed Date       By  Changes
    -- ---------- --- ---------------------------------------------------
     0 2006-10-13 rdr Created
-    1 2006-12-28 rdr Set/clear cfg_timer. Since the cfg_timer was added there is 
+    1 2006-12-28 rdr Set/clear cfg_timer. Since the cfg_timer was added there is
                      no need to flush configuration manually at startup.
+    2 2008-01-16 rdr Fix record length for CNP blockette data.
+    3 2008-02-25 rdr Don't clear cfg_timer unless final flush. cfg_lastwritten set
+                     to data time, not host time.
 */
 #ifndef OMIT_SEED
 #ifndef libopaque_h
@@ -77,10 +80,14 @@ begin
   pcom->blockette_index = 56 ;
   pcom->last_blockette = 48 ;
   pcom->blockette_count = 0 ;
-  if ((final) land (q->arc.amini_filter) land (q->arc.total_frames > 1))
+  if (final)
     then
-      flush_archive (paqs, q) ;
-  paqs->cfg_timer = 0 ;
+      begin
+        paqs->cfg_timer = 0 ;
+        if ((q->arc.amini_filter) land (q->arc.total_frames > 1))
+          then
+            flush_archive (paqs, q) ;
+      end
 end
 
 void add_cfg (paqstruc paqs, string7 *name, pointer buf, integer size,
@@ -165,7 +172,7 @@ begin
 
   q330 = paqs->owner ;
   maxsz = NONDATA_AREA - OPAQUE_HDR_SIZE ;
-  paqs->cfg_lastwritten = now() ;
+  paqs->cfg_lastwritten = paqs->data_timetag ;
   add_cfg (paqs, "GL", addr(q330->raw_global), RAW_GLOBAL_SIZE, 0, 0) ;
   add_cfg (paqs, "FX", addr(q330->raw_fixed), RAW_FIXED_SIZE, 0, 0) ;
   sprintf(s, "L%d", q330->par_create.q330id_dataport + 1) ;
@@ -307,7 +314,7 @@ begin
       pcom->last_sample = 0 ; /* End of stream */
     else
       inc(pcom->last_sample) ; /* to next in stream */
-  storeopaque (addr(p), addr(hdr), 3, pb, size - 4) ;
+  storeopaque (addr(p), addr(hdr), 5, pb, size - 4) ;
   pcom->blockette_index = (pcom->blockette_index + required + 3) and 0xFFFC ; /* longword align */
   inc(pcom->blockette_count) ;
 end

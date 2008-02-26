@@ -25,7 +25,7 @@ Edit History:
 #ifndef libopaque_h
 /* Flag this file as included */
 #define libopaque_h
-#define VER_LIBOPAQUE 1
+#define VER_LIBOPAQUE 3
 
 #ifndef OMIT_SEED
 /* Make sure libtypes.h is included */

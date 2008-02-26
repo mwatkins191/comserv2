@@ -29,6 +29,8 @@ Edit History:
                      indicate that new data has been added since last written to client.
                      If no new data hasn't been written to an existing record don't bother
                      client with useless update.
+    3 2008-02-11 rdr Adjust first_data_byte in seed header when data gets moved to make
+                     room for more blockettes.
 */
 #ifndef OMIT_SEED
 #ifndef libarchive_h
@@ -205,6 +207,7 @@ begin
                         psrc = (pointer)((integer)parc->pcfr + FRAME_SIZE * (dbcnt + 1)) ;
                         pdest = (pointer)((integer)parc->pcfr + FRAME_SIZE * (dbcnt + bcnt + 1)) ;
                         memmove (pdest, psrc, FRAME_SIZE * (parc->total_frames - dbcnt - 1)) ;
+                        incn(parc->hdr_buf.first_data_byte, bcnt * FRAME_SIZE) ;
                       end
                   /* copy new blockettes in archive record */
                   psrc = (pointer)((integer)addr(pbuf->rec) + FRAME_SIZE) ;

@@ -22,6 +22,7 @@ Edit History:
    -- ---------- --- ---------------------------------------------------
     0 2006-10-13 rdr Created
     1 2006-10-29 rdr Fix call to stackdetop in expand_control_detectors.
+    2 2008-01-29 rdr Use new platform specific "uninteger" for pointer comparisons.
 */
 #ifndef OMIT_SEED
 #ifndef libctrldet_h
@@ -306,14 +307,14 @@ begin
     begin
       pdt1 = pop->tospt ;
       pdt2 = pop->nospt ;
-      if ((unsigned integer)pdt1 < EVALUATION_STACK_DEPTH)
+      if ((uninteger)pdt1 < EVALUATION_STACK_DEPTH)
         then
-          b1 = temps[(unsigned integer)pdt1] ;
+          b1 = temps[(uninteger)pdt1] ;
         else
           b1 = *pdt1 ;
-      if ((unsigned integer)pdt2 < EVALUATION_STACK_DEPTH)
+      if ((uninteger)pdt2 < EVALUATION_STACK_DEPTH)
         then
-          b2 = temps[(unsigned integer)pdt2] ;
+          b2 = temps[(uninteger)pdt2] ;
         else
           b2 = *pdt2 ;
       switch (pop->op) begin

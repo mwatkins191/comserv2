@@ -29,6 +29,7 @@ Edit History:
     6 2007-02-19 rdr Status timeout not getting cleared when first registering and also
                      not getting checked while running, fixed.
     7 2007-03-05 rdr Make calls to purge_thread_continuity.
+    8 2008-02-25 rdr Add lib_round when calculating zone offset.
 */
 #ifndef libcmds_h
 #include "libcmds.h"
@@ -994,8 +995,8 @@ begin
                                       then
                                         begin
                                           t = pglob->cur_sequence + pglob->sec_offset + pglob->usec_offset / 1.0E6 ;
-                                          l = t - now () ; /* seconds offset */
-                                          l = l / 1800 ; /* get zone number ( in 30 minute increments ) */
+                                          t = t - now () ; /* seconds offset */
+                                          l = lib_round(t / 1800) ; /* get zone number ( in 30 minute increments ) */
                                           if ((q330->zone_adjust div 1800) != l)
                                             then
                                               begin /* change it */
