@@ -11,11 +11,12 @@
 
 	2008-02-26 - added in new cLib330 from Certsoft (2008-02-25 version)
 
+	2008-04-02 - v2.0.2 added in a newer cLib330 from Certsoft (SVN for cLib330 r56) (2008-03-20 date)
+
 */
  
 #include "Logger.h"
 #include "lib330Interface.h"
-
 
 #define MAX_CHARS_IN_STATION_CODE 4
 
@@ -29,8 +30,8 @@
 
 #define MAJOR_VERSION 2
 #define MINOR_VERSION 0
-#define RELEASE_VERSION 1
-#define APP_VERSION_STRING "Qmaserv v2.0.1 $Rev$"
+#define RELEASE_VERSION 2
+#define APP_VERSION_STRING "Qmaserv v2.0.2 $Rev$"
 extern Logger g_log;
 extern Lib330Interface *g_libInterface;
 extern bool g_reset;
