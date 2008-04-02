@@ -21,6 +21,7 @@ Edit History:
    Ed Date       By  Changes
    -- ---------- --- ---------------------------------------------------
     0 2006-09-10 rdr Created
+    1 2008-03-13 rdr Use modulus to restrict SEED record number to between 1 and 999999.
 */
 #ifndef libseed_h
 #include "libseed.h"
@@ -82,8 +83,10 @@ void fix_seed_header (seed_header *hdr, tsystemtime *greg,
                            longint usec, boolean setdeb)
 begin
   string7 s ;
+  longword recnum ;
 
-  sprintf(s, "%d", hdr->sequence.seed_num) ;
+  recnum = ((hdr->sequence.seed_num - 1) mod 999999) + 1 ; /* restrict to 1 .. 999999 */
+  sprintf(s, "%d", recnum) ;
   zpad(addr(s), 6) ;
   memcpy(addr(hdr->sequence.seed_num), addr(s), 6) ;
   lib330_seed_time (addr(hdr->starting_time), greg, usec) ;

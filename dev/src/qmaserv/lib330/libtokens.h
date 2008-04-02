@@ -25,7 +25,7 @@ Edit History:
 #ifndef libtokens_h
 /* Flag this file as included */
 #define libtokens_h
-#define VER_LIBTOKENS 2
+#define VER_LIBTOKENS 3
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

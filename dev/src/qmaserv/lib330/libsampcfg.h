@@ -25,7 +25,7 @@ Edit History:
 #ifndef libsampcfg_h
 /* Flag this file as included */
 #define libsampcfg_h
-#define VER_LIBSAMPCFG 0
+#define VER_LIBSAMPCFG 3
 
 #ifndef libtypes_h
 #include "libtypes.h"
@@ -44,6 +44,7 @@ extern void clear_sg (paqstruc paqs) ;
 extern void deallocate_sg (paqstruc paqs) ;
 extern pointer allocate_aqstruc (tcontext ownedby) ;
 extern void clear_calstat (pq330 q330) ;
+extern void set_gaps (plcq q) ;
 extern void deallocate_dplcqs (pq330 q330) ;
 extern void init_lcq (paqstruc paqs) ;
 extern void init_dplcq (paqstruc paqs, plcq pl, boolean newone) ;

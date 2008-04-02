@@ -67,9 +67,9 @@ Edit History:
 #endif
 
 #ifdef OMIT_SEED
-#define CT_VER 46 /* RELEASE AT 50 */
+#define CT_VER 48 /* RELEASE AT 50 */
 #else
-#define CT_VER 97 /* RELEASE AT 100 */
+#define CT_VER 98 /* RELEASE AT 100 */
 #endif
 #define CTY_STATIC 0 /* Static storage for status, etc */
 #define CTY_SYSTEM 1 /* system identification */
@@ -454,7 +454,7 @@ begin
           if (cur_lcq->gap_threshold == 0.0)
             then
               cur_lcq->gap_threshold = 0.5 ;
-          cur_lcq->gap_secs = (1 + cur_lcq->gap_threshold) * abs(cur_lcq->rate) ; /* will always be at least a multiple of the rate */
+         set_gaps (cur_lcq) ;
 #ifndef OMIT_SEED
           cur_lcq->firfixing_gain = 1.000 ; /* default if not over-ridden */
           cur_lcq->com = malloc(sizeof(tcom_packet)) ;

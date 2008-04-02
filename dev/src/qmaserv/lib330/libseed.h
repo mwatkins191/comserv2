@@ -26,7 +26,7 @@ Edit History:
 #ifndef libseed_h
 /* Flag this file as included */
 #define libseed_h
-#define VER_LIBSEED 1
+#define VER_LIBSEED 2
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

@@ -21,6 +21,7 @@ Edit History:
    Ed Date       By  Changes
    -- ---------- --- ---------------------------------------------------
     0 2006-10-12 rdr Created
+    1 2008-03-13 rdr Don't reset records_written at 999999.
 */
 #ifndef liblogs_h
 #include "liblogs.h"
@@ -146,9 +147,6 @@ begin
   phdr->continuation_record = ' ' ;
   phdr->sequence.seed_num = pcom->records_written + 1 ;
   inc(pcom->records_written) ;
-  if (pcom->records_written >= 999999)
-    then
-      pcom->records_written = 0 ; /* seed can only handle 1-999999 */
   memcpy(addr(phdr->location_id), addr(q->location), sizeof(tlocation)) ;
   memcpy(addr(phdr->channel_id), addr(q->seedname), sizeof(tseed_name)) ;
   memcpy(addr(phdr->station_id_call_letters), addr(q330->station), sizeof(tseed_stn)) ;
@@ -210,7 +208,7 @@ begin
         storetiming (addr(p), ptim) ;
         inc(q->records_generated_session) ;
         q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        send_to_client (paqs, q, pcom->ring, SCD_BOTH) ;
       end
     else
       q330->need_sats = TRUE ;
@@ -262,7 +260,7 @@ begin
   storetiming (addr(p), ptim) ;
   inc(q->records_generated_session) ;
   q->last_record_generated = secsince () ;
-  send_to_client (paqs, paqs->tim_lcq, pcom->ring) ;
+  send_to_client (paqs, paqs->tim_lcq, pcom->ring, SCD_BOTH) ;
 end
 
 void flush_timing (paqstruc paqs)
@@ -584,7 +582,7 @@ begin
         storeseedhdr (addr(p), phdr, FALSE) ;
         inc(q->records_generated_session) ;
         q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        send_to_client (paqs, q, pcom->ring, SCD_BOTH) ;
         q330->nested_log = FALSE ;
         pcom->frame = 0 ;
       end
@@ -599,9 +597,6 @@ begin
         phdr->continuation_record = ' ' ;
         phdr->sequence.seed_num = pcom->records_written + 1 ;
         inc(pcom->records_written) ;
-        if (pcom->records_written >= 999999)
-          then
-            pcom->records_written = 0 ; /* seed can only handle 1-999999 */
         memcpy(addr(phdr->location_id), addr(q->location), sizeof(tlocation)) ;
         memcpy(addr(phdr->channel_id), addr(q->seedname), sizeof(tseed_name)) ;
         memcpy(addr(phdr->station_id_call_letters), addr(q330->station), sizeof(tseed_stn)) ;
@@ -649,7 +644,7 @@ begin
         storeseedhdr (addr(p), phdr, FALSE) ;
         inc(q->records_generated_session) ;
         q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        send_to_client (paqs, q, pcom->ring, SCD_BOTH) ;
         q330->nested_log = FALSE ;
         pcom->frame = 0 ;
       end

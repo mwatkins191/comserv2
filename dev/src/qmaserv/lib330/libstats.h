@@ -25,7 +25,7 @@ Edit History:
 #ifndef libstats_h
 /* Flag this file as included */
 #define libstats_h
-#define VER_LIBSTATS 2
+#define VER_LIBSTATS 3
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

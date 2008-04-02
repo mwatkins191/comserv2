@@ -22,6 +22,10 @@ Edit History:
    -- ---------- --- ---------------------------------------------------
     0 2006-09-30 rdr Created
     1 2006-10-26 rdr Fix mangled filter cutoff descriptions in verbose mode.
+    2 2008-03-02 rdr Add setting scd_evt and scd_cont based on lcq options.
+    3 2008-03-18 rdr Add set_gaps to setup both the gap_secs and new gap_offset. Gap_offset
+                     needs to be overridden for decimated channels based on the rate of
+                     the source channel.
 */
 #ifndef libsampcfg_h
 #include "libsampcfg.h"
@@ -196,6 +200,22 @@ begin
   return result ;
 end
 
+void set_gaps (plcq q)
+begin
+
+  if (q->rate > 0)
+    then
+      begin
+        q->gap_secs = q->gap_threshold / q->rate ;
+        q->gap_offset = 1.0 ; /* default is one set of data points per second */
+      end
+    else
+      begin
+        q->gap_secs = q->gap_threshold * fabs(q->rate) ;
+        q->gap_offset = fabs(q->rate) ; /* default is one data point per "rate" seconds */
+      end
+end
+
 void init_lcq (paqstruc paqs)
 begin
   plcq p, pl ;
@@ -352,6 +372,11 @@ begin
                 pl->input_sample_rate = pl->prev_link->rate ;
               else
                 pl->input_sample_rate = 1.0 / abs(pl->prev_link->rate) ;
+            if (pl->input_sample_rate >= 0.999)
+              then
+                pl->gap_offset = 1.0 ;
+              else
+                pl->gap_offset = 1.0 / pl->input_sample_rate ; /* set new gap offset based on input rate */
             if (pl->source_fir)
               then
                 pl->delay = pl->prev_link->delay + (pl->source_fir->dly / pl->input_sample_rate) ;
@@ -424,6 +449,29 @@ begin
       if (pl->arc.amini_filter)
         then
           getbuf (q330, addr(pl->arc.pcfr), paqs->arc_size) ;
+      if (pl->lcq_opt and LO_EVENT)
+        then
+          begin
+            if (pl->lcq_opt and LO_NSEVT)
+              then
+                pl->scd_evt = SCD_BOTH ; /* both outputs are event */
+              else
+                begin /* archive is event but 512 is continuous */
+                  pl->scd_evt = SCD_ARCH ;
+                  pl->scd_cont = SCD_512 ;
+                end
+          end
+        else
+          begin
+            if (pl->lcq_opt and LO_NSEVT)
+              then
+                begin /* acrhive is continuous but 512 is event */
+                  pl->scd_evt = SCD_512 ;
+                  pl->scd_cont = SCD_ARCH ;
+                end
+              else
+                pl->scd_cont = SCD_BOTH ;/* both are continuous */
+          end
       allocate_lcq_filters (paqs, pl) ;
 #endif
       pl = pl->link ;

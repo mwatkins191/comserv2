@@ -278,11 +278,7 @@ begin
   if (cur_lcq->gap_threshold == 0.0)
     then
       cur_lcq->gap_threshold = 0.5 ;
-  if (cur_lcq->rate > 0)
-    then
-      cur_lcq->gap_secs = 1.0 + (cur_lcq->gap_threshold / cur_lcq->rate) ; /* will always be at least 1 second difference */
-    else
-      cur_lcq->gap_secs = (1 + cur_lcq->gap_threshold) * abs((integer)cur_lcq->rate) ; /* will always be at least a multiple of the rate */
+  set_gaps (cur_lcq) ;
   if (cur_lcq->lcq_opt and LO_CALDLY)
     then
       cur_lcq->caldly = loadword (p) ;
@@ -446,7 +442,7 @@ begin
   if (cur_lcq->gap_threshold == 0.0)
     then
       cur_lcq->gap_threshold = 0.5 ;
-  cur_lcq->gap_secs = (1 + cur_lcq->gap_threshold) * abs((integer)cur_lcq->rate) ; /* will always be at least a multiple of the rate */
+  set_gaps (cur_lcq) ;
   if (cur_lcq->lcq_opt and LO_FRAME)
     then
 #ifndef OMIT_SEED

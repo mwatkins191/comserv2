@@ -26,6 +26,7 @@ Edit History:
     2 2008-01-16 rdr Fix record length for CNP blockette data.
     3 2008-02-25 rdr Don't clear cfg_timer unless final flush. cfg_lastwritten set
                      to data time, not host time.
+    4 2008-03-13 rdr Don't reset records_written at 999999.
 */
 #ifndef OMIT_SEED
 #ifndef libopaque_h
@@ -73,7 +74,7 @@ begin
         storeseedhdr (addr(p), addr(pcom->ring->hdr_buf), FALSE) ;
         inc(q->records_generated_session) ;
         q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        send_to_client (paqs, q, pcom->ring, SCD_BOTH) ;
       end
   memset (addr(pcom->ring->rec), 0, LIB_REC_SIZE) ;
   memset (addr(pcom->ring->hdr_buf), 0, sizeof(seed_header)) ;
@@ -121,9 +122,6 @@ begin
         phdr->continuation_record = ' ' ;
         phdr->sequence.seed_num = pcom->records_written + 1 ;
         inc(pcom->records_written) ;
-        if (pcom->records_written >= 999999)
-          then
-            pcom->records_written = 0 ; /* seed can only handle 1-999999 */
         memcpy(addr(phdr->location_id), addr(q->location), sizeof(tlocation)) ;
         memcpy(addr(phdr->channel_id), addr(q->seedname), sizeof(tseed_name)) ;
         memcpy(addr(phdr->station_id_call_letters), addr(q330->station), sizeof(tseed_stn)) ;
@@ -221,7 +219,7 @@ begin
         storeseedhdr (addr(p), addr(pcom->ring->hdr_buf), FALSE) ;
         inc(q->records_generated_session) ;
         q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        send_to_client (paqs, q, pcom->ring, SCD_BOTH) ;
       end
   memset (addr(pcom->ring->rec), 0, LIB_REC_SIZE) ;
   memset (addr(pcom->ring->hdr_buf), 0, sizeof(seed_header)) ;
@@ -270,9 +268,6 @@ begin
         phdr->continuation_record = ' ' ;
         phdr->sequence.seed_num = pcom->records_written + 1 ;
         inc(pcom->records_written) ;
-        if (pcom->records_written >= 999999)
-          then
-            pcom->records_written = 0 ; /* seed can only handle 1-999999 */
         memcpy(addr(phdr->location_id), addr(q->location), sizeof(tlocation)) ;
         memcpy(addr(phdr->channel_id), addr(q->seedname), sizeof(tseed_name)) ;
         memcpy(addr(phdr->station_id_call_letters), addr(q330->station), sizeof(tseed_stn)) ;

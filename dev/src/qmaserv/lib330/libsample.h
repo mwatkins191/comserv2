@@ -25,7 +25,7 @@ Edit History:
 #ifndef libsample_h
 /* Flag this file as included */
 #define libsample_h
-#define VER_LIBSAMPLE 3
+#define VER_LIBSAMPLE 6
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h
@@ -50,7 +50,7 @@ extern void flush_lcq (paqstruc paqs, plcq q, pcom_packet pcom) ;
 extern void flush_lcqs (paqstruc paqs) ;
 extern void flush_dplcqs (pq330 q330) ;
 extern void add_blockette (paqstruc paqs, plcq q, pword pw, double time) ;
-extern void send_to_client (paqstruc paqs, plcq q, pcompressed_buffer_ring pbuf) ;
+extern void send_to_client (paqstruc paqs, plcq q, pcompressed_buffer_ring pbuf, byte dest) ;
 extern void build_separate_record (paqstruc paqs, plcq q, pword pw,
                                    double time, enum tpacket_class pclass) ;
 #endif

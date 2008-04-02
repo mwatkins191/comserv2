@@ -71,14 +71,14 @@ begin
   pcom = q->com ;
   q->data_written = FALSE ;
 #endif
-  if ((q->last_timetag > 1) land (fabs(q330->dpstat_timestamp - q->last_timetag - 1.0) > q->gap_secs))
+  if ((q->last_timetag > 1) land (fabs(q330->dpstat_timestamp - q->last_timetag - q->gap_offset) > q->gap_secs))
     then
       begin
         if (q330->cur_verbosity and VERB_LOGEXTRA)
           then
             begin
               sprintf(s, "%s %s", seed2string(addr(q->location), addr(q->seedname), addr(s2)),
-                      realtostr(q330->dpstat_timestamp - q->last_timetag - 1.0, 6, addr(s1))) ;
+                      realtostr(q330->dpstat_timestamp - q->last_timetag - q->gap_offset, 6, addr(s1))) ;
               libdatamsg (q330, LIBMSG_TIMEDISC, addr(s)) ;
             end
 #ifndef OMIT_SEED

@@ -27,7 +27,7 @@ Edit History:
 #ifndef liblogs_h
 /* Flag this file as included */
 #define liblogs_h
-#define VER_LIBLOGS 2
+#define VER_LIBLOGS 3
 
 #ifndef OMIT_SEED
 /* Make sure libtypes.h is included */

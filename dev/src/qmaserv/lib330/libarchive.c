@@ -31,6 +31,9 @@ Edit History:
                      client with useless update.
     3 2008-02-11 rdr Adjust first_data_byte in seed header when data gets moved to make
                      room for more blockettes.
+    4 2008-03-13 rdr Don't reset records_written at 999999.  Don't set records_written from
+                     last data record. If not set by continuity it's OK to start over since
+                     SEED sequence numbers are informational only.
 */
 #ifndef OMIT_SEED
 #ifndef libarchive_h
@@ -274,9 +277,6 @@ begin
             parc->hdr_buf.dob.rec_length = q330->par_create.amini_exponent ;
             parc->hdr_buf.sequence.seed_num = parc->records_written + 1 ;
             inc(parc->records_written) ;
-            if (parc->records_written >= 999999)
-              then
-                parc->records_written = 0 ; /* seed can only handle 1-999999 */
             psrc = (pointer)((integer)addr(pbuf->rec) + FRAME_SIZE) ;
             pdest = (pointer)((integer)parc->pcfr + FRAME_SIZE) ;
             if ((bcnt + fcnt) > 0)
@@ -311,9 +311,6 @@ begin
             parc->hdr_buf.samples_in_record = 0 ; /* don't count first record twice! */
             parc->hdr_buf.sequence.seed_num = parc->records_written + 1 ;
             inc(parc->records_written) ;
-            if (parc->records_written >= 999999)
-              then
-                parc->records_written = 0 ; /* seed can only handle 1-999999 */
             parc->appended = FALSE ;
             parc->existing_record = FALSE ;
           end
@@ -350,9 +347,6 @@ begin
             parc->hdr_buf.dob.rec_length = q330->par_create.amini_exponent ;
             parc->hdr_buf.sequence.seed_num = parc->records_written + 1 ;
             inc(parc->records_written) ;
-            if (parc->records_written >= 999999)
-              then
-                parc->records_written = 0 ; /* seed can only handle 1-999999 */
             pdest = (pointer)((integer)parc->pcfr + NONDATA_OVERHEAD) ;
             memcpy (pdest, psrc, TIMING_BLOCKETTE_SIZE) ;
             parc->total_frames = NONDATA_OVERHEAD + TIMING_BLOCKETTE_SIZE ;
@@ -385,9 +379,6 @@ begin
             parc->hdr_buf.dob.rec_length = q330->par_create.amini_exponent ;
             parc->hdr_buf.sequence.seed_num = parc->records_written + 1 ;
             inc(parc->records_written) ;
-            if (parc->records_written >= 999999)
-              then
-                parc->records_written = 0 ; /* seed can only handle 1-999999 */
             pdest = (pointer)((integer)parc->pcfr + NONDATA_OVERHEAD) ;
             memcpy (pdest, psrc, size) ; /* copy blockettes in as they are */
             parc->total_frames = q->com->blockette_index ;
@@ -435,9 +426,7 @@ begin
   paqstruc paqs ;
   plcq q ;
   pbyte p ;
-  boolean valid_number ;
-  integer valid, v ;
-  string7 numbuf ;
+  integer fcnt ;
   tarc *parc ;
 
   paqs = q330->aqstruc ;
@@ -477,29 +466,18 @@ begin
                       begin /* extract seed header and set flags */
                         p = (pointer)parc->pcfr ;
                         loadseedhdr (addr(p), addr(parc->hdr_buf), (q330->miniseed_call.packet_class == PKC_DATA)) ;
-                        valid_number = TRUE ;
-                        memcpy(addr(numbuf), addr(parc->hdr_buf.sequence.seed_ch), 6) ;
-                        numbuf[6] = 0 ; /* convert fixed length string into C string */
-                        valid = sscanf(addr(numbuf), "%d", addr(v)) ;
-                        if (valid != 1)
-                          then
-                            begin
-                              valid_number = FALSE ;
-                              parc->hdr_buf.sequence.seed_num = 1 ;
-                            end
-                          else
-                            parc->hdr_buf.sequence.seed_num = v ;
-                        parc->records_written = parc->hdr_buf.sequence.seed_num ;
-                        if ((valid_number) land (q->pack_class == PKC_DATA) land paqs->contingood)
+                        fcnt = parc->hdr_buf.deb.frame_count + parc->hdr_buf.number_of_following_blockettes - 1 ;
+                        if ((q->pack_class == PKC_DATA) land (fcnt < paqs->arc_frames) land (paqs->contingood))
                           then
                             begin /* try to extend */
+                              parc->hdr_buf.sequence.seed_num = parc->records_written ;
                               parc->hdr_buf.starting_time.seed_fpt =
                                 extract_time(addr(parc->hdr_buf.starting_time), parc->hdr_buf.deb.usec99) ;
                               parc->existing_record = TRUE ;
-                              parc->total_frames = parc->hdr_buf.deb.frame_count + parc->hdr_buf.number_of_following_blockettes - 1 ;
+                              parc->total_frames = fcnt ;
                             end
                           else
-                            begin /* record number is all we wanted */
+                            begin /* not data record or can't extend existing record */
                               memset(addr(parc->hdr_buf), 0, sizeof(seed_header)) ; /* throw away the header */
                               memset(parc->pcfr, 0, paqs->arc_size) ; /* and the data */
                               q->backup_tag = 0 ;

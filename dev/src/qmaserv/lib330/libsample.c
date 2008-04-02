@@ -26,6 +26,8 @@ Edit History:
                      not 330.
     2 2006-12-30 rdr Fix compilation with OMIT_SEED defined.
     3 2007-03-09 rdr Fix botched (and possibly debauched) Pascal to C translation in proc_mult.
+    4 2008-03-02 rdr Add support for seperate event handling for archival and 512 byte.
+    5 2008-03-13 rdr Don't reset records_written at 999999.
 */
 #ifndef libsample_h
 #include "libsample.h"
@@ -223,7 +225,7 @@ begin
   *tt = timetag_ + correction ;
 end
 
-void send_to_client (paqstruc paqs, plcq q, pcompressed_buffer_ring pbuf)
+void send_to_client (paqstruc paqs, plcq q, pcompressed_buffer_ring pbuf, byte dest)
 begin
 #define JAN_1_2006 189388800 /* first possible valid data */
 #define MAX_DATE 0x7FFF0000 /* above this just has to be nonsense */
@@ -247,10 +249,10 @@ begin
   q330->miniseed_call.miniseed_action = MSA_512 ;
   q330->miniseed_call.data_size = LIB_REC_SIZE ;
   q330->miniseed_call.data_address = addr(pbuf->rec) ;
-  if ((q->mini_filter) land (q330->par_create.call_minidata))
+  if ((dest and SCD_512) land (q->mini_filter) land (q330->par_create.call_minidata))
     then
       q330->par_create.call_minidata (addr(q330->miniseed_call)) ;
-  if ((q->arc.amini_filter) land (q->pack_class != PKC_EVENT) land
+  if ((dest and SCD_ARCH) land (q->arc.amini_filter) land (q->pack_class != PKC_EVENT) land
       (q->pack_class != PKC_CALIBRATE) land (q330->par_create.call_aminidata))
     then
       archive_512_record (paqs, q, pbuf) ;
@@ -373,9 +375,13 @@ begin
 /* write the event blocks to the output files */
                 p = addr(lring->rec) ;
                 storeseedhdr (addr(p), addr(lring->hdr_buf), TRUE) ;
-                inc(q->records_generated_session) ;
-                q->last_record_generated = secsince () ;
-                send_to_client (paqs, q, lring) ;
+                if (q->scd_evt and SCD_ARCH)
+                  then
+                    begin /* archival output only */
+                      inc(q->records_generated_session) ;
+                      q->last_record_generated = secsince () ;
+                    end
+                send_to_client (paqs, q, lring, q->scd_evt) ;
                 lring->hdr_buf.activity_flags = sohsave ;
               end
         until ((contig) lor (lring == q->com->ring))) ;
@@ -383,7 +389,7 @@ begin
   if (lnot (*now_on))
     then
       begin
-        if ((*was_on) land (q->arc.amini_filter))
+        if ((q->scd_evt and SCD_ARCH) land (*was_on) land (q->arc.amini_filter))
           then
             flush_archive (paqs, q) ;
         *was_on = FALSE ; /* contiguity broken */
@@ -400,9 +406,6 @@ begin
   q330 = paqs->owner ;
   install_header (paqs, q, pcom) ;
   inc(pcom->records_written) ;
-  if (pcom->records_written >= 999999)
-    then
-      pcom->records_written = 0 ; /* seed can only handle 1-999999 */
   if ((lnot (q->data_written)) land (q->lcq_num != 0xFF))
     then
       evaluate_detector_stack (q330, q) ;
@@ -420,7 +423,7 @@ begin
     then
       phdr->activity_flags = phdr->activity_flags or SAF_CAL_IN_PROGRESS ;
 /* write continuous data this comm links */
-  if ((q->lcq_opt and LO_EVENT) == 0)
+  if (q->scd_cont)
     then
       begin
         sohsave = phdr->activity_flags ;
@@ -429,15 +432,19 @@ begin
             phdr->activity_flags = phdr->activity_flags or (SAF_EVENT_IN_PROGRESS or SAF_BEGIN_EVENT) ;
         p = addr(pcom->ring->rec) ;
         storeseedhdr (addr(p), phdr, TRUE) ;
-        inc(q->records_generated_session) ;
-        q->last_record_generated = secsince () ;
-        send_to_client (paqs, q, pcom->ring) ;
+        if (q->scd_cont and SCD_ARCH)
+          then
+            begin /* archival output only */
+              inc(q->records_generated_session) ;
+              q->last_record_generated = secsince () ;
+            end
+        send_to_client (paqs, q, pcom->ring, q->scd_cont) ;
         phdr->activity_flags = sohsave ;
       end
   q->data_written = TRUE ;
 /* flag the current record in the pre-event buffer ring as being full */
   pcom->ring->full = TRUE ;
-  if (q->lcq_opt and LO_EVENT)
+  if (q->scd_evt)
     then
       ringman (paqs, q, addr(q->gen_on), addr(q->gen_last_on), addr(q->gen_next)) ;
   pcom->ring = pcom->ring->link ;
@@ -565,7 +572,7 @@ begin
   p = addr(paqs->detcal_buf.rec) ;
   storeseedhdr (addr(p), phdr, FALSE) ;
   q->pack_class = pclass ; /* override normal data class */
-  send_to_client (paqs, q, addr(paqs->detcal_buf)) ;
+  send_to_client (paqs, q, addr(paqs->detcal_buf), SCD_BOTH) ;
   q->pack_class = PKC_DATA ; /* restore to normal */
 end
 
@@ -637,14 +644,14 @@ begin
     then
       begin
         q->timemark_occurred = TRUE ; /* fist sample */
-        if ((q->last_timetag > 1) land (fabs(paqs->data_timetag - q->last_timetag - 1.0) > q->gap_secs))
+        if ((q->last_timetag > 1) land (fabs(paqs->data_timetag - q->last_timetag - q->gap_offset) > q->gap_secs))
           then
             begin
               if (q330->cur_verbosity and VERB_LOGEXTRA)
                 then
                   begin
                     sprintf(s, "%s %s", seed2string(q->location, q->seedname, addr(s1)),
-                            realtostr(paqs->data_timetag - q->last_timetag - 1.0, 6, addr(s2))) ;
+                            realtostr(paqs->data_timetag - q->last_timetag - q->gap_offset, 6, addr(s2))) ;
                     libdatamsg (q330, LIBMSG_TIMEDISC, addr(s)) ;
                   end
 #ifndef OMIT_SEED
@@ -1197,11 +1204,7 @@ begin
         q->variable_rate_set = TRUE ;
         q->rate = adjrate ;
         q->delay = dly5ms * 0.005 ; /* in seconds */
-        if (q->rate > 0)
-          then
-            q->gap_secs = 1.0 + (q->gap_threshold / q->rate) ; /* will always be at least 1 second difference */
-          else
-            q->gap_secs = (1 + q->gap_threshold) * abs(q->rate) ; /* will always be at least a multiple of the rate */
+        set_gaps (q) ;
 #ifndef OMIT_SEED
         down = q->downstream_link ;
         while (down)
@@ -1212,6 +1215,11 @@ begin
                 p->input_sample_rate = p->prev_link->rate ;
               else
                 p->input_sample_rate = 1.0 / abs(p->prev_link->rate) ;
+            if (p->input_sample_rate >= 0.999)
+              then
+                p->gap_offset = 1.0 ;
+              else
+                p->gap_offset = 1.0 / p->input_sample_rate ; /* set new gap offset based on input rate */
             if (p->source_fir)
               then
                 r = p->input_sample_rate / p->source_fir->dec ; /* output rate */
@@ -1222,11 +1230,7 @@ begin
                 p->rate = lib_round(r) ; /* rounded hertz and about */
               else
                 p->rate = -lib_round(1.0 / r) ; /* sub-hertz */
-            if (p->rate > 0)
-              then
-                p->gap_secs = 1.0 + (p->gap_threshold / p->rate) ; /* will always be at least 1 second difference */
-              else
-                p->gap_secs = (1 + p->gap_threshold) * abs(p->rate) ; /* will always be at least a multiple of the rate */
+            set_gaps (p) ;
             if (p->source_fir)
               then
                 p->delay = p->prev_link->delay + (p->source_fir->dly / p->input_sample_rate) ;

@@ -25,11 +25,13 @@ Edit History:
     2 2006-12-30 rdr Add cfg_timer.
     3 2007-03-12 rdr Add first_data flag to indicate that continuity needs to be purged at the
                      first second of incoming data.
+    4 2008-08-02 rdr Add LO_NSEVT, and SCD_xxxx, scd_evt, and scd_cont.
+    5 2008-03-19 rdr Add gap_offset.
 */
 #ifndef libsampglob_h
 /* Flag this file as included */
 #define libsampglob_h
-#define VER_LIBSAMPGLOB 3
+#define VER_LIBSAMPGLOB 5
 
 #ifndef libtypes_h
 #include "libtypes.h"
@@ -72,6 +74,7 @@ Edit History:
 #define LO_DET6 0x20000 /* Detector 6 */
 #define LO_DET7 0x40000 /* Detector 7 */
 #define LO_DET8 0x80000 /* Detector 8 */
+#define LO_NSEVT 0x8000000 /* Netserv is event only */
 #define LO_DOFF 0x10000000 /* Don't generate data */
 #define LO_DATAS 0x20000000 /* Enable writing to dataserv */
 #define LO_NETS 0x40000000 /* Enable writing to netserv */
@@ -93,6 +96,10 @@ Edit History:
 #define DR_NEVER 0 /* no data received */
 #define DR_HAS 1 /* Has received */
 #define DR_ACTIVE 2 /* recently */
+/* Send to Client destination bitmaps */
+#define SCD_ARCH 1 /* send to archival output */
+#define SCD_512 2 /* send to 512 byte miniseed output */
+#define SCD_BOTH 3 /* send to both */
 
 #ifndef OMIT_SEED
 #define MAXSAMP 38
@@ -402,6 +409,7 @@ typedef struct tlcq {
   word backup_qual ; /* in case >1hz data gets flushed between seconds */
   single gap_threshold ; /* number of samples that constitutes a gap */
   tfloat gap_secs ; /* number of seconds constituting a gap */
+  tfloat gap_offset ; /* expected number of seconds between new incoming samples */
   tprecomp precomp ; /* precompressed data fields */
 #ifndef OMIT_SEED
   boolean slipping ; /* is derived stream, waiting for sync */
@@ -421,6 +429,7 @@ typedef struct tlcq {
   boolean gen_on ; /* general detector on */
   boolean gen_last_on ;
   boolean data_written ;
+  byte scd_evt, scd_cont ; /* SCD_xxx flags for event and continuous */
   word pre_event_buffers ; /* number of pre-event buffers */
   tfloat processed_stream ; /* output of this stream's FIR filter */
   longint records_generated_session ; /* count of buffers generated this connection */
