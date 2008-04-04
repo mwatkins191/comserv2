@@ -26,6 +26,7 @@ Edit History:
     3 2008-03-18 rdr Add set_gaps to setup both the gap_secs and new gap_offset. Gap_offset
                      needs to be overridden for decimated channels based on the rate of
                      the source channel.
+    4 2008-04-03 rdr If opt_compat is set then force netserv to event if archive is event.
 */
 #ifndef libsampcfg_h
 #include "libsampcfg.h"
@@ -452,7 +453,7 @@ begin
       if (pl->lcq_opt and LO_EVENT)
         then
           begin
-            if (pl->lcq_opt and LO_NSEVT)
+            if ((q330->par_create.opt_compat) lor (pl->lcq_opt and LO_NSEVT))
               then
                 pl->scd_evt = SCD_BOTH ; /* both outputs are event */
               else

@@ -25,7 +25,7 @@ Edit History:
 #ifndef libsampcfg_h
 /* Flag this file as included */
 #define libsampcfg_h
-#define VER_LIBSAMPCFG 3
+#define VER_LIBSAMPCFG 4
 
 #ifndef libtypes_h
 #include "libtypes.h"

@@ -23,11 +23,12 @@ Edit History:
     0 2006-09-09 rdr Created
     1 2006-10-26 rdr Add last_data_time, current_ip, and current_port to topstat.
     2 2006-11-30 rdr Add Definitions for module directory.
+    3 2008-04-03 rdr Add opt_compat.
 */
 #ifndef libclient_h
 /* Flag this file as included */
 #define libclient_h
-#define VER_LIBCLIENT 4
+#define VER_LIBCLIENT 5
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h
@@ -94,6 +95,7 @@ typedef struct { /* parameters for lib_create call */
   word opt_zoneadjust ; /* calculate host's timezone automatically */
   word opt_secfilter ; /* OSF_xxx bits */
 #ifndef OMIT_SEED
+  word opt_compat ; /* Compatibility Mode */
   word opt_minifilter ; /* OMF_xxx bits */
   word opt_aminifilter ; /* OMF_xxx bits */
   word amini_exponent ; /* 2**exp size of archival miniseed, range of 9 to 14 */
