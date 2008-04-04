@@ -13,6 +13,8 @@
 
 	2008-04-02 - v2.0.2 added in a newer cLib330 from Certsoft (SVN for cLib330 r56) (2008-03-20 date)
 
+	2008-04-04 - v2.0.3 added in a newer cLib330 from Certsoft (SVN for cLib330 r57) (2008-04-03 date)
+
 */
  
 #include "Logger.h"
@@ -30,8 +32,8 @@
 
 #define MAJOR_VERSION 2
 #define MINOR_VERSION 0
-#define RELEASE_VERSION 2
-#define APP_VERSION_STRING "Qmaserv v2.0.2 $Rev$"
+#define RELEASE_VERSION 3
+#define APP_VERSION_STRING "Qmaserv v2.0.3 $Rev$"
 extern Logger g_log;
 extern Lib330Interface *g_libInterface;
 extern bool g_reset;
