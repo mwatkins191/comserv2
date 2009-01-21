@@ -374,9 +374,11 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
            if ((path >= 0) && !udplink)
               {
                 numwrit = write(path, (pchar) &transmit_buf, len * 2 + 1) ;
-                if ((numwrit < 0) && (verbose))
+                if ((numwrit < 0) && (verbose)) {
                     perror ("Error writing to port ") ;
+                    LogMessage(CS_LOG_TYPE_ERROR, "send_window(): writing to port failed with errno %d", errno);
                 }
+              }
           last_sent = dtime () ;
         }
     }
@@ -842,6 +844,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 curlink.grouptime = flip2(dbuf.data_buf.cl.grouptime) ;
                                 if (verbose)
                                     {
+                                      LogMessage(CS_LOG_TYPE_INFO, "Link Packet Received:");
                                       LogMessage(CS_LOG_TYPE_INFO, "Window=%d  Modulus=%d  Start=%d  RC Echo=%c  Data Format=%s",
                                              curlink.window_size, sequence_mod, last_packet_received,
 		  	                     rcelu[curlink.rcecho], lf[linkstat.data_format]) ;
@@ -1780,7 +1783,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
            if ((insane) /* && (numread > maxbytes) */)
                {
                  maxbytes = numread ;
-                 LogMessage(CS_LOG_TYPE_ERROR, "%d bytes read", numread) ;
+                 LogMessage(CS_LOG_TYPE_INFO, "fillbuf(): %d bytes read", numread) ;
                }
          }
       else if (numread < 0)
