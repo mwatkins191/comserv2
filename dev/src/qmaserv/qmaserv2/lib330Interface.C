@@ -39,7 +39,7 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
 	g_log << "+++ ";
       }
     }
-    g_log << mod->name << ":" << mod->ver << " ";
+    g_log << (char *) mod->name << ":" << (char *) mod->ver << " ";
   }
   g_log << std::endl;
   g_log << "+++ Initializing station thread" << std::endl;

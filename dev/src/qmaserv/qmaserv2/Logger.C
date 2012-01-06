@@ -53,6 +53,7 @@
 #include <iostream>
 #include "Logger.h"
 #include "stdio.h"
+#include "string.h"
 #include "QmaTypes.h"
 #include "portingtools.h"
 
