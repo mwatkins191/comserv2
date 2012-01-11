@@ -48,7 +48,7 @@ COPT	= -O
 # convention of appending a "_" suffix to the subroutine or function name.
 # -Dqlib2_fortran is required to compile the fortran interface routines.
 # -DSUNOS4 is required for SunOS 4.1.x.
-CFLAGS	= -Dfortran_suffix -Dqlib2_fortran
+CFLAGS	= -m32 -Dfortran_suffix -Dqlib2_fortran
 #CFLAGS	= -Dfortran_suffix -Dqlib2_fortran -DSUNOS4
 
 C64	= -xarch=v9 -xchip=ultra3
