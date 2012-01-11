@@ -87,7 +87,7 @@ void Logger::logToFile(bool val) {
 }
 
 Logger& Logger::operator<<(char *val) {
-  logBuff << val;
+  logBuff << (char *) val;
   return *this;
 }
 

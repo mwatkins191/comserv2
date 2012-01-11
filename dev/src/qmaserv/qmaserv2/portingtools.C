@@ -27,6 +27,34 @@ size_t strlcpy(char *dst, const char *src, size_t destsize) {
 
 */
 
+void SwapDouble( double *data )
+{
+  char temp;
+
+  union {
+      char   c[8];
+  } dat;
+
+  memcpy( &dat, data, sizeof(double) );
+  temp     = dat.c[0];
+  dat.c[0] = dat.c[7];
+  dat.c[7] = temp;
+
+  temp     = dat.c[1];
+  dat.c[1] = dat.c[6];
+  dat.c[6] = temp;
+
+  temp     = dat.c[2];
+  dat.c[2] = dat.c[5];
+  dat.c[5] = temp;
+
+  temp     = dat.c[3];
+  dat.c[3] = dat.c[4];
+  dat.c[4] = temp;
+  memcpy( data, &dat, sizeof(double) );
+  return;
+}
+
 size_t strlcpy(char *dst, const char *src,  size_t size) {
   size_t n = size;
 

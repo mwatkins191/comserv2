@@ -1,6 +1,7 @@
 #include "global.h"
 #include "clink.h"
 #include "PacketQueue.h"
+#include "portingtools.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -216,13 +217,41 @@ void Lib330Interface::state_callback(pointer p) {
   }
 }
 
+
 void Lib330Interface::onesec_callback(pointer p) {
-  tonesec_call msg;
+  onesec_pkt msg;
+  tonesec_call *src = (tonesec_call*)p;
   int retval;
   char *filterItem;
+  char temp[32];
 
-  memcpy(&msg, (tonesec_call *) p, sizeof(msg));
+  // memcpy(&msg, (tonesec_call *) p, sizeof(msg));
  
+  //translate tonesec_call to onesec_pkt;
+  strncpy(temp,src->station_name,9);
+  strcpy(msg.net,strtok((char*)temp,(char*)"-"));
+  strcpy(msg.station,strtok(NULL,(char*)"-"));
+  strcpy(msg.channel,src->channel);
+  strcpy(msg.location,src->location);
+  
+  msg.rate = htonl((int)src->rate);
+
+  msg.timestamp_sec = htonl((int)src->timestamp);
+  msg.timestamp_usec = htonl((int)((src->timestamp - (double)(((int)src->timestamp)))*1000000));
+
+  //#ifdef LITTLE_ENDIAN
+  //std::cout <<" TimeStamp for "<<msg.net<<"."<<msg.station<<"."<<msg.channel<<std::endl;
+  //g_log <<" : "<<msg.timestamp<<std::endl;
+  //SwapDouble((double*)&msg.timestamp);
+  //g_log <<" (after swap) TimeStamp for "<<msg.net<<"."<<msg.station<<"."<<msg.channel;
+  //g_log <<" : "<<msg.timestamp<<std::endl;
+  //#endif
+
+  for(int i=0;i<src->rate;i++){
+    msg.samples[i] = htonl((int)src->samples[i]);
+  }
+
+
   for(int i=0; i < 255; i++) {
     filterItem = &(multicastChannelList[i][0]);
     if(! *filterItem) {
@@ -236,6 +265,7 @@ void Lib330Interface::onesec_callback(pointer p) {
     } 
   }
 }
+
 
 void Lib330Interface::miniseed_callback(pointer p) {
   tminiseed_call *data = (tminiseed_call *) p;

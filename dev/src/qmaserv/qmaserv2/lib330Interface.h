@@ -19,6 +19,18 @@ extern "C" {
 #include "ConfigVO.h"
 #include "PacketQueue.h"
 
+struct onesec_pkt{
+  char net[4];
+  char station[16];
+  char channel[16];
+  char location[4];
+  uint32_t rate;
+  uint32_t timestamp_sec;
+  uint32_t timestamp_usec;
+  int32_t samples[MAX_RATE];
+};
+
+
 class Lib330Interface {
  public:
   Lib330Interface(char *, ConfigVO configInfo);
