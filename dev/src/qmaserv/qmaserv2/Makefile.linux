@@ -1,6 +1,6 @@
 
 CSERV = ../cserv
-LIB330 = ../lib330 
+LIB330 = ../lib330
 
 CXX	 = g++
 CLIBDIR	 = /usr/local/lib
@@ -9,9 +9,9 @@ COPT	 =
 
 # lib330 and libutil both define some of the same functions.  We'll rely on lib330's implementations (newer)
 USE_FIRST_DEFINED =
-LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl  -l330 -lutil -lpthread 
+LDLIBS	 = $(USE_FIRST_DEFINED)  -L../../util  -lnsl  $(LIB330)/lib330.a -lutil -lpthread 
 
-CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
+CXXFLAGS = -m32 $(INCL) $(DEBUG) $(COPT) -Dlinux -DLINUX
 LD	 = $(CXX)
 INCL	 =  -I../cserv -I. -I$(LIB330) 
 LDFLAGS	 = $(DEBUG) $(LDLIBS)
@@ -36,7 +36,7 @@ program =  qmaserv2
 	$(CXX) $(CXXFLAGS) -c $<
 
 $(program):$(objects) $(files)
-	$(LD) $(objects) $(cserv) -o $@ $(LDFLAGS)
+	$(LD) -m32 $(objects) $(cserv) -o $@ $(LDFLAGS)
 
 all:		$(program)
 
