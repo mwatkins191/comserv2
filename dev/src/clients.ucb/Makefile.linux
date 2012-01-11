@@ -11,7 +11,7 @@ LD_RUN_PATH =
 ########################################################################
 # LINUX definitions
 CC	=  gcc  
-CFLAGS	= -I$(CSINCL) -I$(QDIR) -DLINUX 
+CFLAGS	= -m32 -I$(CSINCL) -I$(QDIR) -DLINUX 
 LIBS	=  $(QDIR)/libqlib2.a  -lm -lnsl  -ldl
 ########################################################################
 # Solaris 2 definitions
