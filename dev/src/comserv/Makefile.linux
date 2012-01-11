@@ -23,9 +23,9 @@
 #	If neither  -D_BIG_ENDIAN_HEADER or -D_LITTLE_ENDIAN_HEADER , the default
 #	is -D_LITTLE_ENDIAN_HEADER and MSEEED record headars are stored in LITTLE
 #	ENDIAN BYTE ORDER IN SHARED MEMORY of COMSERV
-CC	= gcc -g
+CC	= gcc -g -m32
 INCL	= ../include
-CFLAGS	= -I$(INCL)  -DLINUX  -DMYIPADDR
+CFLAGS	=  -I$(INCL)  -DLINUX  -DMYIPADDR
 LDFLAGS	= 
 CSUDIR	= ../util
 CSULIB = $(CSUDIR)/libutil.a
