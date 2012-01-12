@@ -21,12 +21,14 @@ Edit History:
     8  9 Nov 99 IGD Porting to SuSE 6.1 LINUX begins
                         IGD  In version 7 which I have read_cfg () expression "if     (feof(cs->cfgfile))"
                                  was "if feof(cs->cfgfile)" causing a compiler parsing error. Fixed.
+    9  4 Jan 2011 Paulf  - added @include directive handling
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #ifndef _OSK
-#include <termio.h>
+#include <termios.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #else
@@ -44,20 +46,78 @@ Edit History:
 #define SECWIDTH 256
 #endif
 
-short VER_CFGUTIL = 8 ;
+#define COMSERV_PARAMS_ENV "COMSERV_PARAMS"	/* the params dir where @ included file will be found */
 
+short VER_CFGUTIL = 9 ;
+
+
+#define MAX_INDIRECTION 10
   typedef struct
     {
-      char lastread[CFGWIDTH] ;
-      FILE *cfgfile ;
-    } config_struc ;
+      char lastread[CFGWIDTH];
+      FILE *cfgfile[MAX_INDIRECTION];
+      int current_file;
+      char *current_section;
+    } config_struc;
+
+int cfg_init = 0; /* used to detect new cfg struct, for initialization purposes */
+config_struc *cfg_init_ptr = NULL; /* the cfg structure that cfg_init refers to */
+
+/* declarations for funcs in this file used in by other funcs */
+short open_cfg (config_struc *cs, pchar fname, pchar section); 
+void close_cfg (config_struc *cs);
+
+/* handles the @include file opening
+   returns TRUE if all is OK with include file
+
+   input: in_section if NULL indicates we are in a section already skip'ed to
+*/
+int _include_cfg(config_struc *cs, char *in_section)
+{                
+pchar path;
+pchar file;
+char filename[2*CFGWIDTH];
+
+	file = &cs->lastread[1];
+	filename[0]=0;
+	/* open the new file  using the COMSERV_PARAMS env var */
+        if (file[0] == '/')
+        {
+		strcat(filename, file);	/* we have an absolute path */
+        }
+	else if ((path = getenv(COMSERV_PARAMS_ENV)) != NULL)
+	{
+		strcat(filename, path);
+		strcat(filename, "/");
+		strcat(filename, file);
+	}
+	else
+	{
+		/* also just use the filename as is verbatim */
+		strcat(filename, file);
+	}
+	return (open_cfg(cs, filename, in_section));
+}
    
-/* skip to the specified section */
+/* skip to the specified section 
+ *   returns FALSE if section found!
+ *   returns TRUE if section not found or problem with file */
   short skipto (config_struc *cs, pchar section)
     {
       char s[SECWIDTH] ;
       short tries ;
       pchar tmp ;
+
+      if (section == NULL) 
+      {
+         /* this is an @include file inside a section already, return all is OK....FALSE */
+         return FALSE;
+      } 
+      if (cs->current_file == -1) 
+      {
+         /* we closed this file out on a previous read of the config file */
+         return TRUE;
+      }
    
       /* repeat up to twice if looking for a specific section, or once
          if looking for any section "*" */
@@ -79,8 +139,19 @@ short VER_CFGUTIL = 8 ;
              any section start. If found, return FALSE */
           do
             {
-              tmp = fgets(cs->lastread, CFGWIDTH-1, cs->cfgfile) ;
-              untrail (cs->lastread) ;
+              tmp = fgets(cs->lastread, CFGWIDTH-1, cs->cfgfile[cs->current_file]);
+              untrail (cs->lastread);
+	      if (cs->lastread[0] == '@') 
+              {
+		    if (_include_cfg(cs, section) == TRUE) 
+                    {
+			continue; /* go back and read next line from this file, included one did not have desired section */
+                    }
+                    else
+                    {
+                        return FALSE; /* we found it in the included file */
+                    }
+              }
             }
           while ((tmp != NULL) && (strcasecmp((pchar)&cs->lastread, (pchar)&s) != 0) &&
             ((strcmp(section, "*") != 0) || (cs->lastread[0] != '['))) ;
@@ -89,13 +160,18 @@ short VER_CFGUTIL = 8 ;
           if (tmp == NULL)
               {
                 tries++ ;
-                rewind(cs->cfgfile) ;
+                rewind(cs->cfgfile[cs->current_file]) ;
                 cs->lastread[0] = '\0' ;
               }
             else
               return FALSE ;
           }
         while ((tries <= 1) && (strcmp(section, "*") != 0)) ;
+        /* if tmp == NULL then we went through the whole file, we should close it  */
+        if (tmp == NULL) 
+        {
+            close_cfg(cs);
+        }
       return TRUE ; /* no good */    
     }
 
@@ -103,12 +179,30 @@ short VER_CFGUTIL = 8 ;
    or the section is not found */
   short open_cfg (config_struc *cs, pchar fname, pchar section)
     {
-      cs->cfgfile = fopen(fname, "r") ;
-      if (cs->cfgfile == NULL)
+      if (cfg_init == 0 && cs != cfg_init_ptr) 
+      {
+ 	/* we have uninitialized cfg struct and this is first open call */
+        cfg_init = 1;
+        cfg_init_ptr = cs;
+        cs->current_file = -1;
+      } 
+      else if (cfg_init == 1 && cs != cfg_init_ptr) 
+      {
+        /* we have a second config opened before a prior one closed...could be problematic! degenerate case: init anyway */
+        cfg_init_ptr = cs;
+        cs->current_file = -1;
+      }
+
+      cs->current_file++; /* new file */
+
+      cs->cfgfile[cs->current_file] = fopen(fname, "r") ;
+      if (cs->cfgfile[cs->current_file] == NULL)
           return TRUE ;
       cs->lastread[0] = '\0' ; /* there is no next section */
+      cs->current_section = section;
       return skipto(cs, section) ; /* skip to section */
     }
+
 
 /* Returns the part to the left of the "=" in s1, upshifted. Returns the
    part to the right of the "=" in s2, not upshifted. Returns with s1
@@ -122,13 +216,27 @@ short VER_CFGUTIL = 8 ;
       *s2 = '\0' ;
       do
         {
-          if  (feof(cs->cfgfile)) /* IGD was originally, generating compilation error-> if feof(cs->cfgfile)  */
-              return ;
+          if  (feof(cs->cfgfile[cs->current_file])) 
+          {
+              close_cfg(cs);	/* close the current file that is open */
+              if (cs->current_file == -1) 
+              {
+                 return; /* we have reached the last file in the stack */
+              }
+              continue;
+          }
 /* read a line and remove trailing spaces */
-          tmp = fgets(cs->lastread, CFGWIDTH-1, cs->cfgfile) ;
+          tmp = fgets(cs->lastread, CFGWIDTH-1, cs->cfgfile[cs->current_file]) ;
           untrail (cs->lastread) ;
           if ((tmp != NULL) && (cs->lastread[0] != '\0'))
               {
+/* if starts with a '@', it is file to include and start reading instead */
+                if (cs->lastread[0] == '@')
+                {
+		    if (_include_cfg(cs, NULL) == TRUE) {
+			continue; /* section was not found in included file */
+ 		    }
+                }
 /* if starts with a '[', it is start of new section, return */
                 if (cs->lastread[0] == '[')
                     return ;
@@ -150,7 +258,12 @@ short VER_CFGUTIL = 8 ;
 
   void close_cfg (config_struc *cs)
     {
-      fclose(cs->cfgfile) ;
+      if (cs->current_file == -1 || cs->cfgfile[cs->current_file] == NULL) 
+      { 
+         return;
+      }
+      fclose(cs->cfgfile[cs->current_file]) ;
+      cs->current_file--;
     }
 
 /* Find the separator character in the source string, the portion to the
