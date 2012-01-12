@@ -21,11 +21,15 @@ Edit History:
 #define SECWIDTH 256
 #endif
 
+
+#define MAX_INDIRECTION 10
   typedef struct
     {
-      char lastread[CFGWIDTH] ;
-      FILE *cfgfile ;
-    } config_struc ;
+      char lastread[CFGWIDTH];
+      FILE *cfgfile[MAX_INDIRECTION];
+      int current_file;
+      char *current_section;
+    } config_struc;
 
 #ifdef __cplusplus
 extern "C" {
