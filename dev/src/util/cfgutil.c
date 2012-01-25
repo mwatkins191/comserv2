@@ -68,7 +68,7 @@ short open_cfg (config_struc *cs, pchar fname, pchar section);
 void close_cfg (config_struc *cs);
 
 /* handles the @include file opening
-   returns TRUE if all is OK with include file
+   returns TRUE if there is a problem with include file
 
    input: in_section if NULL indicates we are in a section already skip'ed to
 */
@@ -145,7 +145,9 @@ char filename[2*CFGWIDTH];
               {
 		    if (_include_cfg(cs, section) == TRUE) 
                     {
-			continue; /* go back and read next line from this file, included one did not have desired section */
+			continue; /* go back and read next line from this file, 
+				     included one did not have desired section,  
+ 			             or had fatal error opening */
                     }
                     else
                     {
@@ -197,7 +199,11 @@ char filename[2*CFGWIDTH];
 
       cs->cfgfile[cs->current_file] = fopen(fname, "r") ;
       if (cs->cfgfile[cs->current_file] == NULL)
+      {
+          fprintf(stderr, "util/open_cfg(): Fatal Warning: file at path %s could not be opened, skipping\n", fname);
+          cs->current_file--; /* did not open file successfully! */
           return TRUE ;
+      }
       cs->lastread[0] = '\0' ; /* there is no next section */
       cs->current_section = section;
       return skipto(cs, section) ; /* skip to section */
@@ -216,6 +222,10 @@ char filename[2*CFGWIDTH];
       *s2 = '\0' ;
       do
         {
+          if (cs->current_file == -1) 
+          {
+              return; /* something closed the file */
+          }
           if  (feof(cs->cfgfile[cs->current_file])) 
           {
               close_cfg(cs);	/* close the current file that is open */
