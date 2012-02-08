@@ -1,0 +1,65 @@
+########################################################################
+#
+# Makefile     : Comserv
+#
+########################################################################
+
+########################################################################
+# Solaris 2 definitions
+#
+CC	 = cc
+CFLAGS	 = -I$(INCL) -DSOLARIS2  -DMYIPADDR $(DEBUG)
+DEBUG	 = -g
+
+BINDIR	 = ../../bin/Solaris
+INCL	 = ../include
+LDFLAGS	 = $(DEBUG)
+CSUDIR	 = ../util
+CSULIB	 = $(CSUDIR)/libutil.a
+LDLIBS	 = -lposix4 -lnsl -lsocket
+
+########################################################################
+
+ALL =	comserv
+
+
+all:		$(ALL)
+
+comserv:	server.o cscfg.o buffers.o comlink.o commands.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o comserv server.o cscfg.o buffers.o \
+		comlink.o commands.o $(CSULIB) $(LDLIBS)
+
+server.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h server.h server.c
+		$(CC) -c $(CFLAGS) server.c
+
+cscfg.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h server.h cscfg.c
+		$(CC) -c $(CFLAGS) cscfg.c
+
+buffers.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h buffers.c
+		$(CC) -c $(CFLAGS) buffers.c
+
+comlink.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h comlink.c
+		$(CC) -c $(CFLAGS) comlink.c
+
+commands.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h commands.c
+		$(CC) -c $(CFLAGS) commands.c
+
+$(CSULIB):	FORCE
+	(cd $(CSUDIR); make -f Makefile.solaris_cc)
+
+FORCE:
+
+clean:
+		-rm -f *.o $(ALL)
+
+veryclean:
+		-rm *.o $(ALL)
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
+

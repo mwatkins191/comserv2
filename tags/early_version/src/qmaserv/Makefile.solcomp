@@ -1,0 +1,39 @@
+#
+# Simple makefile for the qmaserv process
+# Phil Maechling
+#
+# Currently there is only a Makefile.solaris target.
+#
+# Files of similiar types may be grouped into directories for
+# convienence.
+#
+# The makefile in each directory should support the following targets:
+#       all
+#       clean
+#       veryclean
+#       install
+#
+BINDIR  = ../bin
+
+ALL     = cserv lib330 qmaserv
+
+all:
+	for dir in $(ALL) ; do \
+		echo build for $$dir ... ; \
+		(cd $$dir; make -f Makefile.solcomp all); \
+	done
+
+clean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f Makefile.solcomp clean); \
+	done
+
+veryclean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f Makefile.solcomp veryclean); \
+	done
+
+install:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f Makefile.solcomp BINDIR=$(BINDIR) install); \
+	done

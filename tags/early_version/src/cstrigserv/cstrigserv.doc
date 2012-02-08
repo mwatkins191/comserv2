@@ -1,0 +1,46 @@
+The cstrigserv program is a comserv client that can accept messages from a UDP
+port and control comm detectors on the Quanterra through the comserv
+interface.
+
+The cstrigserv program by default has a comserv client name of CSTR, and it
+reads its configuration information from the global comserv stations.ini file
+and station-specific station.ini file.
+
+Below is a list of configuration parameters for cstrigserv.  The program can be configured
+to receive messages from up to 16 distinct UDP addresses.
+
+[cstr]
+* ip port to listen on
+ipport=19001
+* valid ip addrs to receive udp msgs from.
+* there can be up to 16 addresses listed.
+udpaddr1=192.168.101.2
+udpaddr2=192.168.101.3
+udpaddr3=192.168.101.5
+* optional - my ip address for ack messages.
+myaddr=192.168.1.101.2
+* optional - path to lock file.
+lockfile=path
+
+Cstrigserv recognizes the following format messages:
+
+1.  Explicitly set one or more commdet flags.
+seq_no SET commdet1 value1 commdet2 value2 ... commdetN valueN
+	Set the specified commdet flags to the specified values.
+	1 = enable, 0 = disable.
+
+2.  Trigger one or more commdet flags for a specified duration.
+seq_no TRIGGER duration commdet1 commdet2 ... commdetN
+	Set the specified commdet flags to trigger for the specified
+	duration (in seconds).
+
+3.	Reset server.
+seq_no  RESET
+	Reset any cached trigger information in the server.
+	BEWARE:  This can leave comm detectors turned on permanently!
+
+where:
+	seq_no: unsigned integer
+	commdet1 ... commdetN:  Comm detector names (eg HON, BON, etc).
+				At most 32 commdet strings per message.
+	duration:		duration time for trigger in seconds.

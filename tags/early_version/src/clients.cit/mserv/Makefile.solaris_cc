@@ -1,0 +1,56 @@
+########################################################################
+#
+# Makefile     : mserv - Multicast Comserv
+#
+# Author       : Phil Maechling
+#
+# Last Revised : 2004/07/12
+#
+########################################################################
+
+########################################################################
+# Solaris 2 definitions
+#
+CC	 = cc
+LD	 = $(CC)
+
+COMSERV	 = ../../comserv
+INCL	 = ../../include
+CFLAGS	 = -I$(INCL) -I$(COMSERV) -DSOLARIS2
+CSUDIR	 = ../../util
+LDLIBS	 = -L$(CSUDIR) -lposix4 -lnsl -lsocket -lutil
+
+########################################################################
+
+#files =	$(COMSERV)/buffers.c $(COMSERV)/commands.c mcomlink.c mcscfg.c mservutils.c mserver.c csplit.c
+files =	$(COMSERV)/buffers.c $(COMSERV)/commands.c mcomlink.c mcscfg.c mservutils.c mserver.c
+
+headers = $(INCL)/quanstrc.h $(INCL)/service.h $(INCL)/cfgutil.h $(INCL)/stuff.h $(COMSERV)/server.h
+
+mserv = $(COMSERV)/buffers.o $(COMSERV)/commands.o mserver.o mservutils.o mcscfg.o mcomlink.o 
+
+sources = $(headers) $(files)
+objects = $(files:.c=.o)
+
+program = mserv
+
+#implicit rule for convertin C file to object file
+#
+.c.o:
+	$(CC) $(CFLAGS) -c $<
+
+ALL = $(program)
+
+$(program):$(objects) $(files)
+	$(LD) $(mserv) -o $@ $(LDLIBS)
+
+all: $(ALL)
+
+clean:
+		-rm *.o $(ALL)
+
+veryclean:
+		-rm *.o $(ALL) *~
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
