@@ -1,0 +1,87 @@
+Sept 13, 2007  - updated with Doug Neuhauser's modifications, and latest C-lib330
+
+The version of cLib330 that was included with this build was 2007-09-04
+
+-----------------------older 2005 notes----------------------------
+
+This unified COMSERV bundle contains the comserv server and several clients
+which together provide a communication/data link with Quanterra Inc. digitizers.
+
+In addition to COMSERV, for older quanterras, this version includes MountainAir,
+or qmaserv, for Q330 digitizers. The MountainAir version is v1.1.1 and also
+includes the Q3302EW program which will compile under Windows or Solaris.
+
+This version supports Linux OS (little-endian computers), or can be
+compiled for big-endian computers (primarily Sun Sparc, running Solaris).
+
+This version is based on the Solaris version of COMSERV bundle 000518
+(comserv server v.31). The earlier version of this bundle is
+comserv4linux.010319 (comserv server v.32).
+
+COMSERV was ported to Linux by Ilya Dricker (i.dricker@isti.com),
+Instrumental Software Technologies, Inc. under the contract with Kinemetrics, Inc.
+
+The original big-endian version of COMSERV is written by Quanterra, Inc. and is
+maintained by Doug Neuhauser (doug@seismo.berkeley.edu).
+A vanilla big-endian version is available at
+http://quake.geo.berkeley.edu/qug/software/comserv/
+
+For an additional extensive information about COMSERV for linux,
+please refer to the file doc/pdf/comserv4linux1.0.pdf.
+
+For brief installation and compilation instructions, please read the
+file INSTALL in the src directory.
+
+For information about the latest features of COMSERV, see the file NEWS.
+
+June 28, 2004 - doc started
+
+Notes from Doug Neuhauser's changes:
+2007/08/24	Doug Neuhauser
+
+ISTI's port of comserv to LINUX assumed
+    SOLARIS == big_endian
+    LINUX    == little_endian 
+I need to differentiate OS vs endian changes in the code.
+
+1.  I added a new conditional compilation option to handle
+    little-endian code.
+	-DLITTLE_ENDIAN
+    This is distinct from the previous option
+	-DLINUX
+    which assumed both Linux OS AND little endian architecture.
+
+2.  Compilation options required for various OS and architectures:
+    Solaris SPARC:
+	-DSOLARIS2 
+    Solaris x86
+	-DSOLARIS2 -DLITTLE_ENDIAN
+    Linux x86
+	-DLINUX -DLITTLE_ENDIAN
+
+3.  I also included the current version of qlib2.
+    Previous version is qlib2.0
+
+4.  I created a new set of Makefile:
+	Makefile.solaris_cc_x86
+
+5.  Changes made to handle SIGALRM between client and servers.
+    The nanosleep() call in Solaris is not interrupted and terminated
+    when SIGALRM is ignored.  Therefore, the client and server were
+    only handling requestes from the other when their nanosleep()
+    normally terminated, NOT when the process received a SIGALRM.
+
+    Instead of ignoring SIGALRM (which apparently did work under
+    SUNOS and perhaps earlier Solaris versions, or versions with 
+    usleep()), I added signal handling for SIGLARM so that nanosleep()
+    would be interrupted and return EINTR instead of waiting for the
+    entire sleep time to finish.  Note that I used sigaction() instead
+    signal(), since I was able to demonstrate that signal() really IS
+    unreliable, and that it cannot properly handle all signals in 
+    an SVR4 environment (eg Solaris).
+
+6.  Incorporated ISTI's mserv logging functionality into comserv.
+
+7.  We need a better way to handle the various combination
+    of OS, endian, and compilers.
+
