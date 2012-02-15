@@ -1,4 +1,4 @@
-Feb 13 2012	Doug Neuhauser, doug@seismo.berkeley.edu
+Feb 14 2012	Doug Neuhauser, doug@seismo.berkeley.edu
 
 1.  Merged sources for multiple distributions together
 	Solaris/Sparc
@@ -11,8 +11,8 @@ Feb 13 2012	Doug Neuhauser, doug@seismo.berkeley.edu
 	Makefile.solaris_cc
 	Makefile.solaris_cc_x86
 	Makefile.solaris_gcc
-3.  Updated qlib2 to
-4.  Updated Quanterra lib330 to
+3.  Updated qlib2 to current qlib2.
+4.  Updated Quanterra lib330 to current lib330.
 5.  Fixed various bugs in clients for little-endian builds.
 6.  Changed qmaserv2 multicast 1-second packets to multicast only the
 	required number of samples for each channel.
