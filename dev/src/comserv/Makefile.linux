@@ -20,13 +20,13 @@
 ##	-D_LITTLE_ENDIAN_HEADER flag means that the headers of MSEED records are
 #		going to be stored in LITTLE ENDIAN byte order (native) on
 #		LITTLE-ENDIAN OS (Intel Linux)
-#	If neither  -D_BIG_ENDIAN_HEADER or -D_LITTLE_ENDIAN_HEADER , the default
+#	If neither  -D_BIG_ENDIAN_HEADER or -D_ENDIAN_LITTLE_HEADER , the default
 #	is -D_LITTLE_ENDIAN_HEADER and MSEEED record headars are stored in LITTLE
 #	ENDIAN BYTE ORDER IN SHARED MEMORY of COMSERV
-CC	= gcc -g -m32
+CC	= gcc -g
 INCL	= ../include
-CFLAGS	=  -I$(INCL)  -DLINUX  -DMYIPADDR
-LDFLAGS	= 
+CFLAGS	= -m32 -I$(INCL) -DMYIPADDR -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER
+LDFLAGS	= -m32
 CSUDIR	= ../util
 CSULIB = $(CSUDIR)/libutil.a
 LDLIBS =
@@ -57,7 +57,6 @@ LDLIBS =
 ########################################################################
 
 ALL =	comserv
-BINDIR = ../../bin
 
 all:		$(ALL)
 

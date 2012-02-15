@@ -13,7 +13,6 @@
 #       veryclean
 #       install
 #
-#BINDIR  = ../bin
 
 MAKEFILE = Makefile.solaris_cc
 

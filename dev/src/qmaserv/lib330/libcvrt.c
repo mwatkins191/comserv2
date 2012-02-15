@@ -22,6 +22,8 @@ Edit History:
    -- ---------- --- ---------------------------------------------------
     0 2006-09-28 rdr Created
     1 2006-10-29 rdr Add including my header file.
+    2 2009-06-09 rdr Add protection against denormalized floating point values in
+                     loadsingle.
 */
 #ifndef libcvrt_h
 #include "libcvrt.h"
@@ -196,13 +198,20 @@ end
 
 single loadsingle (pbyte *p)
 begin
-  longint li ;
+  longint li, exp ;
   single s ;
 
   memcpy(addr(li), *p, 4) ;
 #ifdef ENDIAN_LITTLE
   li = ntohl(li) ;
 #endif
+  exp = (li shr 23) and 0xFF ;
+  if ((exp < 1) lor (exp > 254))
+    then
+      li = 0 ; /* replace with zero */
+  else if (li == 0x80000000)
+    then
+      li = 0 ; /* replace with positive zero */
   memcpy(addr(s), addr(li), 4) ;
   incn(*p, 4) ;
   return s ;

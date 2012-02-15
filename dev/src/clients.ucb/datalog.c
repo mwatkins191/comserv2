@@ -285,6 +285,7 @@ main (int argc, char **argv)
 	    if (this->valdbuf) {
 		pdat = (pdata_user) ((long) me + this->dbufoffset);
 		for (k = 0; k < this->valdbuf; k++) {
+		    char seqno[7];
 		    pseed = (pvoid) &pdat->data_bytes;
 		    if (verbosity & 1) {
 			printf("%s [%-4.4s] <%2d> %s recvtime=%s ",
@@ -292,7 +293,10 @@ main (int argc, char **argv)
 			       &this->name, k, 
 			       seednamestring(&pseed->channel_id,&pseed->location_id), 
 			       localtime_string(pdat->reception_time));
-			printf("hdrtime=%s\n", time_string(pdat->header_time));
+			printf("hdrtime=%s ", time_string(pdat->header_time));
+			strncpy (seqno, pdat->data_bytes, 6);
+			seqno[6] = '\0';
+			printf("seq=%s\n", seqno);
 			fflush (stdout);
 		    }
 		    ret = store_seed(pseed);
@@ -361,7 +365,19 @@ int terminate_program (int error)
 	printf ("%s %s - Final scan to ack all received packets\n", 
 		time_str, station);
 	fflush (stdout);
-	cs_scan (me, &alert);
+	j = cs_scan (me, &alert);
+	printf ("cs_scan() = %d\n", j);
+	fflush (stdout);
+	sleep (3);
+/*
+	sleep (1);
+	printf ("%s %s - Second Final scan to ack all received packets\n", 
+		time_str, station);
+	j = cs_scan (me, &alert);
+	printf ("cs_scan() = %d\n", j);
+	fflush (stdout);
+	sleep (1);
+*/
 	cs_off (me);
     }
 

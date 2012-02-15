@@ -551,12 +551,15 @@ char *selector_type_str[] = {"DAT", "EVT", "CAL", "TIM", "MSG", "BLK"};
 /************************************************************************/
 int save_selectors(int type, char *str)
 {
-    char *token;
+    char *token = NULL;
     seltype *selectors = NULL;
-    char *p = str;
+    char *copy_str;
+    char *p;
     int n = 0;
 
     if (str == NULL || (int)strlen(str) <= 0) return(TN_FAILURE);
+    copy_str = strdup(str);
+    p = copy_str;
     sel[type].nselectors = 0;
     if (sel[type].selectors) free (sel[type].selectors);
     while (token = strtok(p,",")) {
@@ -564,6 +567,7 @@ int save_selectors(int type, char *str)
 	    fprintf (info, "Error in selector list for %s\n",
 		     selector_type_str[type]);
 	    if (selectors) free (selectors);
+	    free(copy_str);
 	    return(TN_FAILURE);
 	}
 	selectors = (selectors == NULL) ? (seltype *)malloc(sizeof(seltype)) : 
@@ -571,6 +575,7 @@ int save_selectors(int type, char *str)
 	if (selectors == NULL) {
 	    fprintf (info, "Error allocating selector space for %s\n",
 		     selector_type_str[type]);
+	    free(copy_str);
 	    return(TN_FAILURE);
 	}
 	strcpy(selectors[n++],lead(5,'?',token));
@@ -578,6 +583,7 @@ int save_selectors(int type, char *str)
     }
     sel[type].selectors = selectors;
     sel[type].nselectors = n;
+    free(copy_str);
     return(TN_SUCCESS);
 }
 

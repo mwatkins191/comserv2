@@ -23,10 +23,14 @@ Modification History:
 Ver   Date       WHO	What
 ----------------------------------------------------------------------
    2 24 Aug 2007 DSN	Ported to little_endian systems.
+   3 04 Dec 2010 DSN	Added function to generate nepoch from SEED time.
 
 **********************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <inttypes.h>
 #include "quanstrc.h"
 #include "mservutils.h"
 
@@ -35,7 +39,9 @@ int classify_packet(seed_fixed_data_record_header* sh)
 
   /*  WARNING - ASSUMPTION - ASSUME RECORD IS BIG_ENDIAN */
 
-  if(sh->header.seed_record_type != 'D')
+  if (! (sh->header.seed_record_type == 'D' || 
+	 sh->header.seed_record_type == 'Q' || 
+	 sh->header.seed_record_type == 'R' ) )
   {
     /* I'm guessing on this one. I don't know what type the blockettes */
     /* will be flagged as, but I expect everything else to be = 'D' */
@@ -43,7 +49,7 @@ int classify_packet(seed_fixed_data_record_header* sh)
 
     return(BLOCKETTE);
   }
-  else /* Must be a SEED "D' record type */
+  else /* Must be a SEED "D', 'R', or 'Q' record type */
   {
 
     /* Test for the data only blockette encoding */
@@ -108,8 +114,32 @@ int classify_packet(seed_fixed_data_record_header* sh)
 }
 
 
-int header_to_double_time(seed_fixed_data_record_header* sh,
-			  double* out_time)
+#define	IS_LEAP(yr)	( yr%400==0 || (yr%4==0 && yr%100!=0) )
+double header_to_double_time(seed_fixed_data_record_header* sh)
 {
-  return(FALSE);
+    seed_time_struc *seedtime = &(sh->header.starting_time);
+    seed_time_struc st;
+    int seconds;
+    double dseconds;
+    int year = 1970;
+    int days = 0;
+    
+    /* Convert SEED time from network byte order to computer byte order. */
+    st.yr = ntohs(seedtime->yr);
+    st.jday = ntohs(seedtime->jday);
+    st.hr = seedtime->hr;
+    st.minute = seedtime->minute;
+    st.seconds = seedtime->seconds;
+    st.tenth_millisec = ntohs(seedtime->tenth_millisec);
+
+    /* WARNING - ASSUMPTION - ASSUME RECORD IS BIG_ENDIAN */
+    /* WARNING- Assume SEED time is >= 1980. This is OK for real-time code. */
+    while (year < st.yr) {
+	days += 365 + (IS_LEAP(year));
+	year++;
+    }
+    days += (st.jday-1);
+    seconds = (days*86400) + (st.hr*3600) + (st.minute*60) + st.seconds;
+    dseconds = seconds + ((double)st.tenth_millisec)/10000;
+    return (dseconds);
 }

@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2002 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qda_utils.c,v 1.8 2003/07/29 17:47:57 doug Exp $ ";
+static char sccsid[] = "$Id: qda_utils.c,v 1.9 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -253,7 +253,6 @@ DATA_HDR *decode_hdr_qda
     int		blksize = 0;
     int		itmp[2];
     short int	stmp[2];
-    unsigned short int ustmp[2];
 
     /* Perform data integrity check, and pick out pertinent header info.*/
     if (my_wordorder < 0) get_my_wordorder();
@@ -319,7 +318,7 @@ DATA_HDR *decode_hdr_qda
     ohdr->sample_rate = ihdr->sample_rate;
     ohdr->sample_rate_mult = 1;
 
-    s = stream_name[ihdr->stream];
+    s = stream_name[(int)(ihdr->stream)];
     c = get_component_name(ohdr->station_id, ihdr->component);
     comp_to_seed(s, c, &sc);
     if (sc != NULL) {

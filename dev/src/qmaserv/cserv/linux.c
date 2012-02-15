@@ -5,12 +5,12 @@ Edit History:
    Ed Date      By  Changes
    -- --------- --- ---------------------------------------------------
     1 ?? ??? ?? ??? Initial coding.
-    2 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+    2 24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
 */
 
 short flip2( short shToFlip ) {
 
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
  short shSave1, shSave2;
 
         shSave1 = ((shToFlip & 0xFF00) >> 8);
@@ -22,7 +22,7 @@ short flip2( short shToFlip ) {
 }
 
 int flip4( int iToFlip ) {
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
 int iSave1, iSave2, iSave3, iSave4;
 
         iSave1 = ((iToFlip & 0xFF000000) >> 24);

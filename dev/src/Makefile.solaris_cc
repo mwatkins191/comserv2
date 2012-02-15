@@ -9,27 +9,27 @@
 #	clean
 #	install
 
+MAKEFILE = Makefile.solaris_cc
+
 # BINDIR defined with respect to the subdirectories.
 BINDIR	 = ../../bin/Solaris
-
-MAKEFILE = Makefile.solaris_cc
 
 ALLLIBS	 =  qlib2
 ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
 ALL	 =  $(ALLLIBS) $(ALLPROGS)
 
-all: 	
+all:
 	for dir in $(ALLPROGS) ; do \
 		echo BUILD for $$dir ... ; \
 		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
 
-solaris: 	
-	for dir in $(ALLPROGS) ; do \
+libs:	$(ALLLIBS)
+	for dir in $(ALLLIBS) ; do \
 		echo BUILD for $$dir ... ; \
 		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
-
+	
 clean:
 	for dir in $(ALLPROGS) ; do \
 		(cd $$dir; make -f $(MAKEFILE) clean); \

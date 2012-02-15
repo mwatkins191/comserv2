@@ -21,6 +21,7 @@ Edit History:
 #include <termio.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <time.h>
 #else
 #include <time.h>
 #endif

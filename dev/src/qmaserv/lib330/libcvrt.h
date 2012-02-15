@@ -26,7 +26,7 @@ Edit History:
 #ifndef libcvrt_h
 /* Flag this file as included */
 #define libcvrt_h
-#define VER_LIBCVRT 1
+#define VER_LIBCVRT 2
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

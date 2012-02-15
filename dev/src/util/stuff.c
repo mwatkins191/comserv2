@@ -25,7 +25,7 @@ Edit History:
     9  9 Dec 99 IGD Add up  flip4array(long *in, short bytes) to swap long and int 
 		    data arrays 4 byte data array in case of NUXI problem
    10  5 Mar 01 IGD Add float flip_float(float) byte-swapping routine
-   11 24 Aug 07 DSN Port to LINUX, and separate LITTLE_ENDIAN from LINUX logic.
+   11 24 Aug 07 DSN Port to LINUX, and separate ENDIAN_LITTLE from LINUX logic.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -75,7 +75,7 @@ short VER_STUFF = 11 ;
       for (i = 0 ; i < 4 ; i++)
         if (i < strlen(name))
             { /* move characters left, add on right */
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
               temp.l = temp.l >> 8 ; /*IGD - that how it should work for little-endian machines */
 #else
               temp.l = temp.l << 8 ;
@@ -199,7 +199,7 @@ short VER_STUFF = 11 ;
 
 short flip2( short shToFlip ) {
 
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
  short shSave1, shSave2;
  
  	shSave1 = ((shToFlip & 0xFF00) >> 8);
@@ -211,7 +211,7 @@ short flip2( short shToFlip ) {
 }
 
 int flip4( int iToFlip ) {
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
 int iSave1, iSave2, iSave3, iSave4;
 
 	iSave1 = ((iToFlip & 0xFF000000) >> 24);
@@ -230,7 +230,7 @@ int iSave1, iSave2, iSave3, iSave4;
  * Modified on 03/09/01
  */
 float flip_float(float fToFlip)	{
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
     union {
 		float fl;		
 		char p[4];
@@ -248,9 +248,9 @@ float flip_float(float fToFlip)	{
 return (fToFlip);        /*if it is not little-endian computer, just return input*/
 }	
  
-int flip4array (long *in, short bytes)	{
+int flip4array (long *inp, short bytes)	{
 /*--------------------------------------------------------
-/ Swaps "bytes" bytes of a long array *in: 12345678->43218765 etc. 
+/ Swaps "bytes" bytes of a long array *inp: 12345678->43218765 etc. 
 / returns 0 in case of success and negative value otherwise. 
 / Directly modifies data stored in the memory pointed by *data,
 / therefore could be dangerous if used improperly.
@@ -259,7 +259,7 @@ int flip4array (long *in, short bytes)	{
 / 12/09/1999 Initial revision
 /---------------------------------------------------------*/
 unsigned char tmp;
-unsigned char *p = (unsigned char *)in; 
+unsigned char *p = (unsigned char *)inp; 
 short i;
 short j;
 

@@ -16,9 +16,11 @@ LD	 = $(CC)
 
 COMSERV	 = ../../comserv
 INCL	 = ../../include
-CFLAGS	 = -I$(INCL) -I$(COMSERV) -DSOLARIS2 -DLITTLE_ENDIAN
+CFLAGS	 = -I$(INCL) -I$(COMSERV) -DSOLARIS2 -DENDIAN_LITTLE $(DEBUG)
+LDFLAGS	 = $(DEBUG)
 CSUDIR	 = ../../util
 LDLIBS	 = -L$(CSUDIR) -lposix4 -lnsl -lsocket -lutil
+DEBUG	 = -g
 
 ########################################################################
 

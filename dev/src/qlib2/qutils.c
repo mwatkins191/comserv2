@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2004 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qutils.c,v 1.11 2007/04/24 20:00:13 doug Exp $ ";
+static char sccsid[] = "$Id: qutils.c,v 1.14 2011/08/19 16:13:31 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -50,6 +50,7 @@ static char sccsid[] = "$Id: qutils.c,v 1.11 2007/04/24 20:00:13 doug Exp $ ";
 #include <malloc.h>
 #endif
 
+#include "qlib2_version.h"
 #include "qdefines.h"
 #include "data_hdr.h"
 #include "sdr.h"
@@ -90,52 +91,53 @@ typedef struct stream_map {
 STREAM_MAP known_streams[] = {
 /*  Broadband data streams:						*/
 /*  VSP - 80 SPS from broadband seismometer.				*/
-    "HHZ",  "VSP",  "Z",
-    "HHN",  "VSP",  "N",
-    "HHE",  "VSP",  "E",
+    {"HHZ",  "VSP",  "Z",},
+    {"HHN",  "VSP",  "N",},
+    {"HHE",  "VSP",  "E",},
 /*  Old (incorrect) names for VSP 80 SPS broadband data.		*/
 /*  Used for some station's VSP 100 SPS data.				*/
-    "EHZ",  "VSP",  "Z",
-    "EHN",  "VSP",  "N",
-    "EHE",  "VSP",  "E",
+    {"EHZ",  "VSP",  "Z",},
+    {"EHN",  "VSP",  "N",},
+    {"EHE",  "VSP",  "E",},
 /*  VBB - 20 SPS from broadband seismometer.				*/
-    "BHZ",  "VBB",  "Z",
-    "BHN",  "VBB",  "N",
-    "BHE",  "VBB",  "E",
+    {"BHZ",  "VBB",  "Z",},
+    {"BHN",  "VBB",  "N",},
+    {"BHE",  "VBB",  "E",},
 /*  LP - 1 SPS from broadband seismometer.				*/
-    "LHZ",  "LP",   "Z",
-    "LHN",  "LP",   "N",
-    "LHE",  "LP",   "E",
+    {"LHZ",  "LP",   "Z",},
+    {"LHN",  "LP",   "N",},
+    {"LHE",  "LP",   "E",},
 /*  VLP - 1/10 SPS from broadband seismometer.				*/
-    "VHZ",  "VLP",  "Z",
-    "VHN",  "VLP",  "N",
-    "VHE",  "VLP",  "E",
+    {"VHZ",  "VLP",  "Z",},
+    {"VHN",  "VLP",  "N",},
+    {"VHE",  "VLP",  "E",},
 /*  ULP - 1/100 SPS from broadband seismometer.				*/
-    "UHZ",  "ULP",  "Z",
-    "UHN",  "ULP",  "N",
-    "UHE",  "ULP",  "E",
+    {"UHZ",  "ULP",  "Z",},
+    {"UHN",  "ULP",  "N",},
+    {"UHE",  "ULP",  "E",},
 /*  LG - 80 SPS (low gain) force balance accelerometer (fba) data.	*/
-    "HLZ",  "LG",  "Z",
-    "HLN",  "LG",  "N",
-    "HLE",  "LG",  "E",
+    {"HLZ",  "LG",  "Z",},
+    {"HLN",  "LG",  "N",},
+    {"HLE",  "LG",  "E",},
 /*  Old (incorrect) LG - 80 SPS (low gain) FBA data.			*/
-    "ELZ",  "LG",   "Z",
-    "ELN",  "LG",   "N",
-    "ELE",  "LG",   "E",
+    {"ELZ",  "LG",   "Z",},
+    {"ELN",  "LG",   "N",},
+    {"ELE",  "LG",   "E",},
 /*  BKS VBB channels from ULP instrument.				*/
-    "BHA",  "UBB",   "Z",
-    "BHB",  "UBB",   "N",
-    "BHC",  "UBB",   "E",
+    {"BHA",  "UBB",   "Z",},
+    {"BHB",  "UBB",   "N",},
+    {"BHC",  "UBB",   "E",},
 /*  Experimental channels.						*/
 /*::
-    "LXZ",  "LX",   "Z",
-    "LXN",  "LX",   "N",
-    "LXE",  "LX",   "E",
-    NULL,   UNKNOWN_STREAM,  UNKNOWN_COMP,
-    UNKNOWN_STREAM,   NULL,   NULL,
+    {"LXZ",  "LX",   "Z",},
+    {"LXN",  "LX",   "N",},
+    {"LXE",  "LX",   "E",},
+    {NULL,   UNKNOWN_STREAM,  UNKNOWN_COMP,},
+    {UNKNOWN_STREAM,   NULL,   NULL,},
 ::*/
 /*  Table terminator.							*/
-    NULL,   NULL,   NULL };
+    {NULL,   NULL,   NULL },
+};
 
 /************************************************************************/
 /*  seed_to_comp:							*/
@@ -355,7 +357,7 @@ char *uppercase
 {
     char *p = string;
     unsigned char c;
-    while (c = *p) *(p++) = islower(c) ? toupper(c) : c;
+    while ((c = *p)) *(p++) = islower(c) ? toupper(c) : c;
     return (string);
 }
 
@@ -370,7 +372,7 @@ char *lowercase
 {
     char *p = string;
     unsigned char c;
-    while (c = *p) *(p++) = isupper(c) ? tolower(c) : c;
+    while ((c = *p)) *(p++) = isupper(c) ? tolower(c) : c;
     return (string);
 }
 
@@ -482,7 +484,6 @@ char *capnint
 {
     char tmpstr[80];
     char tmpfmt[10];
-    char *dp = dst;
     sprintf (tmpfmt, "%%0%dd",n);
     sprintf (tmpstr, tmpfmt, ival);
     strncpy (dst, tmpstr, n);
@@ -505,7 +506,6 @@ char *capnlong
 {
     char tmpstr[80];
     char tmpfmt[10];
-    char *dp = dst;
     sprintf (tmpfmt, "%%0%dld",n);
     sprintf (tmpstr, tmpfmt, ival);
     strncpy (dst, tmpstr, n);
@@ -575,7 +575,6 @@ int init_qlib2
 /************************************************************************/
 int get_my_wordorder()
 {
-    char *force_qlib2_version = qlib2_version;
     int ival = 0x01234567;		/* hex 01234567			*/
     unsigned char *pc;
     pc = (unsigned char *)&ival;
@@ -663,7 +662,7 @@ int wordorder_from_time
 int is_data_hdr_ind 
     (char c)			/* data_hdr_ind char.			*/
 {
-    return (c == DATA_HDR_IND_D || c == DATA_HDR_IND_R || c == DATA_HDR_IND_Q);
+    return (c == DATA_HDR_IND_D || c == DATA_HDR_IND_R || c == DATA_HDR_IND_Q || c == DATA_HDR_IND_M);
 }
 
 /************************************************************************/

@@ -13,8 +13,8 @@
 #
 CXX	 = CC
 CC	 = cc
-CXXFLAGS =  -D_SPARC -D_SOLARIS -features=no%altspell  -I$(INCL) -DLITTLE_ENDIAN
-CFLAGS	 = -DLITTLE_ENDIAN
+CXXFLAGS =  -D_SPARC -D_SOLARIS -features=no%altspell  -I$(INCL) -DENDIAN_LITTLE
+CFLAGS	 = -DENDIAN_LITTLE
 LD	 = $(CXX)
 
 INCL	 = ../../include

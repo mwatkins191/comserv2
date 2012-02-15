@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2003 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -38,7 +38,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_utils.c,v 1.17 2004/06/20 01:19:05 doug Exp $ ";
+static char sccsid[] = "$Id: ms_utils.c,v 1.19 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -69,13 +69,15 @@ typedef struct data_format_table {
 
 static FORMAT_ENTRY data_format_table[] =
 {
-    INT_16,		"INT_16",
-    INT_24,		"INT_24",
-    INT_32,		"INT_32",
-    STEIM1,		"STEIM1",
-    STEIM2,		"STEIM2",
-    UNKNOWN_DATATYPE,	"UNKNOWN",
-    UNKNOWN_DATATYPE,	NULL,
+    {INT_16,		"INT_16",},
+    {INT_24,		"INT_24",},
+    {INT_32,		"INT_32",},
+    {STEIM1,		"STEIM1",},
+    {STEIM2,		"STEIM2",},
+    {IEEE_FP_SP,	"IEEE_FP_SP",},
+    {IEEE_FP_DP,	"IEEE_FP_DP",},
+    {UNKNOWN_DATATYPE,	"UNKNOWN",},
+    {UNKNOWN_DATATYPE,	NULL,},
 };
 
 /************************************************************************/
@@ -156,7 +158,6 @@ int read_ms_hdr
     char *buf;			/* buffer for hdr and blockettes.	*/
     DATA_HDR *hdr;		/* pointer to DATA_HDR.			*/
     BS *bs;			/* ptr to blockette structure.		*/
-    BLOCKETTE_1000 *b1000;	/* prt to blockette 1000.		*/
     int nskip = 0;
     int offset = 0;
     int alloc_buf = 0;
@@ -301,6 +302,7 @@ int read_ms_bkt
     SEED_UWORD	bl_len, bl_next, bl_type;
     int		bh_len = sizeof(BLOCKETTE_HDR);
     int		blksize = 0;
+    int		preread = 0;    /* # bytes of blockette data preread.	*/
 
     if (my_wordorder < 0) get_my_wordorder();
     bs = pbs = (BS *)NULL;
@@ -333,6 +335,7 @@ int read_ms_bkt
 	/*  Read blockette header.					*/
 	if (fread (buf+offset, bh_len, 1, fp) != 1) 
 	    return (EOF);
+	preread = 0;
 
 	/*  Decide how much space the blockette takes up.  If we know 	*/
 	/*  blockette type, then allocate the appropriate space.	*/
@@ -354,9 +357,7 @@ int read_ms_bkt
 	    swab2 ((short int *)&bl_type);
 	    swab2 ((short int *)&bl_next);
 	}
-	bl_limit = (bl_next) ? bl_next : 
-		   (hdr->first_data) ? hdr->first_data :
-		   0;
+	bl_limit = (bl_next) ? bl_next : (hdr->first_data) ? hdr->first_data : 0;
 	switch (bl_type) {
 	  case 100: bl_len = sizeof (BLOCKETTE_100); break;
 	  case 200: bl_len = sizeof (BLOCKETTE_200); break;
@@ -371,6 +372,20 @@ int read_ms_bkt
 	  case 500: bl_len = sizeof (BLOCKETTE_500); break;
 	  case 1000: bl_len = sizeof (BLOCKETTE_1000); break;
 	  case 1001: bl_len = sizeof (BLOCKETTE_1001); break;
+	  /* Variable length blockettes.  Preserve original length,	*/
+	  /* even though it may not is divisible by 4.		*/
+	  /* It is up to the user to ensure that that blockettes	*/
+	  /* have 4 byte alignment in a SEED data record.		*/
+	  case 2000: 
+	    /* Length of blockette 2000 is stored in first word of blockette.	*/
+	    preread = 2;
+	    if (fread (buf+offset+bh_len, preread, 1, fp) != 1) 
+		return (EOF);
+	    bl_len = ((BLOCKETTE_2000 *)(buf+offset))->blockette_len; 
+	    if (hdr->hdr_wordorder != my_wordorder) {
+		swab2 ((short int *)&bl_len);
+	    }
+	    break;
 	  default:
 	    fprintf (stderr, "Warning: unknown blockette %d\n",bl_type);
 	    bl_len = 0;
@@ -394,7 +409,7 @@ int read_ms_bkt
 	    /* Check that we do not run into the data portion of record.*/
 	    if (hdr->first_data != 0 && (int)bl_len+offset > hdr->first_data) {
 		fprintf (stderr, "Warning: blockette %d	at offset=%d len=%d first_data=%d\n",
-			 bl_type, bl_limit-offset, bl_len);
+			 bl_type, bl_limit-offset, bl_len, hdr->first_data);
 		bl_len = bl_limit - offset;
 	    }
 	}
@@ -413,7 +428,7 @@ int read_ms_bkt
 	    return (-1);
 	}
 	/* Read the body of the blockette, and copy entire blockette.	*/
-	if (fread(buf+offset+bh_len, bl_len-bh_len, 1, fp) != 1)
+	if (fread(buf+offset+bh_len+preread, bl_len-bh_len-preread, 1, fp) != 1)
 	    return(-1);
 	memcpy (bs->pb,buf+offset,bl_len);
 	bs->len = bl_len;
@@ -423,6 +438,7 @@ int read_ms_bkt
 	    blksize = (int)pow(2., (double)((BLOCKETTE_1000 *)(buf+offset))->data_rec_len);
 	}
 	offset += bl_len;
+	preread = 0;
     }
 
     /* Ensure there are no more blockettes. */
@@ -524,7 +540,6 @@ DATA_HDR *decode_fixed_data_hdr
 	p = (char *)ihdr+8;	/* point to start of blockette.	    */
 	ohdr->data_type = atoi(charncpy(tmp,p,3));
 	switch (ohdr->data_type) {
-	  int ok;
 	  case 5:
 	  case 8:
 	  case 10:
@@ -650,7 +665,7 @@ MS_ATTR get_ms_attr
 	break;
       case INT_16:
 	attr.sample_size = 2;
-	attr.alignment = 1;
+	attr.alignment = 2;
 	attr.nframes = 0;
 	attr.framelimit = 0;
 	attr.nbytes = hdr->num_samples * attr.sample_size;
@@ -666,7 +681,23 @@ MS_ATTR get_ms_attr
 	break;
       case INT_32:
 	attr.sample_size = 4;
-	attr.alignment = 1;
+	attr.alignment = 4;
+	attr.nframes = 0;
+	attr.framelimit = 0;
+	attr.nbytes = hdr->num_samples * attr.sample_size;
+	attr.bytelimit = (hdr->blksize - hdr->first_data);
+	break;
+    case IEEE_FP_SP:
+	attr.sample_size = sizeof(float);
+	attr.alignment = sizeof(float);
+	attr.nframes = 0;
+	attr.framelimit = 0;
+	attr.nbytes = hdr->num_samples * attr.sample_size;
+	attr.bytelimit = (hdr->blksize - hdr->first_data);
+	break;
+    case IEEE_FP_DP:
+	attr.sample_size = sizeof(double);
+	attr.alignment = sizeof(double);
 	attr.nframes = 0;
 	attr.framelimit = 0;
 	attr.nbytes = hdr->num_samples * attr.sample_size;
@@ -722,6 +753,32 @@ char *encode_data_format
     return (data_format_table[i].name);
 }
 
+/************************************************************************/
+/*  mseed_to_data_format:                                               */
+/*	Determine the unpacked(working) data format given the input     */
+/*	mSEED format.                                                   */
+/*  Return: data format code                                            */
+/************************************************************************/
+int mseed_to_data_format
+   (int		format)		/* data format number.			*/
+{
+    switch(format) {
+    case STEIM1:
+    case STEIM2:
+    case INT_16:
+    case INT_32:
+    case INT_24:
+      return DATA_FMT_INT;
+    case IEEE_FP_SP:
+      return DATA_FMT_FLOAT;
+    case IEEE_FP_DP:
+      return DATA_FMT_DOUBLE;
+    default:
+      fprintf (stderr, "Error: unsupported input format %d - aborting.\n", format);
+      exit(1);
+    }
+}
+	
 /************************************************************************/
 /* Fortran interludes to ms_utils routines.				*/
 /************************************************************************/

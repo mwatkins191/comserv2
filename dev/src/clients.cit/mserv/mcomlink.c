@@ -50,6 +50,7 @@ Edit History:
    28 01 Dec 05 PAF changed printf to LogMessage() calls
    29 24 Aug 07 DSN Ported to little_endian systems.
 		    Removed unused code.
+   30 12 Mar 09 DSN Another fix for reference through NULL pointer for dead client.
 
     The changes from comlink.c to mcomlink.c were done to support reception
     of packets on a multicast interface by comserv. The packets are to be
@@ -112,7 +113,7 @@ Edit History:
 
 
 
-short VER_COMLINK = 29 ;
+short VER_COMLINK = 30 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -355,7 +356,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
     {
       DP_to_DA_msg_type mmsg ;
       comstat_rec *pcom ;
-      download_result *pdr ;
+      download_result *pdr = NULL ;
 
       if (xfer_up_ok)
           {
@@ -381,7 +382,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                         shmctl(upmemid, IPC_RMID, NULL) ;
                         upmemid = NOCLIENT ;
                       }
-                  if (pcom->completion_status == CSCS_INPROGRESS)
+                  if (pcom != NULL && pcom->completion_status == CSCS_INPROGRESS)
                       pcom->completion_status = CSCS_ABORTED ;
                   combusy = NOCLIENT ;
                 }
@@ -401,13 +402,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
             if (checkbusy ())
                 {
                   pcom = (pvoid) clients[combusy].outbuf ;
-                  pdr = (pvoid) &pcom->moreinfo ;
+                  if (pcom) pdr = (pvoid) &pcom->moreinfo ;
                   if (pdr->dpshmid != NOCLIENT)
                       {
                         shmctl(pdr->dpshmid, IPC_RMID, NULL) ;
                         pdr->dpshmid = NOCLIENT ;
                       }
-                  if (pcom->completion_status == CSCS_INPROGRESS)
+                  if (pcom != NULL && pcom->completion_status == CSCS_INPROGRESS)
                       pcom->completion_status = CSCS_ABORTED ;
                   combusy = NOCLIENT ;
                 }
@@ -673,8 +674,9 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 /* Extract information that is in the qsl header, but not in the SEED */
 /* header so the comserv can use the information to label packets */
 
-	    packet_type = classify_packet(&my_seed_header);
-            packet_time = dtime();
+            packet_type = classify_packet(&my_seed_header);
+            packet_time = header_to_double_time (&my_seed_header);
+            recv_time = dtime();
 
 /* Here is some planned logic to update the ring buffer element with */
 /* a correct time of data sample. However I could not find a use for */
@@ -691,15 +693,20 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 /* this and I have not yet done it. */
 	      if(rambling)
 		{
-			recv_time = dtime();
 		    	strncpy(myseqno,dest,6);
 		    	memset(&myseqno[6],0,1);
-     			LogMessage(CS_LOG_TYPE_ERROR, "Mcast Packet: %.2s %.5s %.3s Seq=%s received at %s", 
+     			LogMessage(CS_LOG_TYPE_ERROR, "Mcast Packet: %.2s %.5s %.3s Seq=%s Type=%d received at %s", 
 					my_seed_header.header.seednet,
 					my_seed_header.header.station_ID_call_letters,
 					my_seed_header.header.channel_id,
-					myseqno,
+					myseqno, packet_type,
 					time_string(recv_time));
+     			LogMessage(CS_LOG_TYPE_ERROR, "Mcast Packet: %.2s %.5s %.3s Seq=%s Type=%d header time %s", 
+					my_seed_header.header.seednet,
+					my_seed_header.header.station_ID_call_letters,
+					my_seed_header.header.channel_id,
+					myseqno, packet_type,
+					time_string(packet_time));
 		}
 
 #ifndef MSERV
@@ -818,9 +825,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 
              pseed = (pvoid) &freebuf->user_data.data_bytes ;
 
-             freebuf->user_data.reception_time = dtime () ;    
-				            /* reception time */
-
+             freebuf->user_data.reception_time = recv_time ;    
              freebuf->user_data.header_time = packet_time;
 
              memcpy (pseed,dest,512) ;

@@ -13,9 +13,9 @@
 #
 CC	 = cc
 INCL	 = ../include
-DEBUG	 = 
 
-CFLAGS		= -I$(INCL) -DSOLARIS2 $(DEBUG) -DLITTLE_ENDIAN
+DEBUG	= -g
+CFLAGS	= $(DEBUG) -I$(INCL) -DSOLARIS2 -DENDIAN_LITTLE
 LDLIBS	= -lposix4 -lnsl -lsocket 
 RANLIB	= /bin/true
 ########################################################################

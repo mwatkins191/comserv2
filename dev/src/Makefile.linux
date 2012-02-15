@@ -9,35 +9,39 @@
 #	clean
 #	install
 
+MAKEFILE = Makefile.linux
+
 # BINDIR defined with respect to the subdirectories.
-BINDIR =../../bin/Linux
+BINDIR	 = ../../bin/Linux_x86
 
-ALL	=  qlib2 util comserv clients clients.ucb qmaserv
+ALLLIBS	 =  qlib2
+ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
+ALL	 =  $(ALLLIBS) $(ALLPROGS)
 
-all: 	
-	for dir in $(ALL) ; do \
+all:
+	for dir in $(ALLPROGS) ; do \
 		echo BUILD for $$dir ... ; \
-		(cd $$dir; make -f Makefile.linux all); \
+		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
 
-linux: 	
-	for dir in $(ALL) ; do \
+libs:	$(ALLLIBS)
+	for dir in $(ALLLIBS) ; do \
 		echo BUILD for $$dir ... ; \
-		(cd $$dir; make -f Makefile.linux all); \
+		(cd $$dir; make -f $(MAKEFILE) all); \
 	done
-
+	
 clean:
-	for dir in $(ALL) ; do \
-		(cd $$dir; make -f Makefile.linux clean); \
+	for dir in $(ALLPROGS) ; do \
+		(cd $$dir; make -f $(MAKEFILE) clean); \
 	done
 
 veryclean:
-	for dir in $(ALL) ; do \
-		(cd $$dir; make -f Makefile.linux veryclean); \
+	for dir in $(ALLPROGS) ; do \
+		(cd $$dir; make -f $(MAKEFILE) veryclean); \
 	done
 
 install:
-	for dir in $(ALL) ; do \
-		(cd $$dir; make -f Makefile.linux install BINDIR=$(BINDIR) );  \
+	for dir in $(ALLPROGS) ; do \
+		(cd $$dir; make -f $(MAKEFILE) install BINDIR=$(BINDIR) );  \
 	done
 

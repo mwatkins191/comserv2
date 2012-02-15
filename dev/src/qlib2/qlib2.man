@@ -1,4 +1,4 @@
-.\$Id: qlib2.man,v 1.5 2003/06/28 00:31:48 doug Exp $ 
+.\$Id: qlib2.man,v 1.7 2008/04/17 19:04:48 doug Exp $ 
 .TH QLIB2 3 "27 June 2003" BDSN
 .SH NAME
 qlib2 - Subroutine library for Quanterra data and MiniSEED data manipulation
@@ -54,7 +54,7 @@ typedef struct	data_hdr {
     int		xn;			/* last value (STEIM compress)	*/
     int		xm1;			/* future expansion.		*/
     int		xm2;			/* future expansion.		*/
-    int		extra[1];		/* future expansion.		*/
+    float	rate_spsec;		/* blockette 100 sample rate	*/
 } DATA_HDR;
 
 /* Attribute structure for a specific data_hdr and blksize.		*/
@@ -317,6 +317,51 @@ extern int ms_pack_data
     int		num_samples,	/* number of data samples.		*/
     int		*data,		/* ptr to data buffer.			*/
     int		*n_blocks,	/* # MiniSEED blocks (returned).	*/
+    int		*n_samples,	/* # data samples packed (returned).	*/
+    char	**pp_ms,	/* ptr **MiniSEED (returned).		*/
+    int		ms_len,		/* MiniSEED buffer len (if supplied).	*/
+    char	*p_errmsg)	/* ptr to error msg buffer.		*/
+\f1
+.fi
+.br
+The function \f3ms_pack_data\f1 will create MiniSEED records in
+a memory buffer for the specified number of data samples.  The blocksize
+and MiniSEED data encoding must be specified in the \fIblksize\fR and
+\fIdata_type\fR fields respectively in the DATA_HDR structure.
+All other required attributes of the MiniSEED records (station, channel,
+network, start_time, sample_reate, etc) must be specified in the DATA_HDR
+structure.
+.sp
+If the ptr *pp_ms is NULL, the ms_pack_data function will allocate a buffer
+of sufficient size to hold the created MiniSEED records, return
+the ptr to the buffer in *pp_ms, and ignore the value of ms_len.
+If the ptr *pp_ms is not NULL, it is assumed to be a buffer of size \fBms_len\fR
+bytes into which the function will write the MiniSEED records.
+.sp
+The function sets the variable *n_samples to contain the total number of
+data samples that were packed into MiniSEED.  This number MAY be less
+that the total number of input samples if there was either insufficient
+room in the MiniSEED buffer (if provided by the calling routine), or
+if there was a range problem with the input data, such as exceeding
+the limits of the MiniSEED data type.
+The function sets the variable *n_blocks to contain the number of MiniSEED
+records that were created The function returns the total number of initial
+data samples that were packed into the MiniSEED records, which should equal
+the total \fBnum_samples\fR if there was sufficient room in the MiniSEED
+buffer for the required number of MiniSEED blocks.  If the function value is
+less than \fBnum_samples\fR, you can output the created MiniSEED records,
+adjust the DATA_HDR time value, and call the function again with an adjusted
+ptr to the input data buffer and adjusted num_samples.
+
+.nf
+.br
+\f3
+extern int ms_pack_data
+   (DATA_HDR	*hdr,		/* ptr to initial data hdr.		*/
+    BS		*init_bs,	/* ptr to onetime blockettes.		*/
+    int		num_samples,	/* number of data samples.		*/
+    int		*data,		/* ptr to data buffer.			*/
+    int		*n_blocks,	/* # MiniSEED blocks (returned).	*/
     char	**pp_ms,	/* ptr **MiniSEED (returned).		*/
     int		ms_len,		/* MiniSEED buffer len (if supplied).	*/
     char	*p_errmsg)	/* ptr to error msg buffer.		*/
@@ -413,6 +458,26 @@ INT_TIME nepoch_to_int (double nepoch)
 .br
 The function \f3nepoch_to_int\f1 converts a double precision nominal epoch time
 into an INT_TIME structure, and returns as its value the INT_TIME structure.
+
+.nf
+.br
+\f3
+double nepoch_to_tepoch (double nepoch)
+\f1
+.fi
+.br
+The function \f3nepoch_to_tepoch\f1 converts a double precision nominal epoch time
+into an true epoch time, and returns as its value the true epoch time.
+
+.nf
+.br
+\f3
+double tepoch_to_nepoch (double tepoch)
+\f1
+.fi
+.br
+The function \f3nepoch_to_int\f1 converts a double precision true epoch time
+into a nominal epoc time, and returns as its value the nominal epoch time.
 
 .nf
 .br
@@ -690,7 +755,7 @@ c
 		integer xn
 		integer xm1
 		integer xm2
-		integer extra(1)
+		real rate_spsec
 	end structure
 
 .SH FORTRAN GENERAL ROUTINES
@@ -1079,7 +1144,7 @@ The timestamp string is returned in the last argument str.
 .nf
 .br
 \f3
-integer function f_parse_date(it, str)
+integer function f_parse_date (it, str)
 \f1
 .fi
 .br
@@ -1088,6 +1153,28 @@ str and return the corresponding date/time value in the INT_TIME structure
 of the first argument.  If the function is successful it returns 1 as the 
 function value.  If the function was unsuccessful in parsing the date/time
 string, it returns 0 as the function value.
+
+.nf
+.br
+\f3
+double precision function f_nepoch_to_tepoch (nepoch)
+\f1
+.fi
+.br
+The function \f3f_nepoch_to_tepoch\f1 will convert a double precision
+nominal epoch time to a double precision true epoch time, and return the
+true epoch time as the value of the function.
+
+.nf
+.br
+\f3
+double precision function f_tepoch_to_nepoch (tepoch)
+\f1
+.fi
+.br
+The function \f3f_tepoch_to_nepoch\f1 will convert a double precision
+true epoch time to a double precision nominal epoch time, and return the
+nominal epoch time as the value of the function.
 
 .SH NOTES
 

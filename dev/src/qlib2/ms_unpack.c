@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2004 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_unpack.c,v 1.7 2004/06/20 01:19:05 doug Exp $ ";
+static char sccsid[] = "$Id: ms_unpack.c,v 1.9 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdlib.h>
@@ -91,6 +91,11 @@ int ms_unpack
     datasize = blksize - hdr->first_data;
     dbuf = (char *)ms + hdr->first_data;
 
+    /* If there are no data samples in the record, we don't care what	*/
+    /* the data format is.						*/
+    nsamples = hdr->num_samples;
+    if (nsamples == 0) return (nsamples);
+
     /* Decide if this is a format that we can decode.			*/
     switch (format) {
       case STEIM1:
@@ -132,6 +137,16 @@ int ms_unpack
 				  max_num_points, (int *)data_buffer, 
 				  hdr->data_wordorder, NULL);
 	break;
+      case IEEE_FP_SP:
+	nsamples = unpack_fp_sp ((float *)dbuf, datasize, hdr->num_samples,
+				  max_num_points, (float *)data_buffer, 
+				  hdr->data_wordorder, NULL);
+	break;
+      case IEEE_FP_DP:
+	nsamples = unpack_fp_dp ((double *)dbuf, datasize, hdr->num_samples,
+				  max_num_points, (double *)data_buffer, 
+				  hdr->data_wordorder, NULL);
+	break;
      default:
 	fprintf (stderr, "Error: Currently unable to read format %d for %s.%s.%s\n", format,
 		 hdr->station_id, hdr->network_id, hdr->channel_id);
@@ -143,4 +158,3 @@ int ms_unpack
     }
     return (MS_ERROR);
 }
-

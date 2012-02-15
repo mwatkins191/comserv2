@@ -1,3 +1,4 @@
+# Code in this directory uses global.h (../lib33/platform.h) to define system and endian attributes.
 
 CSERV = ../cserv
 LIB330 = ../lib330

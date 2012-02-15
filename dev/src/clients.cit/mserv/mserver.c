@@ -64,7 +64,7 @@ Edit History:
 			where logs are dumped. Otherwise, they are dumped in the
 			mserv run dir.
    36 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
-   37 24 Aug 07 DSN Port to LINUX, and separate LITTLE_ENDIAN from LINUX logic.
+   37 24 Aug 07 DSN Port to LINUX, and separate ENDIAN_LITTLE from LINUX logic.
 		    Change from SIG_IGN to signal handler for SIGALRM.
 
    38 19 Sep 07 PAF fixed some mods that got out of sync from version 35 from DSN
@@ -73,6 +73,7 @@ Edit History:
 	of comserv that receives multicast messages and puts them into
 	the comserv ring buffers. The input messages are to be 512
 	byte SEED packets
+   39 12 Mar 09 DSN Another fix for reference through NULL pointer for dead client.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -134,7 +135,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 38
+#define EDITION 39
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -1017,10 +1018,12 @@ log_type)==0)
                       if (clients[i].client_memid == clientid)
                           {
                             cursvc = clients[i].client_address ;
-                            if (cursvc->client_pid != clients[i].client_pid)
-                                cursvc = NULL ; /* not a complete match */
-                              else
+/*:: DSN start mod 2009/03/12 */
+                            if (cursvc != NULL && cursvc->client_pid == clients[i].client_pid)
                                 break ; /* found a complete match of segment ID and PID */
+                              else
+                                cursvc = NULL ; /* not a complete match */
+/*:: DSN end mod 2009/03/12 */
                           }
                     if (cursvc == NULL)
                         {

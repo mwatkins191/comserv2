@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2004 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,11 +37,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_pack.c,v 1.12 2007/06/12 21:13:00 doug Exp $ ";
+static char sccsid[] = "$Id: ms_pack2.c,v 1.6 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
 #include <memory.h>
 #include <math.h>
@@ -72,7 +73,7 @@ static char sccsid[] = "$Id: ms_pack.c,v 1.12 2007/06/12 21:13:00 doug Exp $ ";
 /*	to initialize compressor.					*/
 /*									*/
 /*	Return:								*/
-/*	    0 on success.
+/*	    0 on success.						*/
 /*	    negative QLIB2 error code on error.				*/
 /*	Update x0, xn, xm1, xm2 in DATA_HDR.				*/
 /*	x0 = first data value from THIS data buffer.			*/
@@ -88,7 +89,7 @@ int ms_pack2_data
    (DATA_HDR	*hdr,		/* ptr to initial data hdr.		*/
     BS		*init_bs,	/* ptr to onetime blockettes.		*/
     int		num_samples,	/* number of data samples.		*/
-    int		*data,		/* ptr to data buffer.			*/
+    void	*data,		/* ptr to data buffer.			*/
     int		*n_blocks,	/* # miniSEED blocks (returned).	*/
     int		*n_samples,	/* # data samples packed (returned).	*/
     char	**pp_ms,	/* ptr **miniSEED (returned).		*/
@@ -101,13 +102,21 @@ int ms_pack2_data
     switch (hdr->data_type) {
       case STEIM1:
       case STEIM2:
-	status = ms_pack2_steim (hdr, init_bs, data, NULL, num_samples, 
+	status = ms_pack2_steim (hdr, init_bs, (int*)data, NULL, num_samples, 
 				n_blocks, n_samples, pp_ms, ms_len, p_errmsg);
 	break;
       case INT_32:
       case INT_24:
       case INT_16:
-	status = ms_pack2_int (hdr, init_bs, data, num_samples, 
+	status = ms_pack2_int (hdr, init_bs, (int*)data, num_samples, 
+			     n_blocks, n_samples, pp_ms, ms_len, p_errmsg);
+	break;
+      case IEEE_FP_SP:
+	status = ms_pack2_float (hdr, init_bs, (float*)data, num_samples, 
+			     n_blocks, n_samples, pp_ms, ms_len, p_errmsg);
+	break;
+      case IEEE_FP_DP:
+	status = ms_pack2_double (hdr, init_bs, (double*)data, num_samples, 
 			     n_blocks, n_samples, pp_ms, ms_len, p_errmsg);
 	break;
       case UNKNOWN_DATATYPE:
@@ -143,7 +152,6 @@ int ms_pack2_update_hdr
     int		*data)		/* data buffer used for last ms_pack.	*/
 {
     BS		    *bs;	/* ptr to blockette structure.		*/
-    BLOCKETTE_HDR   *bh;	/* ptr to blockette hdr.		*/
 
     int seconds, usecs;	
     /* Update the time in the header.					*/
@@ -164,7 +172,8 @@ int ms_pack2_update_hdr
 	hdr->hdrtime = add_time (hdr->hdrtime, seconds, usecs);
     }
     hdr->num_samples -= num_samples;
-    if (hdr->data_type != UNKNOWN_DATATYPE) {
+    if (hdr->data_type == STEIM1 || hdr->data_type == STEIM2 || hdr->data_type == INT_32
+	|| hdr->data_type == INT_24 || hdr->data_type == INT_16 ) {
 	if (num_samples <= 0) {
 	    /* No change from input. */
 	}
@@ -201,8 +210,8 @@ int ms_pack2_update_return_hdr
     int		num_samples,	/* number of samples just packed.	*/
     int		*data)		/* data buffer used for this packing.	*/
 {
-    int seconds, usecs;
-    if (hdr->data_type != UNKNOWN_DATATYPE) {
+    if (hdr->data_type == STEIM1 || hdr->data_type == STEIM2 || hdr->data_type == INT_32
+	|| hdr->data_type == INT_24 || hdr->data_type == INT_16 ) {
 	if (num_samples <= 0) {
 	    /* No change from input. */
 	}
@@ -238,12 +247,6 @@ int init_miniseed_hdr
     BS		*extra_bs)	/* ptr to block-specific blockettes.	*/
 {
     int status = 0;
-    int blockette_space;	/* # of bytes required for blockettes.	*/
-    int n_extra_bs;		/* # of extra blockettes.		*/
-    BS *bs;			/* ptr to blockette structure.		*/
-    BS *last_bs;		/* ptr to last permanent blockette.	*/
-    int align;			/* alignment in bytes required for data.*/
-    short int stmp[2];
 
     /* Ensure that we have a blockette 1000, required by miniSEED.	*/
     if (add_required_miniseed_blockettes (hdr) != 0) {
@@ -278,7 +281,7 @@ int update_miniseed_hdr
 /*	the space pointed to by *pp_ms.					*/
 /*									*/
 /*	Return:								*/
-/*	    0 on success.
+/*	    0 on success.						*/
 /*	    negative QLIB2 error code on error.				*/
 /************************************************************************/
 int ms_pack2_steim 
@@ -306,7 +309,6 @@ int ms_pack2_steim
     int frames_per_block;	/* # of steim compressed framed per blk.*/
     int	nframes;		/* # of steim frames in Mini-SEED block.*/
     int nsamples;		/* # of samples in Mini-SEED block.	*/
-    int seconds, usecs;		/* seconds and usecs for time calcs.	*/
     int pad;			/* flag to indicate padding of frames.	*/
     int status = 0;		/* status from data packing routine.	*/
     int i;			/* loop indices.			*/
@@ -337,7 +339,15 @@ int ms_pack2_steim
 	free_diff = 1;
 	diff[0] = data[0] - hdr0->xm1;
 	for (i=1; i<num_samples; i++) {
-	    diff[i] = data[i] - data[i-1];
+	    int64_t diff64;
+	    /* Check for possible 32-bit int overflow/underflow.    */
+	    /* If found, set diff to max/min 32-bit int value.	    */
+	    /* This will raise a MS_COMPRESS error in the STEIM	    */
+	    /* packing functions.				    */
+	    diff64 = (int64_t)data[i] - (int64_t)data[i-1];
+	    if (diff64 > INT_MAX) diff64 = INT_MAX;
+	    if (diff64 < INT_MIN) diff64 = INT_MIN;
+	    diff[i] = (int)diff64;
 	}
     }
 
@@ -429,7 +439,7 @@ int ms_pack2_steim
 	    if (QLIB2_CLASSIC) exit (1);
 	    if (free_diff) free ((char *)diff);
 	    free_data_hdr (hdr);
-	    if (nblks_malloced > 0) free(*pp_ms);
+ 	    if (nblks_malloced > 0) free(*pp_ms);
 	    return (MS_ERROR);
 	    break;
 	}
@@ -448,13 +458,15 @@ int ms_pack2_steim
 	/* Update Mini-SEED header with:				*/
 	/*	final sample count.					*/
 	/* Update hdr for the next record.				*/
-	hdr->num_samples = nsamples;
-	update_miniseed_hdr ((SDR_HDR *)p_ms, hdr);
-	ms_pack2_update_hdr (hdr, 1, nsamples, &data[ipt]);
-	ipt += nsamples;
-	samples_remaining -= nsamples;
-	++num_blocks;
-	hdr->num_samples = 0;
+	if (nsamples > 0) {
+	    hdr->num_samples = nsamples;
+	    update_miniseed_hdr ((SDR_HDR *)p_ms, hdr);
+	    ms_pack2_update_hdr (hdr, 1, nsamples, &data[ipt]);
+	    ipt += nsamples;
+	    samples_remaining -= nsamples;
+	    ++num_blocks;
+	    hdr->num_samples = 0;
+	}
     }
 
     /* Cleanup.								*/
@@ -503,7 +515,6 @@ int ms_pack2_int
     int nsamples;		/* # of samples in miniSEED block.	*/
     int max_bytes;		/* max # of data bytes in record.	*/
     int nbytes;			/* # of bytes packed into record.	*/
-    int seconds, usecs;		/* seconds and usecs for time calcs.	*/
     int pad;			/* flag to indicate padding of frames.	*/
     int blksize = hdr0->blksize;/* output blksize.			*/
     int status = 0;		/* status from data packing routine.	*/
@@ -581,7 +592,7 @@ int ms_pack2_int
 	    
 	init_bs = NULL;
 	p_packed = (void *)(p_ms + hdr->first_data);
-	max_bytes = blksize + 1 - hdr->first_data;
+	max_bytes = blksize - hdr->first_data;
 
 	/* Pack the rest of the miniSEED record with data.		*/
 	switch (hdr->data_type) {
@@ -631,6 +642,306 @@ int ms_pack2_int
 }
 
 /************************************************************************/
+/*  ms_pack2_float:							*/
+/*	Pack data into miniSEED records in IEEE_FP_SP format    	*/
+/*									*/
+/*	If *pp_ms is NULL, space for the miniSEED records will be	*/
+/*	allocated by packing routines, and should be freed by the	*/
+/*	calling routine.  Otherwise, the packing routines will use	*/
+/*	the space pointed to by *pp_ms.					*/
+/*									*/
+/*	Return:								*/
+/*	    # samples packed on success.				*/
+/*	    negative QLIB2 error code on error.				*/
+/************************************************************************/
+int ms_pack2_float 
+   (DATA_HDR	*hdr0,		/* ptr to initial data hdr.		*/
+    BS		*init_bs,	/* ptr to onetime blockettes.		*/
+    float	*data,		/* ptr to data buffer.			*/
+    int		num_samples,	/* number of data samples.		*/
+    int		*n_blocks,	/* # miniSEED blocks (returned).	*/
+    int		*n_samples,	/* # data samples packed (returned).	*/
+    char	**pp_ms,	/* ptr **miniSEED (returned).		*/
+    int		ms_len,		/* miniSEED buffer len (if supplied).	*/
+    char	*p_errmsg)	/* ptr to error msg buffer.		*/
+{
+    DATA_HDR *hdr;		/* data header used for writing miniSEED*/
+    char *p_ms;			/* ptr to current miniSEED block.	*/
+    void *p_packed;		/* ptr to packed output data.		*/
+    char errmsg[256];		/* error msg buffer.			*/
+    int ipt;			/* index of data to pack.		*/
+    int nblks_malloced;		/* # of miniSEED output blocks malloced.*/
+    int num_blocks;		/* # of miniSEED block created.		*/
+    int samples_remaining;	/* # samples left to cvt to miniseed.	*/
+    int nsamples;		/* # of samples in miniSEED block.	*/
+    int max_bytes;		/* max # of data bytes in record.	*/
+    int nbytes;			/* # of bytes packed into record.	*/
+    int pad;			/* flag to indicate padding of frames.	*/
+    int blksize = hdr0->blksize;/* output blksize.			*/
+    int status = 0;		/* status from data packing routine.	*/
+
+    /* Initialization.							*/
+    *n_blocks = 0;
+
+    /* Check for invalid arguments.					*/
+    if (num_samples <= 0) return(MS_ERROR);
+    if (blksize < 128 ||
+	(blksize != (int)pow(2.0,floor(log2((double)blksize))))) {
+	sprintf (errmsg, "Warning: invalid blksize: %d\n", blksize);
+	if (p_errmsg) strcpy(p_errmsg, errmsg);
+	else fprintf (stderr, errmsg);
+	return (MS_ERROR);
+    }
+
+    /* If *pp_ms != NULL, assume that the caller is providing sufficient*/
+    /* memory to hold all of the resulting miniSEED records.		*/
+    /* If it is NULL, we allocate the space, and set it to point to the	*/
+    /* allocated miniSEED records.					*/
+    /* If we allocated the space for the miniSEED, the caller is	*/
+    /* responsible for freeing the space.				*/
+    if (*pp_ms) nblks_malloced = -1;
+    else nblks_malloced = 0;
+
+    /* Create a copy of the initial data_hdr for our use.		*/
+    /* We will update this each time we create a miniSEED block.	*/
+    hdr = dup_data_hdr (hdr0);
+    if (hdr == NULL) {
+	return (MS_ERROR);
+    }
+
+    /* Start compressor.						*/
+    num_blocks = 0;
+    samples_remaining = num_samples;
+    ipt = 0;
+    pad = 1;
+
+    while (samples_remaining > 0 && status == 0) {
+	/* Check for available space.					*/
+	/* Allocate more space for Mini-SEED blocks if necessary.	*/
+	if (nblks_malloced < 0) {
+	    if (ms_len < blksize) {
+		*n_blocks = num_blocks;
+		free_data_hdr (hdr);
+		return (num_samples - samples_remaining);
+	    }
+	    ms_len -= blksize;
+	}
+	if (nblks_malloced >= 0 && num_blocks == nblks_malloced) {
+	    if(*pp_ms == NULL) {
+	      *pp_ms = (char *)malloc((nblks_malloced+MALLOC_INCREMENT)*blksize);
+	    } else {
+	      *pp_ms = (char *)realloc(*pp_ms,(nblks_malloced+MALLOC_INCREMENT)*blksize);
+	    }
+	    if (*pp_ms == NULL) {
+		sprintf (errmsg, "Error mallocing miniSEED buffer\n");
+		if (p_errmsg) strcpy(p_errmsg, errmsg);
+		else fprintf (stderr, errmsg);	    
+		free_data_hdr (hdr);
+		return (QLIB2_MALLOC_ERROR);
+	    }
+	    nblks_malloced += MALLOC_INCREMENT;
+	}
+
+	/* Initialize the next fixed data header.			*/
+	p_ms = *pp_ms + (num_blocks * blksize);
+	if (init_miniseed_hdr ((SDR_HDR *)p_ms, hdr, init_bs) < 0) {
+	    sprintf (errmsg, "Error: initializing MiniSEED header");
+	    if (p_errmsg) strcpy(p_errmsg, errmsg);
+	    else fprintf (stderr, errmsg);	    
+	    free_data_hdr (hdr);
+	    if (nblks_malloced > 0) free(*pp_ms);
+	    return (MS_ERROR);
+	}
+	    
+	init_bs = NULL;
+	p_packed = (void *)(p_ms + hdr->first_data);
+	max_bytes = blksize - hdr->first_data;
+
+	/* Pack the rest of the miniSEED record with data.		*/
+	status = pack_fp_sp ((float*)p_packed, &data[ipt], samples_remaining, 
+			 max_bytes, pad, hdr->data_wordorder, &nbytes, &nsamples);
+
+	if (status != 0) {
+	    sprintf (errmsg, "Error packing %s data\n", "IEEE_FP_SP");
+	    if (p_errmsg) strcpy(p_errmsg, errmsg);
+	    else {
+		fprintf (stderr, errmsg);
+		fflush (stderr);
+	    }
+	}
+
+	/* End of data or Mini-SEED block is full or packing error.	*/
+	/* Update Mini-SEED header with:				*/
+	/*	final sample count.					*/
+	/* Update hdr for the next record.				*/
+	hdr->num_samples = nsamples;
+	update_miniseed_hdr ((SDR_HDR *)p_ms, hdr);
+	ms_pack2_update_hdr (hdr, 1, nsamples, (int*)data+ipt);
+	ipt += nsamples;
+	samples_remaining -= nsamples;
+	++num_blocks;
+	hdr->num_samples = 0;
+    }
+
+    /* Cleanup.								*/
+    free_data_hdr (hdr);
+    ms_pack2_update_return_hdr (hdr0, num_blocks, num_samples, (void*)data);
+    *n_blocks = num_blocks;
+    *n_samples = num_samples - samples_remaining;
+    return(status);
+}
+
+/************************************************************************/
+/*  ms_pack2_double:							*/
+/*	Pack data into miniSEED records in IEEE_FP_DP format    	*/
+/*									*/
+/*	If *pp_ms is NULL, space for the miniSEED records will be	*/
+/*	allocated by packing routines, and should be freed by the	*/
+/*	calling routine.  Otherwise, the packing routines will use	*/
+/*	the space pointed to by *pp_ms.					*/
+/*									*/
+/*	Return:								*/
+/*	    # samples packed on success.				*/
+/*	    negative QLIB2 error code on error.				*/
+/************************************************************************/
+int ms_pack2_double 
+   (DATA_HDR	*hdr0,		/* ptr to initial data hdr.		*/
+    BS		*init_bs,	/* ptr to onetime blockettes.		*/
+    double	*data,		/* ptr to data buffer.			*/
+    int		num_samples,	/* number of data samples.		*/
+    int		*n_blocks,	/* # miniSEED blocks (returned).	*/
+    int		*n_samples,	/* # data samples packed (returned).	*/
+    char	**pp_ms,	/* ptr **miniSEED (returned).		*/
+    int		ms_len,		/* miniSEED buffer len (if supplied).	*/
+    char	*p_errmsg)	/* ptr to error msg buffer.		*/
+{
+    DATA_HDR *hdr;		/* data header used for writing miniSEED*/
+    char *p_ms;			/* ptr to current miniSEED block.	*/
+    void *p_packed;		/* ptr to packed output data.		*/
+    char errmsg[256];		/* error msg buffer.			*/
+    int ipt;			/* index of data to pack.		*/
+    int nblks_malloced;		/* # of miniSEED output blocks malloced.*/
+    int num_blocks;		/* # of miniSEED block created.		*/
+    int samples_remaining;	/* # samples left to cvt to miniseed.	*/
+    int nsamples;		/* # of samples in miniSEED block.	*/
+    int max_bytes;		/* max # of data bytes in record.	*/
+    int nbytes;			/* # of bytes packed into record.	*/
+    int pad;			/* flag to indicate padding of frames.	*/
+    int blksize = hdr0->blksize;/* output blksize.			*/
+    int status = 0;		/* status from data packing routine.	*/
+
+    /* Initialization.							*/
+    *n_blocks = 0;
+
+    /* Check for invalid arguments.					*/
+    if (num_samples <= 0) return(MS_ERROR);
+    if (blksize < 128 ||
+	(blksize != (int)pow(2.0,floor(log2((double)blksize))))) {
+	sprintf (errmsg, "Warning: invalid blksize: %d\n", blksize);
+	if (p_errmsg) strcpy(p_errmsg, errmsg);
+	else fprintf (stderr, errmsg);
+	return (MS_ERROR);
+    }
+
+    /* If *pp_ms != NULL, assume that the caller is providing sufficient*/
+    /* memory to hold all of the resulting miniSEED records.		*/
+    /* If it is NULL, we allocate the space, and set it to point to the	*/
+    /* allocated miniSEED records.					*/
+    /* If we allocated the space for the miniSEED, the caller is	*/
+    /* responsible for freeing the space.				*/
+    if (*pp_ms) nblks_malloced = -1;
+    else nblks_malloced = 0;
+
+    /* Create a copy of the initial data_hdr for our use.		*/
+    /* We will update this each time we create a miniSEED block.	*/
+    hdr = dup_data_hdr (hdr0);
+    if (hdr == NULL) {
+	return (MS_ERROR);
+    }
+
+    /* Start compressor.						*/
+    num_blocks = 0;
+    samples_remaining = num_samples;
+    ipt = 0;
+    pad = 1;
+
+    while (samples_remaining > 0 && status == 0) {
+	/* Check for available space.					*/
+	/* Allocate more space for Mini-SEED blocks if necessary.	*/
+	if (nblks_malloced < 0) {
+	    if (ms_len < blksize) {
+		*n_blocks = num_blocks;
+		free_data_hdr (hdr);
+		return (num_samples - samples_remaining);
+	    }
+	    ms_len -= blksize;
+	}
+	if (nblks_malloced >= 0 && num_blocks == nblks_malloced) {
+	    if(*pp_ms == NULL) {
+	      *pp_ms = (char *)malloc((nblks_malloced+MALLOC_INCREMENT)*blksize);
+	    } else {
+	      *pp_ms = (char *)realloc(*pp_ms,(nblks_malloced+MALLOC_INCREMENT)*blksize);
+	    }
+	    if (*pp_ms == NULL) {
+		sprintf (errmsg, "Error mallocing miniSEED buffer\n");
+		if (p_errmsg) strcpy(p_errmsg, errmsg);
+		else fprintf (stderr, errmsg);	    
+		free_data_hdr (hdr);
+		return (QLIB2_MALLOC_ERROR);
+	    }
+	    nblks_malloced += MALLOC_INCREMENT;
+	}
+
+	/* Initialize the next fixed data header.			*/
+	p_ms = *pp_ms + (num_blocks * blksize);
+	if (init_miniseed_hdr ((SDR_HDR *)p_ms, hdr, init_bs) < 0) {
+	    sprintf (errmsg, "Error: initializing MiniSEED header");
+	    if (p_errmsg) strcpy(p_errmsg, errmsg);
+	    else fprintf (stderr, errmsg);	    
+	    free_data_hdr (hdr);
+	    if (nblks_malloced > 0) free(*pp_ms);
+	    return (MS_ERROR);
+	}
+	    
+	init_bs = NULL;
+	p_packed = (void *)(p_ms + hdr->first_data);
+	max_bytes = blksize - hdr->first_data;
+
+	/* Pack the rest of the miniSEED record with data.		*/
+	status = pack_fp_dp ((double*)p_packed, &data[ipt], samples_remaining, 
+			 max_bytes, pad, hdr->data_wordorder, &nbytes, &nsamples);
+
+	if (status != 0) {
+	    sprintf (errmsg, "Error packing %s data\n", "IEEE_FP_DP");
+	    if (p_errmsg) strcpy(p_errmsg, errmsg);
+	    else {
+		fprintf (stderr, errmsg);
+		fflush (stderr);
+	    }
+	}
+
+	/* End of data or Mini-SEED block is full or packing error.	*/
+	/* Update Mini-SEED header with:				*/
+	/*	final sample count.					*/
+	/* Update hdr for the next record.				*/
+	hdr->num_samples = nsamples;
+	update_miniseed_hdr ((SDR_HDR *)p_ms, hdr);
+	ms_pack2_update_hdr (hdr, 1, nsamples, (int*)data+ipt);
+	ipt += nsamples;
+	samples_remaining -= nsamples;
+	++num_blocks;
+	hdr->num_samples = 0;
+    }
+
+    /* Cleanup.								*/
+    free_data_hdr (hdr);
+    ms_pack2_update_return_hdr (hdr0, num_blocks, num_samples, (void *)data);
+    *n_blocks = num_blocks;
+    *n_samples = num_samples - samples_remaining;
+    return(status);
+}
+
+/************************************************************************/
 /*  ms_pack2_text:							*/
 /*	Pack text into miniSEED records in unknown format.		*/
 /*									*/
@@ -665,7 +976,6 @@ int ms_pack2_text
     int nsamples;		/* # of samples in miniSEED block.	*/
     int max_bytes;		/* max # of data bytes in record.	*/
     int nbytes;			/* # of bytes packed into record.	*/
-    int seconds, usecs;		/* seconds and usecs for time calcs.	*/
     int pad;			/* flag to indicate padding of frames.	*/
     int blksize = hdr0->blksize;/* output blksize.			*/
     int status = 0;		/* status from data packing routine.	*/
@@ -742,7 +1052,7 @@ int ms_pack2_text
 	}
 	init_bs = NULL;
 	p_packed = (void *)(p_ms + hdr->first_data);
-	max_bytes = blksize + 1 - hdr->first_data;
+	max_bytes = blksize - hdr->first_data;
 
 	/* Pack the rest of the miniSEED record with text lines.	*/
 	status = pack_text ((char *)p_packed, (char *)&data[ipt], samples_remaining, 

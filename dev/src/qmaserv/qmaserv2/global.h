@@ -19,6 +19,8 @@
  	
 	2012-01-11 - v2.0.5 - paulf version with newer compiler fixes 
 
+	2012-02-06 - v2.0.6 - DSN version with limit to RLIMIT_NOFILE.
+
 */
  
 #include "Logger.h"
@@ -37,7 +39,7 @@
 #define MAJOR_VERSION 2
 #define MINOR_VERSION 0
 #define RELEASE_VERSION 3
-#define APP_VERSION_STRING "Qmaserv v2.0.5 $Rev$"
+#define APP_VERSION_STRING "Qmaserv v2.0.6 $Rev$"
 extern Logger g_log;
 extern Lib330Interface *g_libInterface;
 extern bool g_reset;

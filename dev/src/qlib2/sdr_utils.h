@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: sdr_utils.h,v 1.4 2002/11/22 16:03:35 doug Exp $ 	*/
+/*	$Id: sdr_utils.h,v 1.5 2008/03/24 19:14:31 doug Exp $ 	*/
 
 #ifndef	__sdr_utils_h
 #define	__sdr_utils_h

@@ -12,6 +12,7 @@ Edit History:
     4 13 Dec 94 WHO Add verbose flag to show more contents of packets.
     5 23 Jul 04 PAF added data latency to verbose flag
     6 29 Jul 04 PAF added transmission latency vs total data latency (-L option for long listing, -N for only new data)
+    7 04 Jan 2012 DSN Work on both big and little endian systems.  Uses qlib2.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -61,7 +62,7 @@ double seed_jul (seed_time_struc *st)
   return t ;
 }
     
-depad (pchar ain, pchar sout, short cnt)
+void depad (pchar ain, pchar sout, short cnt)
 {
 
   short n ;
@@ -115,6 +116,7 @@ void main (int argc, char *argv[], char **envp)
   tprand prand ;
   tpcal2 pcal2 ;
   pchar pc1, pc2 ;
+  char mseed[512];
 
   /* Allow override of station name on command line and -V option */
   for (j = 1 ; j < argc ; j++) {
@@ -184,6 +186,11 @@ void main (int argc, char *argv[], char **envp)
 	for (k = 0 ; k < this->valdbuf ; k++) {
 	  now = time(0);
 	  pseed = (pvoid) &pdat->data_bytes ;
+#ifdef	ENDIAN_LITTLE
+	  memcpy (mseed, pseed, 512);
+	  swap_mseed_header(mseed);
+	  pseed = (void *)mseed;
+#endif
 	  printf("[%4.4s] <%2d> Channel=%s Received at=%s ",
 		 &this->name, k, seednamestring(&pseed->channel_id, 
 						&pseed->location_id), time_string(pdat->reception_time)) ;

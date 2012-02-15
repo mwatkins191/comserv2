@@ -11,9 +11,8 @@ TARGET	= $(TARGET1)
 
 DIR	= qlib2
 
-SRCS	= qlib2_version.c drm_utils.c ms_utils.c ms_pack.c ms_pack2.c ms_unpack.c pack.c \
-	qda_utils.c qtime.c sdr_utils.c unpack.c qutils.c 
-
+SRCS	= drm_utils.c ms_utils.c ms_pack.c ms_pack2.c ms_unpack.c \
+	pack.c qda_utils.c qtime.c sdr_utils.c unpack.c qutils.c 
 
 HDR =	qlib2.h
 
@@ -21,7 +20,7 @@ HDRS =	qdefines.h msdatatypes.h timedef.h \
 	qsteim.h sdr.h qda.h seismo.h data_hdr.h \
 	qtime.h qutils.h qda_utils.h drm_utils.h sdr_utils.h \
 	ms_utils.h ms_pack.h ms_pack2.h pack.h ms_unpack.h unpack.h
-	
+
 FHDR =	qlib2.inc
 
 FHDRS =	qdefines.inc data_hdr.inc qfortran.inc
@@ -33,8 +32,6 @@ LIBDIR=	/usr/local/lib
 MANDIR=	/usr/local/man
 MANEXT=	3
 
-RANLIB	= ranlib
-
 .PRECIOUS:	$(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8)
 
 BINDIR	= /usr/local/bin
@@ -43,34 +40,28 @@ MANEXT	= 1
 
 CC	= cc
 COPT	= -O
+CDBG	= -g
+CNL	= -DNO_LEAPSECONDS
+C64	= -m64
+C32	= -m32
 
 # -Dfortran_suffix is required for fortran Compilers that use the BSD 
 # convention of appending a "_" suffix to the subroutine or function name.
 # -Dqlib2_fortran is required to compile the fortran interface routines.
-# -DSUNOS4 is required for SunOS 4.1.x.
-CFLAGS	= -m32 -Dfortran_suffix -Dqlib2_fortran
-#CFLAGS	= -Dfortran_suffix -Dqlib2_fortran -DSUNOS4
 
-C64	= -xarch=v9 -xchip=ultra3
-$(TARGET1)  := CFLAGS += $(COPT)
-$(TARGET2) := CFLAGS += -g
-$(TARGET3) := CFLAGS += $(COPT) -DNO_LEAPSECONDS
-$(TARGET4) := CFLAGS += -g -DNO_LEAPSECONDS
-$(TARGET5) := CFLAGS += $(COPT) $(C64)
-$(TARGET6) := CFLAGS += -g $(C64)
-$(TARGET7) := CFLAGS += $(COPT) -DNO_LEAPSECONDS $(C64)
-$(TARGET8) := CFLAGS += -g -DNO_LEAPSECONDS $(C64)
+CFLAGS	= -Dfortran_suffix -Dqlib2_fortran
 
 ALLHDRS	= $(HDR) $(FHDR) 
 ALLLIBS32 = $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 ALLLIBS64 = $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8)
 ALLLIBS = $(ALLLIBS32) $(ALLLIBS64)
-#:: ALLLIBS = $(ALLLIBS32)
 ALL	= $(ALLHDRS) $(ALLLIBS)
 
 ########################################################################
 
-all:	$(ALL)
+all32:	$(ALLHDRS) $(ALLLIBS32)
+all64:	$(ALLHDRS) $(ALLLIBS64)
+all:	all32 all64
 
 $(HDR):	$(HDRS)
 	cat $(HDRS)  | grep -v '#include "'> $@
@@ -78,29 +69,45 @@ $(HDR):	$(HDRS)
 $(FHDR): $(FHDRS)
 	cat $(FHDRS) | grep -v '#include "'> $@
 
-$(TARGET1):	$(TARGET1)($(OBJS))
-	$(RANLIB) $@
+libqlib2.a:
+	$(CC) -c $(CFLAGS) $(C32) $(COPT) $(SRCS)
+	ar r $(TARGET1) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET2):	$(TARGET2)($(OBJS))
-	$(RANLIB) $@
+libqlib2.debug.a:
+	$(CC) -c $(CFLAGS) $(C32) $(CDBG) $(SRCS)
+	ar r $(TARGET2) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET3):	$(TARGET3)($(OBJS))
-	$(RANLIB) $@
+libqlib2nl.a:
+	$(CC) -c $(CFLAGS) $(C32) $(CNL) $(COPT) $(SRCS)
+	ar r $(TARGET3) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET4):	$(TARGET4)($(OBJS))
-	$(RANLIB) $@
+libqlib2nl.debug.a:
+	$(CC) -c $(CFLAGS) $(C32) $(CNL) $(CDBG) $(SRCS)
+	ar r $(TARGET4) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET5):	$(TARGET5)($(OBJS))
-	$(RANLIB) $@
+libqlib2-64.a:
+	$(CC) -c $(CFLAGS) $(COPT) $(C64) $(SRCS)
+	ar r $(TARGET5) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET6):	$(TARGET6)($(OBJS))
-	$(RANLIB) $@
+libqlib2-64.debug.a:
+	$(CC) -c $(CFLAGS) $(CDBG) $(C64) $(SRCS)
+	ar r $(TARGET6) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET7):	$(TARGET7)($(OBJS))
-	$(RANLIB) $@
+libqlib2nl-64.a:
+	$(CC) -c $(CFLAGS) $(CNL) $(COPT) $(C64) $(SRCS)
+	ar r $(TARGET7) $(OBJS)
+	-rm -f $(OBJS)
 
-$(TARGET8):	$(TARGET8)($(OBJS))
-	$(RANLIB) $@
+libqlib2nl-64.debug.a:
+	$(CC) -c $(CFLAGS) $(CNL) $(CDBG) $(C64) $(SRCS)
+	ar r $(TARGET8) $(OBJS)
+	-rm -f $(OBJS)
 
 install_all:	install install_leapseconds install_man
 
@@ -108,7 +115,6 @@ install:	$(ALL) leapseconds
 	cp $(HDR) $(FHDR) drm_seismo.h $(INCDIR)/
 	for lib in $(ALLLIBS) ; do \
 		cp $$lib $(LIBDIR) ; \
-		( cd $(LIBDIR) ; $(RANLIB) $$lib ) ; \
 	done
 
 install_leapseconds:	leapseconds
@@ -116,7 +122,7 @@ install_leapseconds:	leapseconds
 
 install_man:	qlib2.man
 	cp qlib2.man $(MANDIR)/man$(MANEXT)/qlib2.$(MANEXT)
-	
+
 clean:
 	-rm -f *.o $(ALL)
 

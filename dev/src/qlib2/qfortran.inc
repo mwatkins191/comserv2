@@ -12,10 +12,12 @@ c	Fortran interludes to ms_utils routines.
 
 c	Fortran interludes to qtime routines.
 	double precision f_dsamples_in_time, f_tdiff
+	double precision f_nepoch_to_tepoch, f_tepoch_to_nepoch
 	integer f_mdy_to_doy, f_parse_date
 	external f_dsamples_in_time, f_tdiff, f_mdy_to_doy, f_parse_date
 	external f_add_time, f_time_interval2, f_int_to_ext, f_ext_to_int
 	external f_time_to_str, f_dy_to_mdy
+	external f_nepoch_to_tepoch, f_tepoch_to_nepoch
 
 c	Fortran interludes to qutils routines.
 	integer f_get_my_wordorder, f_set_hdr_wordorder

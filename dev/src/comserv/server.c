@@ -62,11 +62,12 @@ Edit History:
        7 Dec 00 IGD Changes are incorporated into the root Linux version
    32 21 Apr 04 DSN Added myipaddr config directive.
    33 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
-   34 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+   34 24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
 		    Change from SIG_IGN to signal handler for SIGALRM.
 		    Added in LogInit() and LogMessage() calls instead of to stdout.
 		    LOGDIR should added to the station.ini for the directory
 		    where logs are dumped. Otherwise, they are dumped in the comserv run dir.
+   35 12 Mar 09 DSN Another fix for reference through NULL pointer for dead client.
 */           
 #include <stdio.h>
 #include <errno.h>
@@ -128,7 +129,7 @@ Edit History:
 #define PRIVILEGED_WAIT 1000000 /* 1 second */
 #define NON_PRIVILEGED_WAIT 100000 /* 0.1 second */
 #define NON_PRIVILEGED_TO 60.0
-#define EDITION 34
+#define EDITION 35
 
 char seedformat[4] = { 'V', '2', '.', '3' } ;
 char seedext = 'B' ;
@@ -931,7 +932,7 @@ int main (int argc, char *argv[], char **envp)
                 {
                   /* Accept either ip address or hostname. */
                   char *ha = myipaddr ;
-                  unsigned long mynetaddr ;
+                  long int mynetaddr ;
                   if ((int)(mynetaddr = inet_addr(myipaddr)) == -1)
                       {
                         struct hostent *hp;
@@ -942,7 +943,7 @@ int main (int argc, char *argv[], char **envp)
                             }
                           else
                             {
-                              memcpy((char *)mynetaddr,hp->h_addr_list[0],sizeof(mynetaddr));
+                              memcpy((char *)&mynetaddr,hp->h_addr_list[0],sizeof(mynetaddr));
                             }
                       }
                   serv_addr.sin_addr.s_addr = mynetaddr ;
@@ -1083,10 +1084,12 @@ int main (int argc, char *argv[], char **envp)
                       if (clients[i].client_memid == clientid)
                           {
                             cursvc = clients[i].client_address ;
-                            if (cursvc->client_pid != clients[i].client_pid)
-                                cursvc = NULL ; /* not a complete match */
-                              else
+/*:: DSN start mod 2009/03/12 */
+                            if (cursvc != NULL && cursvc->client_pid == clients[i].client_pid)
                                 break ; /* found a complete match of segment ID and PID */
+                              else
+                                cursvc = NULL ; /* not a complete match */
+/*:: DSN end mod 2009/03/12 */
                           }
                     if (cursvc == NULL)
                         {

@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: ms_utils.h,v 1.3 2003/04/18 21:17:28 doug Exp $ 	*/
+/*	$Id: ms_utils.h,v 1.4 2008/10/24 19:53:56 doug Exp $ 	*/
 
 #ifndef	__ms_utils_h
 #define	__ms_utils_h
@@ -86,6 +86,9 @@ extern int decode_data_format
    (char	*str);		/* string containing data format.	*/
 
 extern char *encode_data_format 
+   (int		format);	/* data format number.			*/
+
+extern int mseed_to_data_format 
    (int		format);	/* data format number.			*/
 
 #ifdef	qlib2_fortran

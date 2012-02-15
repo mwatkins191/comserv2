@@ -81,8 +81,11 @@ Edit History:
 		    endian-order in the shared memory if this compilation flag is set	 	
       17 Mar 01 IGD Header order bits (7 and 8) are in the I/O and clock flags byte (see comments for
                     set_byte_order_SEED_IO_BYTE() ).
- 30   24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+ 30   24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
 		    Changed printf to LogMessage() calls.
+ 31   12 Mar 09 DSN Another fix for reference through NULL pointer for dead client.
+ 32   01 Dec 09 DCK Fix/add logging for corrupt data packet with odd length, set proper workorder for
+		    blockettes in comments.
  	 */
 #include <stdio.h>
 #include <errno.h>
@@ -118,9 +121,10 @@ Edit History:
 
 #ifdef	LINUX
 #include "unistd.h"
+#endif
+
 #ifndef FIRSTDATA       /* IGD 03/05/01 Add */
 #define FIRSTDATA 56
-#endif
 #endif
 
 #define SEED_IO_BIT6 0x40    /* IGD 03/09/01 */
@@ -129,7 +133,7 @@ Edit History:
 #define SET_LITTLE_ENDIAN 0  /* of fixed SEED header */
 
 
-short VER_COMLINK = 30 ;
+short VER_COMLINK = 32 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -277,12 +281,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                   accum = (accum << 1) ;
               tdata = tdata << 1 ;
             }
+	    
           accum = flip4( accum ); /*IGD flip4 here */
           crctable[count] = accum ;
         }
     }
 
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
   long gcrccalc (pchar b, short len)
     {
       complong crc ;
@@ -343,9 +348,24 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
           ltemp.l = gcrccalc(ta, len - 6) ;
           temp_pkt.c.crc = ltemp.s[0] ;
           temp_pkt.c.crc_low = ltemp.s[1] ;
-          if (udplink)
+          if (udplink) {
               numwrit = sendto (path, (pchar) &temp_pkt, len, 0,
                         (psockaddr) &cli_addr, sizeof(cli_addr)) ;
+	      if (insane) {
+		char str[8192];
+		pchar p = (pchar)&temp_pkt;
+		int i = 0, l = 0;
+		str[0] = 0;
+		LogMessage(CS_LOG_TYPE_INFO, "numwrit = %d  len = %d", numwrit, len);
+		for (i=0; i<len; i++) {
+		    unsigned int ival;
+		    ival = p[i];
+		    sprintf (str+l, "%2x ", ival);
+		    l += 3;
+		}
+		LogMessage(CS_LOG_TYPE_INFO, "packet = %s", str);
+	      }
+	  }
             else
               {
                 tstr = &transmit_buf[1] ;
@@ -374,11 +394,9 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
            if ((path >= 0) && !udplink)
               {
                 numwrit = write(path, (pchar) &transmit_buf, len * 2 + 1) ;
-                if ((numwrit < 0) && (verbose)) {
+                if ((numwrit < 0) && (verbose))
                     perror ("Error writing to port ") ;
-                    LogMessage(CS_LOG_TYPE_ERROR, "send_window(): writing to port failed with errno %d", errno);
                 }
-              }
           last_sent = dtime () ;
         }
     }
@@ -526,7 +544,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
     {
       DP_to_DA_msg_type mmsg ;
       comstat_rec *pcom ;
-      download_result *pdr ;
+      download_result *pdr = NULL ;
 	
       if (xfer_up_ok)
           {
@@ -552,7 +570,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                         shmctl(upmemid, IPC_RMID, NULL) ;
                         upmemid = NOCLIENT ;
                       }
-                  if (pcom->completion_status == CSCS_INPROGRESS)
+                  if (pcom != NULL && pcom->completion_status == CSCS_INPROGRESS)
                       pcom->completion_status = CSCS_ABORTED ;
                   combusy = NOCLIENT ;
                 }
@@ -572,13 +590,13 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
             if (checkbusy ())
                 {
                   pcom = (pvoid) clients[combusy].outbuf ;
-                  pdr = (pvoid) &pcom->moreinfo ;
-                  if (pdr->dpshmid != NOCLIENT)
+                  if (pcom) pdr = (pvoid) &pcom->moreinfo ;
+                  if (pdr != NULL && pdr->dpshmid != NOCLIENT)
                       {
                         shmctl(pdr->dpshmid, IPC_RMID, NULL) ;
                         pdr->dpshmid = NOCLIENT ;
                       }
-                  if (pcom->completion_status == CSCS_INPROGRESS)
+                  if (pcom != NULL && pcom->completion_status == CSCS_INPROGRESS)
                       pcom->completion_status = CSCS_ABORTED ;
                   combusy = NOCLIENT ;
                 }
@@ -778,7 +796,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
       long *pl ;
       char seedst[5] ;
       char s1[64], s2[64] ;
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
       pchar tmpa;          /* IGD tmp byte-swapping array */
       timing * tmp_timing; /* IGD 03/05/01 tmp Byte-swapping pointer for blockette 500 */
       murdock_detect *detm;
@@ -803,6 +821,18 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
           }
         else
           pecp = NULL ;
+
+       if (verbose)
+	   if (pecp == NULL)
+		LogMessage(CS_LOG_TYPE_ERROR, "TYPE=%d sq=%d Packet size=%d\n",
+		dbuf.data_buf.cl.frame_type,dbuf.seq,size);
+	   else
+		LogMessage(CS_LOG_TYPE_INFO, 
+		"TYPE=%d sq=%d Packet size=%d%s pecp=%d dpsum=%d chksum=%d%s ltemp.l=%d dpcrc=%d%s\n",
+		dbuf.data_buf.cl.frame_type,dbuf.seq,size, (size==514?" ":"***"),(long) pecp, 
+		dp_sum, pecp->chksum,(dp_sum == pecp->chksum?" ":" ***"),
+		ltemp.l, dp_crc,(ltemp.l==dp_crc?" ":" ***")); /* DCK DEBUG */
+
       if ((pecp != NULL) && (dp_sum == pecp->chksum) && (ltemp.l == dp_crc))
           {
             netto_cnt = 0 ; /* got a packet, reset timeout */
@@ -844,7 +874,6 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 curlink.grouptime = flip2(dbuf.data_buf.cl.grouptime) ;
                                 if (verbose)
                                     {
-                                      LogMessage(CS_LOG_TYPE_INFO, "Link Packet Received:");
                                       LogMessage(CS_LOG_TYPE_INFO, "Window=%d  Modulus=%d  Start=%d  RC Echo=%c  Data Format=%s",
                                              curlink.window_size, sequence_mod, last_packet_received,
 		  	                     rcelu[curlink.rcecho], lf[linkstat.data_format]) ;
@@ -1029,7 +1058,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedheader (&dbuf.data_buf.cr.h, pseed) ; /* convert header to SEED */
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
 #ifdef	_BIG_ENDIAN_HEADER	/* IGD 03/03/01 */
                    /*
                     * If a user requested to store an MSEED header in big-endian byte order on little-endian
@@ -1092,15 +1121,15 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     seedsequence (&pbr->hdr, flip4(*pl) ) ; /*IGD 03/05/01 flip4 */
                     pseed = (pvoid) pbr;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
 #ifndef _BIG_ENDIAN_HEADER
                     /* IGD 03/05/01
                      * If this code is executed on little-endian processor,
 		     * pbr->hdr structure here is all BIG_ENDIAN.
                      * We will byte-swap some members of pbr structure if:
-		     * 1) The program is compiled with -DLITTLE_ENDIAN flag;
+		     * 1) The program is compiled with -DENDIAN_LITTLE flag;
                      * 2) It is not compiled with -D_BIG_ENDIAN_HEADER compilation flag
-                     * Note that the check for -DLITTLE_ENDIAN flag is done inside flip2()/flip4()
+                     * Note that the check for -DENDIAN_LITTLE flag is done inside flip2()/flip4()
 		     */
                     flip_fixed_header(pseed);	   						
                     pbr->bmin.data_offset = flip2(pbr->bmin.data_offset);
@@ -1159,6 +1188,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	ENDIAN_LITTLE
 #if (defined _BIG_ENDIAN_HEADER)
                     /* IGD 03/05/01
                      * If this code is executed on little-endian processor, the comments
@@ -1167,6 +1197,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 		    flip_fixed_header(pseed);	
                     pseed->deb.blockette_type = flip2(pseed->deb.blockette_type);
                     pseed->deb.next_offset = flip2(pseed->deb.next_offset);
+#endif
 #endif
 
                     break ;
@@ -1202,6 +1233,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	ENDIAN_LITTLE
 #if (defined _BIG_ENDIAN_HEADER)			
                     /* IGD 03/05/01
                      * If this code is executed on little-endian processor, the comments
@@ -1214,9 +1246,12 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 		    tmp_timing->blockette_type = flip2(tmp_timing->blockette_type);
                     tmp_timing->next_blockette = flip2(tmp_timing->next_blockette);
                     tmp_timing->vco_correction = flip_float(tmp_timing->vco_correction);
+                    tmp_timing->time_of_exception.yr = flip2(tmp_timing->time_of_exception.yr);
+                    tmp_timing->time_of_exception.jday = flip2(tmp_timing->time_of_exception.jday);
                     tmp_timing->time_of_exception.tenth_millisec =
                    	 flip2(tmp_timing->time_of_exception.tenth_millisec);
                     tmp_timing->exception_count = flip4(tmp_timing->exception_count);
+#endif
 #endif
                     if (rambling)
                         {
@@ -1253,6 +1288,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	ENDIAN_LITTLE
 #if (defined _BIG_ENDIAN_HEADER)			
                     /* IGD 03/06/01
                      * If this code is executed on little-endian processor, the comments
@@ -1274,6 +1310,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     dett->signal_onset_time.yr = flip2(dett->signal_onset_time.yr);
                     dett->signal_onset_time.jday = flip2(dett->signal_onset_time.jday);
                     dett->signal_onset_time.tenth_millisec = flip2(dett->signal_onset_time.tenth_millisec);
+#endif
 #endif
 
                     if (rambling)
@@ -1311,12 +1348,14 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	ENDIAN_LITTLE
 #if (defined _BIG_ENDIAN_HEADER)			
                     /* IGD 03/06/01
                      * If this code is executed on little-endian processor, the comments
 		     * from the previous cases are applicable o what we do here
 		     */			
 		    flip_fixed_header(pseed);	
+#endif
 #endif
 
                     if (rambling)
@@ -1361,6 +1400,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                     freebuf->user_data.reception_time = dtime () ;    /* reception time */
                     freebuf->user_data.header_time = seedblocks ((pvoid) pseed, &dbuf.data_buf) ;
                     pseed->header.IO_flags = process_set_byte_order_SEED_IO_BYTE(pseed->header.IO_flags); /* IGD 03/09/01 */
+#ifdef	ENDIAN_LITTLE
 #if (defined _BIG_ENDIAN_HEADER)			
                     /* IGD 03/07/01
                      * If this code is executed on little-endian processor, the comments
@@ -1427,7 +1467,8 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                         calabort->res = flip2(calabort->res);
                         break ;
                       }
-                  end	
+		    }
+#endif
 #endif
 
                     if (rambling)
@@ -1471,7 +1512,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                           if (full)
                               {
 				/* IGD Time to do byte swapping if we are with little-endian */
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
 				/* IGD: We are going to swap several elements of pultra here */
 				/* IGD 01/21/01 swapping of pultra header is moved here */
 				/* because at this place we are guaranteed to byteswap header only once */
@@ -1538,7 +1579,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 j++ ;
                           if (full)
                               {
-#ifdef	LITTLE_ENDIAN	/* IGD Need to do byte swapping in memory */
+#ifdef	ENDIAN_LITTLE	/* IGD Need to do byte swapping in memory */
                                 flip_detectors(ta)  ;
 #endif
                                 detavail_loaded = TRUE ;
@@ -1667,7 +1708,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                           pcom = (pvoid) clients[combusy].outbuf ;
                           preply = &dbuf.data_buf.cy ;
                           memcpy ((pchar) &replybuf, (pchar) &preply->bytes, flip2(preply->byte_count)) ;  /*IGD flip2 here */
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
                           if ((replybuf.ces.dp_seq = pcom->command_tag) &&   /*here is a bug*/
                               (pcom->completion_status == CSCS_INPROGRESS))    /*pointed by*/
 #else /*IGD 09/03/01 Bug fixed : was elif */
@@ -1710,9 +1751,34 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
           {
             linkstat.last_bad = dtime () ;
             linkstat.check_errors++ ;
-            if (verbose)
-                LogMessage(CS_LOG_TYPE_ERROR, "CHECKSUM ERROR ON PACKET %d, BYTE COUNT=%d, CHECKSUM ERRORS=%d",
-                        last_packet_received, size, linkstat.check_errors) ;
+            if (verbose) {
+		char str[4096];
+		int i, l;
+		if( pecp == NULL) {
+			LogMessage(CS_LOG_TYPE_ERROR, "Packet size is odd size=%d\n",size);
+		}
+		else {
+			LogMessage(CS_LOG_TYPE_ERROR, "CHECKSUM ERROR ON PACKET %d, BYTE COUNT=%d, CHECKSUM ERRORS=%d",
+				last_packet_received, size, linkstat.check_errors) ;
+			LogMessage(CS_LOG_TYPE_ERROR, "COMPUTED CHECKSUM = %d,  PACKET CHECKSUM = %d", (int)dp_sum, (int)pecp->chksum);
+			LogMessage(CS_LOG_TYPE_ERROR, "COMPUTED CRC = %08x,  PACKET CRC = %08x = %04hx %04hx", dp_crc, ltemp.l, ltemp.s[0], ltemp.s[1]);
+		}
+		str[0] = 0;
+		l = 0;
+		if (insane) {
+		    for (i=0; i<size+6; i++) {
+			unsigned int ival;
+			ival = dest[i];
+			sprintf (str+l, "%2x ", ival);
+			l += 3;
+		    }
+		    LogMessage(CS_LOG_TYPE_ERROR, "packet = %s", str);
+/*::		    for (l=0; l<256; l++) {
+			printf ("crctable[%d] = %d\n", l, crctable[l]);
+		    }
+::*/
+		}
+	    }
           }
     }
 
@@ -1783,7 +1849,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
            if ((insane) /* && (numread > maxbytes) */)
                {
                  maxbytes = numread ;
-                 LogMessage(CS_LOG_TYPE_INFO, "fillbuf(): %d bytes read", numread) ;
+                 LogMessage(CS_LOG_TYPE_ERROR, "%d bytes read", numread) ;
                }
          }
       else if (numread < 0)
@@ -2100,7 +2166,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
    ******************************************/
   char process_set_byte_order_SEED_IO_BYTE(char myByte)	
   {
-#ifndef LITTLE_ENDIAN
+#ifndef ENDIAN_LITTLE
 	myByte = set_byte_order_SEED_IO_BYTE(myByte, SET_BIG_ENDIAN);
 #else
 #ifdef _BIG_ENDIAN_HEADER

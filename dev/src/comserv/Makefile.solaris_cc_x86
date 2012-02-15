@@ -7,11 +7,10 @@
 ########################################################################
 # Solaris 2 definitions
 #
+DEBUG	 = -g
 CC	 = cc
-CFLAGS	 = -I$(INCL) -DSOLARIS2  -DMYIPADDR $(DEBUG) -DLITTLE_ENDIAN
-DEBUG	 = 
+CFLAGS	 = $(DEBUG) -I$(INCL) -DSOLARIS2  -DMYIPADDR -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER
 
-BINDIR	 = ../../bin/Solaris
 INCL	 = ../include
 LDFLAGS	 = $(DEBUG)
 CSUDIR	 = ../util

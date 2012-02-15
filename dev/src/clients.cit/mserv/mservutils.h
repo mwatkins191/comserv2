@@ -33,7 +33,6 @@ Modification History:
 
 int classify_packet(seed_fixed_data_record_header* sh);
 
-int header_to_double_time(seed_fixed_data_record_header* sh,
-			  double* out_time);
+double header_to_double_time(seed_fixed_data_record_header* sh);
 
 #endif

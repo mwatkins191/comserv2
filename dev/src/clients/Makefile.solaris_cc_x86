@@ -12,11 +12,10 @@
 # Solaris 2 definitions
 #
 CC	 = cc
-CFLAGS	 = -I$(INCL) -DSOLARIS2 $(DEBUG) -DLITTLE_ENDIAN
-DEBUG	 =
+DEBUG	 = -g
+CFLAGS	 = $(DEBUG) -I$(INCL) -DSOLARIS2 -DENDIAN_LITTLE
 
 INCL	 = ../include
-BINDIR	 = ../../bin/Solaris
 LDFLAGS	 = $(DEBUG)
 CSUDIR	 = ../util
 CSULIB	 = $(CSUDIR)/libutil.a

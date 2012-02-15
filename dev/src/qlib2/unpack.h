@@ -37,7 +37,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: unpack.h,v 1.2 2000/10/25 20:40:24 doug Exp $ 	*/
+/*	$Id: unpack.h,v 1.3 2008/10/24 19:53:56 doug Exp $ 	*/
 
 #ifndef	__unpack_h
 #define	__unpack_h
@@ -98,6 +98,27 @@ extern int unpack_int_24
     int		*databuff,	/* ptr to unpacked data array.		*/
     int		data_wordorder,	/* wordorder of data (NOT USED).	*/
     char	**p_errmsg);	/* ptr to ptr to error message.		*/
+
+extern int unpack_fp_sp
+   (float	*ibuf,		/* ptr to input data.			*/
+    int		nbytes,		/* number of bytes in all data frames.	*/
+    int		num_samples,	/* number of data samples in all frames.*/
+    int		req_samples,	/* number of data desired by caller.	*/
+    float	*databuff,	/* ptr to unpacked data array.		*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    char	**p_errmsg);	/* ptr to ptr to error message.		*/
+
+extern int unpack_fp_dp
+   (double	*ibuf,		/* ptr to input data.			*/
+    int		nbytes,		/* number of bytes in all data frames.	*/
+    int		num_samples,	/* number of data samples in all frames.*/
+    int		req_samples,	/* number of data desired by caller.	*/
+    double	*databuff,	/* ptr to unpacked data array.		*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    char	**p_errmsg);	/* ptr to ptr to error message.		*/
+
+
+
 
 #ifdef	__cplusplus
 }

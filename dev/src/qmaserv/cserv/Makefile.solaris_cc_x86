@@ -10,14 +10,14 @@
 # Solaris 2 definitions
 #
 CC	 = cc
-CFLAGS	 = -I$(INCL) -I$(CSERV) -DSOLARIS2 $(COPT) $(DEBUG) -DLITTLE_ENDIAN
+CFLAGS	 = $(DEBUG) -I$(INCL) -I$(CSERV) -DSOLARIS2 $(COPT) -DENDIAN_LITTLE
 DEBUG	 = -g
 COPT	 = 
 
 INCL	 = ../../include
 CSERV	 = ../../comserv
 CSUDIR	 = ../../util
-LDFLAGS	 = -lsocket -lnsl -lposix4 $(DEBUG)
+LDFLAGS	 = $(DEBUG) -lsocket -lnsl -lposix4
 LDLIBS	 =
 ########################################################################
 

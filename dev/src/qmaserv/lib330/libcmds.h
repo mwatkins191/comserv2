@@ -1,5 +1,5 @@
 /*   Lib330 Command Processing headers
-     Copyright 2006 Certified Software Corporation
+     Copyright 2006-2010 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -25,7 +25,7 @@ Edit History:
 #ifndef libcmds_h
 /* Flag this file as included */
 #define libcmds_h
-#define VER_LIBCMDS 8
+#define VER_LIBCMDS 23
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h
@@ -36,6 +36,7 @@ Edit History:
 #endif
 
 extern void lib_start_registration (pq330 q330) ;
+extern void lib_continue_registration (pq330 q330) ;
 extern void lib_start_ping (pq330 q330) ;
 extern void lib_timer (pq330 q330) ;
 extern void purge_cmdq (pq330 q330) ;

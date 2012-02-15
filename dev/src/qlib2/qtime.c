@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2004 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: qtime.c,v 1.21 2007/04/24 20:00:13 doug Exp $ ";
+static char sccsid[] = "$Id: qtime.c,v 1.26 2011/08/19 16:13:31 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -102,6 +102,8 @@ int	    DOY [] = { 0, 31, 59, 90,120,151,181,212,243,273,304,334,365 };
 /*  	offset within the year.  When converting between external time	*/
 /*	and internal time, use this table to determine if we need to	*/
 /*	add &/or remove leap seconds.					*/
+/*	For handling conversion between nominal and true epoch time,	*/
+/*	the values of the nominal and true epoch time are also stored.	*/
 /************************************************************************/
 
 /************************************************************************/
@@ -112,6 +114,9 @@ typedef struct lsinfo {
     INT_TIME	inttime;	/*  Internal def. of leap time,		*/
 				/*  incl. prior leaps this year.	*/
     int		leap_value;	/*  Leap increment in seconds.		*/
+    int		total_offset;	/*  New total epoch time offset: (t-n)	*/
+    double	tepoch;		/*  True epoch time of leap time.	*/
+    double	nepoch;		/*  Nominal epoch time of leap time.	*/
 } LSINFO;
 
 struct lstable {
@@ -122,6 +127,24 @@ struct lstable {
 } lstable;
 
 /************************************************************************/
+/* NOTES on lstable:							*/
+/*  1.	For positive leapseconds:					*/
+/*	nepoch is the nominal epoch value of the next non-leapsecond.	*/
+/*	All other time representations are valid times for this second.	*/
+/*  2.  For negative leapseconds:					*/
+/*	The issue here is that this represents a NON-EXISTANT SECOND.	*/
+/*	exttime is NOT a valid time.  When normalized, it converts to	*/
+/*	the next valid second.						*/
+/*	tepoch is value of the normalized time (eg the next valid sec).	*/
+/*	nepoch is nominal epoch value of the (invalid) leapsecond.	*/
+/*	inttime is the value of the normalized time.			*/
+/*  There are inherint ambiguities, because an EXT_TIME entry for a 	*/
+/*  negative leapsecond is by definition NOT a valid time.		*/
+/*  However, an INT_TIME value and a tepoch value CANNOT represent a	*/
+/*  invalid time, so they must represent to the next valid second.	*/
+/************************************************************************/
+
+/************************************************************************/
 /*  init_leap_second_table:						*/
 /*	Initialize leap second table from external file.		*/
 /*  Return: 0 on success, 1 on warning, -1 on error.			*/
@@ -130,7 +153,7 @@ int init_leap_second_table ()
 {
     FILE    *lf;
     char    line[LEAPLINELEN+1], keywd[10], s_month[10], corr[10], type[10];
-    int	    i, l, ls;
+    int	    i, l, ls, n, delta_second;
     int	    lnum = 0;
     char    leap_file[MAXPATHLEN];
     char    *ep;
@@ -138,6 +161,9 @@ int init_leap_second_table ()
     EXT_TIME et;
     struct stat stat_buf;
     static int status = 0;
+    INT_TIME prev_inttime;
+    INT_TIME inttime_epoch_origin = {1970,0,0};
+    double sdif;
 
     if (lstable.initialized) return (status);
     lstable.initialized = 1;
@@ -166,7 +192,7 @@ int init_leap_second_table ()
 	return (1);
     }
 
-    while (fgets(line,LEAPLINELEN,lf)!=NULL) {
+    while (status == 0 && fgets(line,LEAPLINELEN,lf)!=NULL) {
 	++lnum;
 	line[LEAPLINELEN]='\0';
 	trim(line);
@@ -213,12 +239,60 @@ int init_leap_second_table ()
 		break;
 	}
 	if (p->leap_value == 0) continue;
-	/* Ensure that the INT_TIME field does not wrap into the next	*/
-	/* year for leapseconds occurring at the end of the year.	*/
+
+	/* Make sure we can handle consecutive leapseconds. */
+	/* Both leapseconds will map to the same nominal time. */
+	n = lstable.nleapseconds;
 	et = p->exttime;
-	et.second -= p->leap_value;
-	p->inttime = ext_to_int (et);
-	p->inttime.second += p->leap_value;
+	if (p->leap_value == 1) {
+	    /* Positive leap second: */
+	    /* Compute nominal and true epoch time of last second with 1-1 mapping  */
+	    /* before this leap second. */
+	    et = p->exttime;
+	    et.second = 59;
+	    delta_second = p->exttime.second - et.second;
+	    p->inttime = ext_to_int (et);
+	    p->tepoch = int_to_tepoch (p->inttime);
+	    p->nepoch = int_to_nepoch (p->inttime);
+	    /* Now define the values for this leapsecond. */
+	    /* Compute nominal and true epoch times for this second. */
+	    /* Nominal time for a POSITIVE leapsecond is defined as the */
+	    /* nominal time of the next nominal second. */
+	    p->inttime.second += delta_second;
+	    p->tepoch += delta_second;
+	    p->nepoch += 1;
+	    p->total_offset = (n > 0) ? lstable.lsinfo[n-1].total_offset + p->leap_value : p->leap_value;
+	}
+	else {	
+	    /* Negative leap second: */
+	    /* Compute nominal and true epoch time of (worst case) last second with 1-1 mapping  */
+	    /* before this leap second. */
+	    et = p->exttime;
+	    et.second = 57; /* There can never be more than 2 consecutive negative leap seconds. */
+	    delta_second = p->exttime.second - et.second;
+	    p->inttime = ext_to_int (et);
+	    p->tepoch = int_to_tepoch (p->inttime);
+	    p->nepoch = int_to_nepoch (p->inttime);
+	    /* Now define the values for this leapsecond. */
+	    /* Compute nominal and true epoch times for this second. */
+	    /* Nominal time for a NEGATIVE leapsecond is defined as the */
+	    /* nominal time of the next nominal second. */
+	    p->tepoch += delta_second;
+	    p->nepoch += delta_second;
+	    p->inttime.second += delta_second; /* IS THIS CORRECT ? */
+	    p->total_offset = (n > 0) ? lstable.lsinfo[n-1].total_offset + p->leap_value : p->leap_value;
+	}
+	/* Sanity check - ensure entries are in increasing time order. */
+	prev_inttime = (n > 0) ? lstable.lsinfo[n-1].inttime : inttime_epoch_origin;
+	sdif = tdiff (p->inttime, prev_inttime) / USECS_PER_SEC;
+	if (sdif < 0) {
+	    fprintf (stderr, "Error: leapsecond table not in increasing time order.\n");
+	    fprintf (stderr, "%s\n", line);
+	    fflush (stderr);
+	    if (QLIB2_CLASSIC) exit(1);
+	    status = QLIB2_TIME_ERROR;
+	    continue;
+	}
 	++lstable.nleapseconds;
     }
     if (ferror(lf)) {
@@ -238,11 +312,12 @@ static LSINFO *is_leap_second
    (INT_TIME it)		/* INT_TIME structure			*/
 {
     int		i;
+    int		status;
     /*	Search leap second table.   */
     if (!lstable.initialized) {
-	int status = init_leap_second_table();
+	status = init_leap_second_table();
     }
-    for (i=0; i<lstable.nleapseconds; i++) {
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
 	if (it.year == lstable.lsinfo[i].inttime.year &&
 	    it.second == lstable.lsinfo[i].inttime.second)
 	    return (&lstable.lsinfo[i]);
@@ -250,6 +325,49 @@ static LSINFO *is_leap_second
     return(NULL);
 }
 
+/************************************************************************/
+/*  is_leap_second_t:							*/
+/*	Return lsinfo structure if true second is in leap second table.	*/
+/************************************************************************/
+static LSINFO *is_leap_second_t
+   (double tepoch)		/* True epoch time			*/
+{
+    int		i;
+    int		status;
+    /*	Search leap second table.   */
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
+    tepoch = floor(tepoch);
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
+	if (tepoch == lstable.lsinfo[i].tepoch)
+	    return (&lstable.lsinfo[i]);
+    }
+    return(NULL);
+}
+
+/************************************************************************/
+/*  is_leap_second_n:							*/
+/*	Return lsinfo structure if nominal second is in leap second table*/
+/************************************************************************/
+static LSINFO *is_leap_second_n
+   (double nepoch)		/* Nominal epoch time			*/
+{
+    int		i;
+    int		status;
+    /*	Search leap second table.   */
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
+    nepoch = floor(nepoch);
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
+	if (nepoch == lstable.lsinfo[i].nepoch)
+	    return (&lstable.lsinfo[i]);
+    }
+    return(NULL);
+}
+
+#if 0
 /************************************************************************/
 /*  sec_per_min:							*/
 /*	Return the number of seconds in this minute.			*/
@@ -259,8 +377,10 @@ static int sec_per_min
 {
     /*	Search leap second table.   */
     int i;
+    int status;
+
     if (!lstable.initialized) {
-	int status = init_leap_second_table();
+	status = init_leap_second_table();
     }
     for (i=0; i<lstable.nleapseconds; i++) {
 	if (et.year < lstable.lsinfo[i].exttime.year) break;
@@ -273,6 +393,7 @@ static int sec_per_min
     }
     return(60);
 }
+#endif
 
 /************************************************************************/
 /*  prior_leaps_in_ext_time:						*/
@@ -285,11 +406,19 @@ static int prior_leaps_in_ext_time
 {
     LSINFO	*p;
     int		i;
+    int		status;
     int		result = 0;
+
     if (!lstable.initialized) {
-	int status = init_leap_second_table();
+	status = init_leap_second_table();
     }
-    for (i=0; i<lstable.nleapseconds; i++) {
+    if ((et.year < 1970) ||
+	((i=lstable.nleapseconds) == 0) ||
+	(et.year > lstable.lsinfo[i-1].inttime.year)) return(result);
+    /* Search the leapsecond table backwards. */
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
+	p = &lstable.lsinfo[i];
+	if (et.year > p->exttime.year) break;
 	p = &lstable.lsinfo[i];
 	if (et.year == p->exttime.year && 
 	    (et.doy > p->exttime.doy ||
@@ -316,12 +445,19 @@ static int prior_leaps_in_int_time
     /*	time within this year.						*/
     LSINFO	*p;
     int		i;
+    int		status;
     int		result = 0;
+
     if (!lstable.initialized) {
-	int status = init_leap_second_table();
+	status = init_leap_second_table();
     }
-    for (i=0; i<lstable.nleapseconds; i++) {
+    if ((it.year < 1970) ||
+	((i=lstable.nleapseconds) == 0) ||
+	(it.year > lstable.lsinfo[i-1].inttime.year)) return(result);
+    /* Search the leapsecond table backwards. */
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
 	p = &lstable.lsinfo[i];
+	if (it.year > p->inttime.year) break;
 	if (it.year == p->inttime.year && 
 	    (it.second > p->inttime.second))
 	    result += p->leap_value;
@@ -367,7 +503,6 @@ int mdy_to_doy
 EXT_TIME normalize_ext 
    (EXT_TIME	et)		/* EXT_TIME to normalize.		*/
 {
-    int seconds_per_minute;
     /*  Normalize external time from the minute up.			*/
     while (et.minute >= 60) { et.minute -= 60; ++(et.hour); }
     while (et.minute <   0) { et.minute += 60; --(et.hour); }
@@ -497,7 +632,7 @@ EXT_TIME int_to_ext
 INT_TIME ext_to_int
    (EXT_TIME	et)		/* EXT_TIME to convert to INT_TIME.	*/
 {
-    INT_TIME	it;
+    INT_TIME	it, it2;
     int		leaps;
     int i;
     i = 0;
@@ -509,7 +644,8 @@ INT_TIME ext_to_int
 		et.minute * (int)SEC_PER_MINUTE +
 		et.second + leaps;
     it.usec = et.usec;
-    return(normalize_time(it));
+    it2 = normalize_time(it);
+    return (it2);
 }
 
 /************************************************************************/
@@ -524,6 +660,7 @@ double int_to_tepoch
 {
     double	tepoch = 0.0;
     int		year = 1970;
+
     while (it.year < year) {
 	tepoch -= sec_per_year(--year);
     }
@@ -547,6 +684,7 @@ INT_TIME tepoch_to_int
 {
     INT_TIME	it;
     int		s_p_y;
+
     it.year = 1970;
     it.second = it.usec = 0;
     while (tepoch < 0) {
@@ -559,7 +697,7 @@ INT_TIME tepoch_to_int
     }
     it.second = (int)tepoch;
     tepoch -= it.second;
-    it.usec = roundoff(tepoch*USECS_PER_SEC) % USECS_PER_SEC;
+    it.usec = roundoff(tepoch*USECS_PER_SEC);
     return(normalize_time(it));
 }
 
@@ -571,10 +709,12 @@ INT_TIME tepoch_to_int
 /*	Nominal epoch time converted from INT_TIME structure.		*/
 /************************************************************************/
 double int_to_nepoch
-   (INT_TIME	it)		/* INT_TIME to convert to True epoch.	*/
+   (INT_TIME	it)		/* INT_TIME to convert to Nominal epoch.*/
 {
     double	nepoch = 0.0;
     int		year = 1970;
+    int		leaps;
+
     while (it.year < year) {
 	nepoch -= nsec_per_year(--year);
     }
@@ -583,6 +723,10 @@ double int_to_nepoch
     }
     nepoch += it.second;
     nepoch += ((double)it.usec / (double)USECS_PER_SEC);
+    /* Adjust by the number of leapseconds that preceed this time	*/
+    /* within this year. */
+    leaps = prior_leaps_in_int_time (it);
+    nepoch -= leaps;
     return(nepoch);
 }
 
@@ -598,20 +742,104 @@ INT_TIME nepoch_to_int
 {
     INT_TIME	it;
     int		s_p_y;
+    int		leaps;
+    int		status;
+    LSINFO	*lp;
+
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
     it.year = 1970;
     it.second = it.usec = 0;
     while (nepoch < 0) {
 	--(it.year);
 	nepoch += nsec_per_year(it.year);
     }
+    /*	Search leap second table.   */
     while (nepoch >= (s_p_y = nsec_per_year(it.year))) {
 	nepoch -= s_p_y;
 	++(it.year);
     }
     it.second = (int)nepoch;
     nepoch -= it.second;
-    it.usec = roundoff(nepoch*USECS_PER_SEC) % USECS_PER_SEC;
+    it.usec = roundoff(nepoch*USECS_PER_SEC);
+    /* Perform leap second adjustment if necessary. */
+    leaps = prior_leaps_in_int_time (it);
+    if ((lp = is_leap_second (it))) leaps += lp->leap_value;
+    it.second += leaps;
     return(normalize_time(it));
+}
+
+/************************************************************************/
+/*  nepoch_to_tepoch:							*/
+/*	Convert nominal epoch time to true epoch time.			*/
+/*  return:								*/
+/*	True epoch time in double precision.				*/
+/************************************************************************/
+double nepoch_to_tepoch
+   (double	nepoch)		/* Nominal epoch to convert to true.	*/
+{
+    double	tepoch;
+    int		i;
+    int		status;
+    LSINFO	*lp;
+    int		offset = 0;
+
+    /*	Search leap second table.   */
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
+    /* Assuming that most time operates are with current time,		*/
+    /* process the leapsecond table in reverse time order.		*/
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
+	if (nepoch >= lstable.lsinfo[i].nepoch) {
+	    offset = lstable.lsinfo[i].total_offset;
+	    if ((lp = is_leap_second_n(floor(nepoch)))) {
+		/* No additional offset change required for positive leapsecond.    */
+		/* Map negative leapsecond to true second FOLLOWING leapsecond.   */
+		if (lp->leap_value < 0) offset -= lp->leap_value;
+	    }
+	    break;
+	}
+    }
+    tepoch = nepoch + offset;
+    return(tepoch);
+}
+
+/************************************************************************/
+/*  tepoch_to_nepoch:							*/
+/*	Convert true epoch time to nominal epoch time.			*/
+/*  return:								*/
+/*	Nominal epoch time in double precision.				*/
+/************************************************************************/
+double tepoch_to_nepoch
+   (double	tepoch)		/* True epoch to convert to nominal.	*/
+{
+    double	nepoch;
+    int		i;
+    int		status;
+    LSINFO	*lp;
+    int		offset = 0;
+
+    /*	Search leap second table.   */
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
+    /* Assuming that most time operates are with current time,		*/
+    /* process the leapsecond table in reverse time order.		*/
+    for (i=lstable.nleapseconds-1; i>=0; i--) {
+	if (tepoch >= lstable.lsinfo[i].tepoch) {
+	    offset = lstable.lsinfo[i].total_offset;
+	    if ((lp = is_leap_second_t(floor(tepoch)))) {
+		/* Map positive leapsecond to nominal second FOLLOWING leapsecond.   */
+		/* No additional offset change required for negative leapsecond.    */
+		if (lp->leap_value > 0) offset -= lp->leap_value;
+	    }
+	    break;
+	}
+    }
+    nepoch = tepoch - offset;
+    return(nepoch);
 }
 
 /************************************************************************/
@@ -623,10 +851,12 @@ int sec_per_year
    (int		year)		/* year (input).			*/
 {
     int		i;
+    int		status;
     int		result = ( SEC_PER_DAY * (365 + IS_LEAP(year)) );
+
     /*	Search leap second table.   */
     if (!lstable.initialized) {
-	int status = init_leap_second_table();
+	status = init_leap_second_table();
     }
     for (i=0; i<lstable.nleapseconds; i++) {
 	if (year == lstable.lsinfo[i].inttime.year)
@@ -643,7 +873,6 @@ int sec_per_year
 int nsec_per_year
    (int		year)		/* year (input).			*/
 {
-    int		i;
     int		result = ( SEC_PER_DAY * (365 + IS_LEAP(year)) );
     return(result);
 }
@@ -969,7 +1198,6 @@ INT_TIME *parse_date
     int		format;
     int		ndelim;
     int		l;
-    char	*p1, *p2;
     double	epoch;
 
     et.year = et.doy = et.month = et.day = 0;
@@ -1130,7 +1358,7 @@ INT_TIME *parse_date_month
     char	*p, *q, *eos;
     char	*delim;
     EXT_TIME	et;
-    int		trip, nd;
+    int		trip;
     int		error = 0;
     static INT_TIME	it;
     int		format;
@@ -1323,10 +1551,7 @@ INT_TIME end_of_span
 {
     EXT_TIME	et;
     char	*p;
-    int		l;
     int		span_value;
-    int		second = 0;
-    int		usec = 0;
     INT_TIME	invalid_time;
 
     /*	Compute end of span time based on initial time and specified	*/
@@ -1566,7 +1791,40 @@ INT_TIME int_time_from_timeval
 	INT_TIME it;
 	it = int_time_from_time_tm(gmtime(&(tv->tv_sec)));
 	it.usec = tv->tv_usec;
-	return (it);
+	return (normalize_time(it));
+}
+
+/************************************************************************/
+/* dump_leapsecond_table:						*/
+/************************************************************************/
+void dump_leapsecond_table ()
+{
+    int i;
+    int status;
+    LSINFO *lp;
+
+    if (!lstable.initialized) {
+	status = init_leap_second_table();
+    }
+    printf ("initialized = %d\n", lstable.initialized);
+    printf ("nleapseconds = %d\n", lstable.nleapseconds);
+    for (i=0; i<lstable.nleapseconds; i++) {
+	lp = &lstable.lsinfo[i];
+	printf ("\n");
+	printf ("[%d]\t%04d/%02d/%02d,%02d:%02d:%02d\t%s\n", i, 
+		lp->exttime.year, lp->exttime.month, lp->exttime.day,
+		lp->exttime.hour, lp->exttime.minute, lp->exttime.second,
+		time_to_str(lp->inttime, MONTHS_FMT_1));
+	printf ("\tleap_value = %d\ttotal_offset = %d\n",
+		lp->leap_value, lp->total_offset);
+	printf ("\tEXT_TIME = %d %d %d %d %d %d %d %d\n",
+		lp->exttime.year, lp->exttime.month, lp->exttime.day, lp->exttime.doy,
+		lp->exttime.hour, lp->exttime.minute, lp->exttime.second, lp->exttime.usec);
+	printf ("\tINT_TIME = %d %d %d\n",
+		lp->inttime.year, lp->inttime.second, lp->inttime.usec);
+	printf ("\tNEPOCH = %.0lf\n", lp->nepoch);
+	printf ("\tTEPOCH = %.0lf\n", lp->tepoch);
+    }
 }
 
 /************************************************************************/
@@ -1743,6 +2001,24 @@ void f_nepoch_to_int
     *it = nepoch_to_int(*nepoch);
 }
 
+/* Convert nepoch to tepoch.						*/
+#ifdef	fortran_suffix
+double nepoch_to_tepoch_
+   (double	nepoch)		/* Nominal epoch to convert to true.	*/
+{
+   return (nepoch_to_tepoch(nepoch));
+}
+#endif
+
+/* Convert tepoch to nepoch.						*/
+#ifdef	fortran_suffix
+double tepoch_to_nepoch_
+   (double	tepoch)		/* Nominal epoch to convert to true.	*/
+{
+   return (tepoch_to_nepoch(tepoch));
+}
+#endif
+
 /* Convert INT_TIME to ascii string, according to specified format.	*/
 #ifdef	fortran_suffix
 void f_time_to_str_ 
@@ -1818,4 +2094,24 @@ int f_parse_date_month
 	return (1);
     }
     else return (0);
+}
+
+#ifdef	fortran_suffix
+double f_nepoch_to_tepoch_
+#else
+double f_nepoch_to_tepoch
+#endif
+   (double	*nepoch)	/* Nominal epoch to convert to true.	*/
+{
+    return (nepoch_to_tepoch (*nepoch));
+}
+
+#ifdef	fortran_suffix
+double f_tepoch_to_nepoch_
+#else
+double f_tepoch_to_nepoch
+#endif
+   (double	*tepoch)	/* True epoch to convert to nominal.	*/
+{
+    return (tepoch_to_nepoch (*tepoch));
 }

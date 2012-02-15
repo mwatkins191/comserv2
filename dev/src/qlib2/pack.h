@@ -37,7 +37,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: pack.h,v 1.3 2002/05/21 19:07:00 doug Exp $ 	*/
+/*	$Id: pack.h,v 1.5 2008/10/24 19:53:56 doug Exp $ 	*/
 
 #ifndef	__pack_h
 #define	__pack_h
@@ -101,6 +101,26 @@ extern int pack_int_16
 extern int pack_int_24 
    (unsigned char p_packed[],	/* output data array - packed.		*/
     int		data[],		/* input data array - unpacked.		*/
+    int		ns,		/* desired number of samples to pack.	*/
+    int		max_bytes,	/* max # of bytes for output buffer.	*/
+    int		pad,		/* flag to specify padding to max_bytes.*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    int		*pnbytes,	/* number of bytes actually packed.	*/
+    int		*pnsamples);	/* number of samples actually packed.	*/
+
+extern int pack_fp_sp 
+   (float p_packed[],	/* output data array - packed.		*/
+    float	*data,		/* input data array - unpacked.		*/
+    int		ns,		/* desired number of samples to pack.	*/
+    int		max_bytes,	/* max # of bytes for output buffer.	*/
+    int		pad,		/* flag to specify padding to max_bytes.*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    int		*pnbytes,	/* number of bytes actually packed.	*/
+    int		*pnsamples);	/* number of samples actually packed.	*/
+
+extern int pack_fp_dp 
+   (double p_packed[],	/* output data array - packed.		*/
+    double 	*data,		/* input data array - unpacked.		*/
     int		ns,		/* desired number of samples to pack.	*/
     int		max_bytes,	/* max # of bytes for output buffer.	*/
     int		pad,		/* flag to specify padding to max_bytes.*/

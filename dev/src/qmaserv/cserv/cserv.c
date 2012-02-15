@@ -87,7 +87,7 @@ Edit History:
    35  8 Sep 00 KIM Change ipaddr, ipaddr type conversion
    36  7 Dec 00 IGD Changes are incorporated into the root Linux version
    37 18 Apr 07 DSN Test for failure when shmat() to client shared memory.
-   38 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+   38 24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
 */           
 #include <stdio.h>
 #include <errno.h>

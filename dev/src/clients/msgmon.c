@@ -14,6 +14,7 @@ Edit History:
     4  9 Jun 94 WHO Cleanup to avoid warnings.
     5  7 Jun 96 WHO Start of conversion to run on OS9.
     6 22 Jul 96 WHO Fix offset calculation in final scan.
+    7 04 Jan 2012 DSN Fix for little endian machine with big endian headers.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -35,6 +36,7 @@ Edit History:
 #include "stuff.h"
 #include "timeutil.h"
 #include "service.h"
+#include "stuff.h"
 #ifdef _OSK
 #include "os9stuff.h"
 #endif
@@ -146,9 +148,17 @@ static int verbosity ; /* defaults to zero? */
                       pdat = (pdata_user) ((long) me + this->dbufoffset) ;
                       for (k = 0 ; k < this->valdbuf ; k++)
                         {
+			  short int first_data_byte;
+			  short int samples_in_record;
                           pseed = (pvoid) &pdat->data_bytes ;
-                          pc1 = (pchar) ((long) pseed + pseed->first_data_byte) ;
-                          pc2 = (pchar) ((long) pc1 + pseed->samples_in_record - 2) ;
+			  memcpy (&first_data_byte, &(pseed->first_data_byte), 2);
+			  memcpy (&samples_in_record, &(pseed->samples_in_record), 2);
+#ifdef	ENDIAN_LITTLE
+			  first_data_byte = flip2 (first_data_byte);
+			  samples_in_record = flip2 (samples_in_record);
+#endif
+                          pc1 = (pchar) ((long) pseed + first_data_byte) ;
+                          pc2 = (pchar) ((long) pc1 + samples_in_record - 2) ;
                           *pc2 = '\0' ;
                           printf ("%s\n", pc1) ;
                           pdat = (pdata_user) ((long) pdat + this->dbufsize) ;

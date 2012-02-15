@@ -2,14 +2,14 @@
 /*  Structure definitions for holding and request records.		*/
 /*									*/
 /*	Douglas Neuhauser						*/
-/*	Seismological Laboratory					*/
+/*	Seismographic Station						*/
 /*	University of California, Berkeley				*/
 /*	doug@seismo.berkeley.edu					*/
 /*									*/
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2000 The Regents of the University of California.
+ * Copyright (c) 1996 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: holdings.h,v 1.5 2000/10/26 13:39:49 doug Exp $ 	*/
+/*	$Id: holdings.h,v 1.6 2010/06/01 21:03:13 doug Exp $ 	*/
 
 #define	HR_STATION_LEN		5
 #define	HR_NETWORK_LEN		2
@@ -107,23 +107,48 @@ typedef struct _request_rec {
 /*  98/09/23	Doug Neuhauser, Seismological Laboratory, UC Berkeley	*/
 /*									*/
 /*  Add location, offset and length fields for database support.	*/
-/*  Reorganzied fields 
+/*  Reorganzied fields							*/
+/*									*/
+/*  2010/06/01	Doug Neuhauser, Seismological Laboratory, UC Berkeley	*/
+/*									*/
+/*  Added record_type field and padding.				*/
 /************************************************************************/
 
-#define	HOLDING_SHORT_VERSION	4
+#define	HOLDING_SHORT_VERSION	5
 typedef struct _holding_short {								    /*off len*/
     char    len;				/* structure length.			*/  /*  0  1 */
     char    version;				/* version.				*/  /*  1  1 */
     char    blkexp;				/* blksize = 2**blkexp			*/  /*  2  1 */
     char    data_type;				/* MiniSEED data type.			*/  /*  3  1 */
-    char    station[HR_STATION_LEN+1];		/* SEED station name.			*/  /*  4  6 */
-    char    network[HR_NETWORK_LEN+1];		/* SEED network name.			*/  /* 10  3 */
-    char    channel[HR_CHANNEL_LEN+1];		/* SEED channel name.			*/  /* 13  4 */
-    char    location[HR_LOCATION_LEN+1];	/* SEED location name.			*/  /* 17  3 */
-    short int sample_rate;			/* sample rate (+=samp/sec, -=sec/samp)	*/  /* 20  2 */
-    short int sample_rate_mult;			/* padding.				*/  /* 22  2 */
-    SDR_TIME start_time;			/* start time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 24 10 */
-    SDR_TIME end_time;				/* end time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 34 10 */
-    int	    offset;				/* initial offset of timeseries in file.*/  /* 44  4 */
-    int	    length;				/* length in bytes of timeseries.	*/  /* 48  4 */
+    char    record_type;			/* MiniSEED record type.		*/  /*  4  1 */
+    char    pad[3];				/* Padding.				*/  /*  5  3 */
+    char    station[HR_STATION_LEN+1];		/* SEED station name.			*/  /*  8  6 */
+    char    network[HR_NETWORK_LEN+1];		/* SEED network name.			*/  /* 14  3 */
+    char    channel[HR_CHANNEL_LEN+1];		/* SEED channel name.			*/  /* 17  4 */
+    char    location[HR_LOCATION_LEN+1];	/* SEED location name.			*/  /* 21  3 */
+    short int sample_rate;			/* sample rate (+=samp/sec, -=sec/samp)	*/  /* 24  2 */
+    short int sample_rate_mult;			/* padding.				*/  /* 26  2 */
+    SDR_TIME start_time;			/* start time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 28 10 */
+    SDR_TIME end_time;				/* end time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 38 10 */
+    int	    offset;				/* initial offset of timeseries in file.*/  /* 48  4 */
+    int	    length;				/* length in bytes of timeseries.	*/  /* 52  4 */
 } HOLDING_SHORT;
+
+/*:: #define	HOLDING_SHORT_VERSION	4
+/*:: typedef struct _holding_short {								    /*off len*/
+/*::    char    len;				/* structure length.			*/  /*  0  1 */
+/*::    char    version;				/* version.				*/  /*  1  1 */
+/*::    char    blkexp;				/* blksize = 2**blkexp			*/  /*  2  1 */
+/*::    char    data_type;				/* MiniSEED data type.			*/  /*  3  1 */
+/*::    char    station[HR_STATION_LEN+1];		/* SEED station name.			*/  /*  4  6 */
+/*::    char    network[HR_NETWORK_LEN+1];		/* SEED network name.			*/  /* 10  3 */
+/*::    char    channel[HR_CHANNEL_LEN+1];		/* SEED channel name.			*/  /* 13  4 */
+/*::    char    location[HR_LOCATION_LEN+1];	/* SEED location name.			*/  /* 17  3 */
+/*::    short int sample_rate;			/* sample rate (+=samp/sec, -=sec/samp)	*/  /* 20  2 */
+/*::    short int sample_rate_mult;			/* padding.				*/  /* 22  2 */
+/*::    SDR_TIME start_time;			/* start time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 24 10 */
+/*::    SDR_TIME end_time;				/* end time: yyyy,ddd,hh:mm:ss.tttt	*/  /* 34 10 */
+/*::    int	    offset;				/* initial offset of timeseries in file.*/  /* 44  4 */
+/*::    int	    length;				/* length in bytes of timeseries.	*/  /* 48  4 */
+/*::} HOLDING_SHORT;
+::*/

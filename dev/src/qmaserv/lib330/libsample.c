@@ -1,5 +1,5 @@
 /*   Lib330 Time Series data routines
-     Copyright 2006 Certified Software Corporation
+     Copyright 2006-2010 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -26,8 +26,15 @@ Edit History:
                      not 330.
     2 2006-12-30 rdr Fix compilation with OMIT_SEED defined.
     3 2007-03-09 rdr Fix botched (and possibly debauched) Pascal to C translation in proc_mult.
-    4 2008-03-02 rdr Add support for seperate event handling for archival and 512 byte.
-    5 2008-03-13 rdr Don't reset records_written at 999999.
+    4 2007-08-04 rdr Some foolishness to get around gcc-avr32 optimizer bugs when
+                     calling "average".
+    5 2008-01-10 rdr Move flushing of message LCQ into DP area.
+    6 2008-03-13 rdr Add support for seperate event handling for archival and 512 byte.
+                     Don't reset records_written at 999999.
+    7 2009-04-06 rdr Fix Gap offset for channels decimated from Paros input.
+    8 2009-09-05 rdr Ignore data for EP channels that don't yet have a valid delay.
+    9 2010-03-27 rdr Fix building segmented data structure.
+   10 2011-03-17 rdr For Q335 new usage of deb_flags.
 */
 #ifndef libsample_h
 #include "libsample.h"
@@ -325,7 +332,11 @@ begin
       phdr->deb.next_blockette = 64 ;
     else
       phdr->deb.next_blockette = 0 ;
-  phdr->deb.deb_flags = DEB_Q330 or DEB_PB14_FIX ;
+  if (q330->q335)
+    then
+      phdr->deb.deb_flags = DEB_NEWBITS or q->gain_bits ;
+    else
+      phdr->deb.deb_flags = DEB_Q330 or DEB_PB14_FIX ;
   if (q->lcq_opt and LO_EVENT)
     then
       phdr->deb.deb_flags = phdr->deb.deb_flags or DEB_EVENT_ONLY ;
@@ -606,13 +617,13 @@ end
 
 void process_lcq (paqstruc paqs, plcq q, integer src_samp, tfloat dv)
 begin
-  integer samples ;
+  string95 s ;
+  string31 s1, s2 ;
+  volatile integer samples ; /* gcc kept cloberring this without volatile */
   integer i ;
   longint dsamp ;        /* temp integer sample */
   tfloat sf ;
   plong p1 ;
-  string95 s ;
-  string31 s1, s2 ;
 #ifndef OMIT_SEED
   integer used ;
   longint int_time ; /* integer equivalent of sample time */
@@ -624,6 +635,9 @@ begin
   pq330 q330 ;
 
   q330 = paqs->owner ;
+  if ((q->raw_data_source == (DC_SPEC + 4)) land (q->delay == 0.0))
+    then
+      return ; /* don't have a valid delay value yet */
 #ifndef OMIT_SEED
   q->data_written = FALSE ;
   if (q->slipping)
@@ -670,12 +684,12 @@ begin
   if (src_samp > 0) /* only done due to decimation from a higher rate */
     then
       begin
+        samples = 1 ;
 #ifndef OMIT_SEED
         pfir = q->fir ;
         if (pfir)
           then
             begin /*this only processes one sample at a time, it's probably <=1hz anyway*/
-              samples = 1 ;
               *(pfir->f) = dv ;
               inc(pfir->f) ;
               inc(pfir->fcount) ;
@@ -781,7 +795,7 @@ begin
             if (q->avg_filt)
               then
                 begin
-                  average (q330, q->avg, sf, *p2, q) ; /* recursive filter always enabled here */
+                  average (paqs, q->avg, sf, *p2, q) ;
                   inc(p2) ;
                 end
             inc(p1) ;
@@ -929,9 +943,6 @@ begin
         case PKC_TIMING :
           flush_timing (paqs) ;
           break ;
-        case PKC_MESSAGE :
-          flush_messages (paqs) ;
-          break ;
         case PKC_DATA :
           if ((q->lcq_opt and LO_NOUT) == 0)
             then
@@ -951,7 +962,14 @@ begin
   q = paqs->dplcqs ;
   while (q)
     begin
-      flush_lcq (paqs, q, q->com) ;
+      switch (q->pack_class) begin
+        case PKC_DATA :
+          flush_lcq (paqs, q, q->com) ;
+          break ;
+        case PKC_MESSAGE :
+          flush_messages (paqs) ;
+          break ;
+      end
       q = q->link ;
     end
 end
@@ -1091,7 +1109,6 @@ begin
                   begin /* enqueue this pkt, set ppkt non-NIL, and return */
                     q->dholdq->ppkt = addr(q->dholdq->pkt) ;
                     memcpy (addr(q->dholdq->pkt), psave, size and DMSZ) ;
-                    return ;
                   end
             end
         size = size and DMSZ ;
@@ -1215,22 +1232,22 @@ begin
                 p->input_sample_rate = p->prev_link->rate ;
               else
                 p->input_sample_rate = 1.0 / abs(p->prev_link->rate) ;
-            if (p->input_sample_rate >= 0.999)
-              then
-                p->gap_offset = 1.0 ;
-              else
-                p->gap_offset = 1.0 / p->input_sample_rate ; /* set new gap offset based on input rate */
             if (p->source_fir)
               then
                 r = p->input_sample_rate / p->source_fir->dec ; /* output rate */
               else
                 r = p->input_sample_rate ; /* no decimation, so what's the point? */
-            if (r >= 0.0)
+            if (r >= 0.999)
               then
                 p->rate = lib_round(r) ; /* rounded hertz and about */
               else
                 p->rate = -lib_round(1.0 / r) ; /* sub-hertz */
             set_gaps (p) ;
+            if (p->input_sample_rate >= 0.999)
+              then
+                p->gap_offset = 1.0 ;
+              else
+                p->gap_offset = 1.0 / p->input_sample_rate ; /* set new gap offset based on input rate */
             if (p->source_fir)
               then
                 p->delay = p->prev_link->delay + (p->source_fir->dly / p->input_sample_rate) ;

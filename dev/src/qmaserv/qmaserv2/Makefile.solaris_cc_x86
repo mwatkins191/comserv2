@@ -1,17 +1,18 @@
+# Code in this directory uses global.h (../lib33/platform.h) to define system and endian attributes.
 
 CSERV = ../cserv
 LIB330 = ../lib330
 
 CXX	 = CC
 CLIBDIR	 = /usr/local/lib
-DEBUG	 = -g 
+DEBUG	 = -g
 COPT	 = 
 
 # lib330 and libutil both define some of the same functions.  We'll rely on lib330's implementations (newer)
 USE_FIRST_DEFINED = -z muldefs
 LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl -lsocket -l330 -lutil -lposix4 -lpthread -R$(CLIBDIR)
 
-CXXFLAGS = $(INCL) $(DEBUG) $(COPT) -DLITTLE_ENDIAN
+CXXFLAGS = $(DEBUG) $(INCL) $(COPT) -DENDIAN_LITTLE
 LD	 = $(CXX)
 INCL	 = -I../cserv -I. -I$(LIB330)
 LDFLAGS	 = $(DEBUG) $(LDLIBS)

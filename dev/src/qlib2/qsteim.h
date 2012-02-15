@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qsteim.h,v 1.2 2000/10/25 20:40:23 doug Exp $ 	*/
+/*	$Id: qsteim.h,v 1.3 2009/02/06 03:06:08 doug Exp $ 	*/
 
 #ifndef	__qsteim_h
 #define	__qsteim_h
@@ -52,7 +52,7 @@
 #define	STEIM2_567_MASK		3
 
 typedef union u_diff {			/* union for steim 1 objects.	*/
-    char	    byte[4];		/* 4 1-byte differences.	*/
+    signed char	    byte[4];		/* 4 1-byte differences.	*/
     short	    hw[2];		/* 2 halfword differences.	*/
     int		    fw;			/* 1 fullword difference.	*/
 } U_DIFF;

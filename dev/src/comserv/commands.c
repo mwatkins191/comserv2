@@ -41,7 +41,7 @@ Edit History:
       17 Dec 99 IGD Implemented byte swapping for the messages sent to DA for case   CSCM_MASS_RECENTER
                     Implemented byte swapping for the messages sent to DA for case    CSCM_CAL
       18 Dec 99 IGD Number of changes ; presumably swapping for every case of handler()
-   22 24 Aug 07 DSN Separate LITTLE_ENDIAN from LINUX logic.
+   22 24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -208,6 +208,10 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
       DP_to_DA_msg_type msg ;
       int ii;  /*IGD swapping counter */
       
+      if (verbose==verbose) {
+	printf ("Enter handler client %d\n", clientnum);
+	fflush (stdout);
+      }
       pt = &clients[clientnum] ;
       client = (pclient_station) ((long) svc + svc->offsets[svc->curstation]) ;
       pcom = (pvoid) ((long) svc + client->comoutoffset) ;
@@ -237,6 +241,10 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
           }
 
 /* Have permission to proceed */
+      if (verbose==verbose) {
+	printf ("handler cmd=%d\n", client->command);
+	fflush(stdout);
+      }
       switch (client->command)
         {
           case CSCM_ATTACH : break ;
@@ -246,6 +254,10 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
 /* If starting fresh, clear pointers and counters */
               if (client->seqdbuf != CSQ_NEXT)
                   {
+		    if (verbose==verbose) {
+			printf ("request = CSQ_FIRST | CSQ_LAST| CSQ_TIME\n");
+			fflush (stdout);
+		    }
                     client->next_data = 0 ;
                     for (i = DATAQ ; i < NUMQ ; i++)
                       {
@@ -259,11 +271,17 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                       }
                     if ((client->seqdbuf == CSQ_LAST) && (base->next_data > 0))
                         client->next_data = base->next_data -1 ;
-                  }
+		  }
 /* Go through records gotten last time to unblock */
-              if (client->seqdbuf != CSQ_FIRST)
+              if (client->seqdbuf != CSQ_FIRST) 
+		{
+		  if (verbose==verbose) {
+		    printf ("request = CSQ_NEXT | CSQ_LAST | CSQ_TIME\n");
+		    fflush (stdout);
+		  }
                   for (i = DATAQ ; i < NUMQ ; i++)
                     {
+	              int debug_most_recent = -1;
                       plast = &pt->last[i] ;
                       bscan[i] = plast->scan ;
                       if ((bscan[i] == NULL) ||
@@ -272,14 +290,26 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                       while ((bscan[i] != rings[i].head) &&
                              (bscan[i]->packet_num < client->next_data))
                         {
-                          if (pt->blocking)
+                          if (pt->blocking) {
                               clr_bit (&bscan[i]->blockmap, clientnum) ;
+/*:: start debug */
+			      debug_most_recent = bscan[i]->packet_num;
+/*:: end debug */
+			  }
                           bscan[i] = (pvoid) bscan[i]->next ;
                           plast->scan = bscan[i] ;
                           plast->packet = bscan[i]->packet_num ;
-                        }
-                    }
-
+			}
+/*:: start debug */
+		      if (verbose==verbose) {
+			if (debug_most_recent >= 0) {
+			    printf ("ack queue %d thru packet_num=%d client %d\n", i, debug_most_recent, clientnum);
+			    fflush (stdout);
+			}
+		      }
+/*:: end debug */
+		    }
+		}
 /* 
    New records that can be transferred to client. They are transferred in the 
    order that they were received, regardless of packet type.
@@ -335,14 +365,19 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                               memcpy ((pchar) pdata, (pchar) &bscan[lowi]->user_data, rings[lowi].xfersize) ;
                               client->valdbuf++ ;
                               pdata = (pdata_user) ((long) pdata + client->dbufsize) ;
+			      if (verbose==verbose) {
+				printf ("send queue %d packet_num %d client %d\n",
+					lowi, bscan[lowi]->packet_num, clientnum);
+				fflush(stdout);
+			      }
                             }
                       }
                   client->next_data = bscan[lowi]->packet_num + 1 ;
                   bscan[lowi] = (pvoid) bscan[lowi]->next ;
-                }
+		}
               client->seqdbuf = CSQ_NEXT ;
               break ;
-            }
+	    }
           case CSCM_LINK :
             {
               if (! linkstat.ultraon)
@@ -731,7 +766,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               msg.las.dp_seq = cmd_seq ;
               memcpy ((pchar) &msg.las.la, (pchar) plac, sizeof(linkadj_com)) ;
 /* IGD Do byte swapping */
-#ifdef	LITTLE_ENDIAN	/*IGD #ifdef is redundant, but let it be here anyways */
+#ifdef	ENDIAN_LITTLE	/*IGD #ifdef is redundant, but let it be here anyways */
               msg.las.la.window_size = flip2(msg.las.la.window_size);
 	      msg.las.la.resendtime = flip2(msg.las.la.resendtime);
 	      msg.las.la.synctime = flip2(msg.las.la.synctime);
@@ -809,7 +844,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                     msg.ucs.dp_seq = cmd_seq ;
                     msg.ucs.rc_sp2 = flip2(0) ;   /*IGD flip2 here */
                     memcpy ((pchar) &msg.ucs.xc, (pchar) pcsc, sizeof(cal_start_com)) ;
-#ifdef	LITTLE_ENDIAN                  /*IGD flips here */
+#ifdef	ENDIAN_LITTLE                  /*IGD flips here */
                     msg.ucs.xc.calnum  = flip2 (msg.ucs.xc.calnum);
 	            msg.ucs.xc.duration  = flip4 (msg.ucs.xc.duration);
 		    msg.ucs.xc.amp  = flip2 (msg.ucs.xc.amp);
@@ -913,7 +948,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               msg.des.rc_sp4 = flip2(0) ;  /*IGD flip2 here just in case*/
               memcpy ((pchar) &msg.des.de, (pchar) pdec, sizeof(det_enable_com)) ;
 	      
-#ifdef	LITTLE_ENDIAN
+#ifdef	ENDIAN_LITTLE
       	     for (ii = 1; ii < msg.des.de.count ; ii++)	{
 		msg.des.de.detectors[ii].detector_id = 	
 			flip2(msg.des.de.detectors[ii].detector_id );  /*IGD flip2 here */

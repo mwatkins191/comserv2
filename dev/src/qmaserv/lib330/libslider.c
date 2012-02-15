@@ -31,6 +31,17 @@ Edit History:
                      before a timing blockette is received.
     6 2007-07-06 rdr Data_timetag set to 0 instead of -1, anything less than +1 is considered
                      not yet set. Clear lasttime at the same time.
+    7 2007-08-04 rdr Add conditionals for omitting network code.
+    8 2008-01-11 rdr Ignore data from Q330 if freeze timer set.
+    9 2008-07-31 rdr Add handling of new serial sensor blockettes. Change serial sensor
+                     configuration recording to use the enclosing blockette size minus
+                     the overhead since the size will be different for different sensors.
+   10 2008-08-20 rdr Add TCP support. Put in missing AC_WRITE update in dack_out.
+   11 2009-02-09 rdr Add EP support.
+   12 2009-07-28 rdr Add DSS support.
+   13 2009-09-13 rdr Fix error message for ST32_DRIFT.
+   14 2010-12-22 rdr Add Sensor control blockette handling.
+   15 2011-02-18 rdr Add handling of FE PLL blockettes.
 */
 #ifndef libtypes_h
 #include "libtypes.h"
@@ -82,6 +93,9 @@ Edit History:
 #ifndef libcompress_h
 #include "libcompress.h"
 #endif
+#ifndef libdss_h
+#include "libdss.h"
+#endif
 #endif
 
 void allocate_packetbuffers (pq330 q330)
@@ -89,7 +103,7 @@ begin
   integer i ;
 
   for (i = 0 ; i <= 255 ; i++)
-    getbuf (q330, addr(q330->pkt_bufs[i]), sizeof(tpkt_buf)) ;
+    getthrbuf (q330, addr(q330->pkt_bufs[i]), sizeof(tpkt_buf)) ;
 end
 
 static void reset_window (pq330 q330)
@@ -179,13 +193,32 @@ begin
         strcat(s, s1) ;
         libmsgadd(q330, LIBMSG_PKTOUT, addr(s)) ;
       end
+#ifndef OMIT_NETWORK
   if (q330->usesock)
     then
       begin
         if (q330->dpath == INVALID_SOCKET)
           then
             return ;
-        err = sendto(q330->dpath, addr(q330->dataout.qdp), msglth, 0, addr(q330->dsockout), sizeof(struct sockaddr)) ;
+        if (q330->tcp)
+          then
+            begin
+              if (q330->cpath == INVALID_SOCKET)
+                then
+                  return ;
+              p = (pointer)((integer)addr(q330->dataout.qdp) - 4) ;
+              pref = p ; /* save start of tcp packet */
+              storeword (addr(p), 1) ; /* data port */
+              storeword (addr(p), msglth) ; /* qdp length */
+              err = send(q330->cpath, (pchar)pref, msglth + 4, 0) ;
+            end
+          else
+            begin
+              if (q330->dpath == INVALID_SOCKET)
+                then
+                  return ;
+              err = sendto(q330->dpath, addr(q330->dataout.qdp), msglth, 0, addr(q330->dsockout), sizeof(struct sockaddr)) ;
+            end
         if (err == SOCKET_ERROR)
           then
             begin
@@ -195,15 +228,26 @@ begin
 #else
                      errno ;
 #endif
-              sprintf(s1, "%d", err) ;
-              libmsgadd(q330, LIBMSG_CANTSEND, addr(s1)) ;
-              add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
+              if ((q330->tcp) land (err != EWOULDBLOCK))
+                then
+                  begin
+                    sprintf(s1, "%d, Waiting 10 minutes", err) ;
+                    tcp_error (q330, addr(s1)) ;
+                  end
+                else
+                  begin
+                    sprintf(s1, "%d", err) ;
+                    libmsgadd(q330, LIBMSG_CANTSEND, addr(s1)) ;
+                    add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
+                  end
             end
           else
             add_status (q330, AC_WRITE, msglth + IP_HDR_LTH + UDP_HDR_LTH) ;
       end
+#endif
 #ifndef OMIT_SERIAL
-    else
+  if (q330->usesock == 0)
+    then
       begin
         memcpy(addr(q330->commands.cmsgout.qdp), addr(q330->dataout.qdp), msglth) ;
         send_packet (q330, msglth, q330->q330dport, q330->dataport) ;
@@ -315,6 +359,11 @@ begin
             sprintf(s, "%d to %d", v1, v2) ;
             libdatamsg (q330, LIBMSG_SEQRESUME, addr(s)) ;
           end
+#ifndef OMITSEED
+      if ((q330->dssstruc) land (q330->dsspath != INVALID_SOCKET) land (dsn == (q330->lastseq + 1)))
+        then
+          lib_dss_continuous (q330->dssstruc) ; /* Starting a new second of data */
+#endif
       paqs->dt_data_sequence = dsn ; /* set global data record sequence number */
       q330->lastseq = paqs->dt_data_sequence ;
       pend = psave ;
@@ -395,7 +444,7 @@ begin
                     case ST32_DRIFT :
                       v1 = wordval ;
                       r = v1 + lval1 * 1.0E-6 ;
-                      sprintf(s, "8.6f Seconds", r) ;
+                      sprintf(s, "%8.6f Seconds", r) ;
                       libdatamsg (q330, LIBMSG_PHASERANGE, addr(s)) ;
                       break ;
                   end
@@ -478,25 +527,28 @@ begin
                               break ;
                           end
                           break ;
+                        case 4 :
+                          switch (paqs->proc_lcq->raw_data_field) begin
+                            case 0 :
+                              process_one (q330, subchan) ;
+                              break ;
+                            case 1 :
+                              process_one (q330, wordval shr 8) ;
+                              break ;
+                          end
+                          break ;
                       end
                       paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
                     end
                   break ;
                 case DC_MN32 :
-                  lval1 = loadlongint (addr(p)) ;
-                  switch (chan and not DCM) begin
-                    case 0 :
-                    case 1 :
-                    case 2 :
-                    case 3 : /* Serial Sensor */
-                      paqs->proc_lcq = paqs->dispatch[idx] ;
-                      while (paqs->proc_lcq)
-                        begin
-                          process_variable (q330, subchan, wordval, lval1) ;
-                          paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
-                        end
-                      break ;
-                  end
+                  lval1 = loadlongint (addr(p)) ; /* serial sensor */
+                  paqs->proc_lcq = paqs->dispatch[idx] ;
+                  while (paqs->proc_lcq)
+                    begin
+                      process_variable (q330, subchan, wordval, lval1) ;
+                      paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
+                    end
                   break ;
                 case DC_MN232 :
                   lval1 = loadlongint (addr(p)) ;
@@ -709,7 +761,28 @@ begin
                     end
                   break ;
                 case DC_AG32 :
-                  loadlongint (addr(p)) ;
+                  lval1 = loadlongint (addr(p)) ;
+                  paqs->proc_lcq = paqs->dispatch[idx] ;
+                  while (paqs->proc_lcq)
+                    begin
+                      switch (sub) begin
+                        case 0 :
+                        case 1 :
+                          switch (paqs->proc_lcq->raw_data_field) begin
+                            case 0 :
+                              process_one (q330, subchan) ; /* Clock quality */
+                              break ;
+                            case 1 :
+                              process_one (q330, sex(wordval)) ; /* VCO Control */
+                              break ;
+                            case 2 :
+                              process_one (q330, lval1) ; /* Clock phase */
+                              break ;
+                          end
+                          break ;
+                      end
+                      paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
+                    end
                   break ;
                 case DC_AG232 :
                   loadlongint (addr(p)) ;
@@ -945,15 +1018,60 @@ begin
                           add_cfg (paqs, "XA", p2, CFGSZ_AUXAD, 0, 0) ;
                           break ;
                         case CFG_SS1 :
-                          add_cfg (paqs, "S1", p2, CFGSZ_SS, 0, 0) ;
+                          add_cfg (paqs, "S1", p2, wordval - 4, 0, 0) ;
                           break ;
                         case CFG_SS2 :
-                          add_cfg (paqs, "S2", p2, CFGSZ_SS, 0, 0) ;
+                          add_cfg (paqs, "S2", p2, wordval - 4, 0, 0) ;
                           break ;
                       end
 #endif
                       break ;
+                    case SP_ENVPROC :
+                      skip = (wordval - 1) and 0xFFFC ; /* + 3 not including first 4 */
+                      if (wordval == 8)
+                        then
+                          begin /* 1hz data */
+                            p = psave ; /* point at 32 bit value */
+                            lval1 = loadlongint (addr(p)) ;
+                            paqs->proc_lcq = paqs->epdispatch[subchan] ;
+                            while (paqs->proc_lcq)
+                              begin
+#ifndef OMIT_SEED
+                                if (q330->lastseq == 0)
+                                  then
+                                    paqs->proc_lcq->com->charging = TRUE ;
+#endif
+                                  process_one (q330, lval1) ;
+                                  paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
+                                end
+                          end
+                        else
+                          begin /* compressed data */
+                            if ((wordval > MAXDATA) lor
+                                ((wordval + (integer)pstart) > (integer)pend))
+                              then
+                                begin
+                                  v1 = wordval ;
+                                  sprintf(s, "%d", v1) ;
+                                  libdatamsg (q330, LIBMSG_INVBLKLTH, addr(s)) ;
+                                  return ;
+                                end
+                            paqs->proc_lcq = paqs->epdispatch[subchan] ;
+                            while (paqs->proc_lcq)
+                              begin
+#ifndef OMIT_SEED
+                                if (q330->lastseq == 0)
+                                  then
+                                    paqs->proc_lcq->com->charging = TRUE ;
+#endif
+                                p = psave ; /* in case multiple users */
+                                process_comp (q330, p, wordval) ;
+                                paqs->proc_lcq = paqs->proc_lcq->dispatch_link ;
+                              end
+                          end
+                      break ;
                     default :
+                      skip = (wordval - 1) and 0xFFFC ; /* + 3 not including first 4 */
                       v1 = chan ;
                       sprintf(s, "%X", v1) ;
                       zpad(s, 2) ;
@@ -981,7 +1099,7 @@ end
 
 void dack_out (pq330 q330)
 begin
-  pbyte p ;
+  pbyte p, pref ;
   integer msglth, err, j ;
   string95 s, s1, s2 ;
   longword acks[4] ;
@@ -1032,13 +1150,32 @@ begin
           then
             libmsgadd(q330, LIBMSG_PKTOUT, addr(s)) ;
       end
+#ifndef OMIT_NETWORK
   if (q330->usesock)
     then
       begin
         if (q330->dpath == INVALID_SOCKET)
           then
             return ;
-        err = sendto(q330->dpath, addr(q330->dataout.qdp), msglth, 0, addr(q330->dsockout), sizeof(struct sockaddr)) ;
+        if (q330->tcp)
+          then
+            begin
+              if (q330->cpath == INVALID_SOCKET)
+                then
+                  return ;
+              p = (pointer)((integer)addr(q330->dataout.qdp) - 4) ;
+              pref = p ; /* save start of tcp packet */
+              storeword (addr(p), 1) ; /* data port */
+              storeword (addr(p), msglth) ; /* qdp length */
+              err = send(q330->cpath, (pchar)pref, msglth + 4, 0) ;
+            end
+          else
+            begin
+              if (q330->dpath == INVALID_SOCKET)
+                then
+                  return ;
+              err = sendto(q330->dpath, addr(q330->dataout.qdp), msglth, 0, addr(q330->dsockout), sizeof(struct sockaddr)) ;
+            end
         if (err == SOCKET_ERROR)
           then
             begin
@@ -1048,15 +1185,26 @@ begin
 #else
                      errno ;
 #endif
-              sprintf(s1, "%d", err) ;
-              libmsgadd(q330, LIBMSG_CANTSEND, addr(s1)) ;
-              add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
+              if ((q330->tcp) land (err != EWOULDBLOCK))
+                then
+                  begin
+                    sprintf(s1, "%d, Waiting 10 minutes", err) ;
+                    tcp_error (q330, addr(s1)) ;
+                  end
+                else
+                  begin
+                    sprintf(s1, "%d", err) ;
+                    libmsgadd(q330, LIBMSG_CANTSEND, addr(s1)) ;
+                    add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
+                  end
             end
           else
             add_status (q330, AC_WRITE, msglth + IP_HDR_LTH + UDP_HDR_LTH) ;
       end
+#endif
 #ifndef OMIT_SERIAL
-    else
+  if (q330->usesock == 0)
+    then
       begin
         memcpy(addr(q330->commands.cmsgout.qdp), addr(q330->dataout.qdp), msglth) ;
         send_packet (q330, msglth, q330->q330dport, q330->dataport) ;
@@ -1141,7 +1289,7 @@ begin
   if (lnot q330->link_recv)
     then
       return ;
-  if (q330->libstate != LIBSTATE_RUN)
+  if ((q330->libstate != LIBSTATE_RUN) lor (q330->share.freeze_timer > 0))
     then
       return ;
   add_status (q330, AC_PACKETS, 1) ;

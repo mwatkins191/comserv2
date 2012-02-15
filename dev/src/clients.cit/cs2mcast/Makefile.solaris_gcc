@@ -19,7 +19,7 @@ LD	 = $(CXX)
 
 INCL	 = ../../include
 CSLIB	 = ../../util
-LDLIBS	 = -L$(CSLIB) -lsocket -lnsl -lutil -lposix4
+LDLIBS	 = -L$(CSLIB) -lposix4 -lnsl -lsocket -lutil 
 ########################################################################
 
 files = mcast.C cs2mcast.C

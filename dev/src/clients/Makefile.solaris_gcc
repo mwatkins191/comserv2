@@ -16,7 +16,6 @@ CFLAGS	 = -I$(INCL) -DSOLARIS2 $(DEBUG)
 DEBUG	 =
 
 INCL	 = ../include
-BINDIR	 = ../../bin/Solaris
 LDFLAGS	 = $(DEBUG)
 CSUDIR	 = ../util
 CSULIB	 = $(CSUDIR)/libutil.a

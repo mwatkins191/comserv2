@@ -2,11 +2,10 @@
 ########################################################################
 # Linux definitions  IGD
 #
-BINDIR = ../../bin
 CC	= gcc
 INCL	= ../include
-CFLAGS	= -I$(INCL)  -DLINUX  
-LDFLAGS	= 
+CFLAGS	= -I$(INCL) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32
+LDFLAGS	= -m32
 CSUDIR	= ../util
 CSULIB = $(CSUDIR)/libutil.a
 LDLIBS =

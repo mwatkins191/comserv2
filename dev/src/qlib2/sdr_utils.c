@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2003 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: sdr_utils.c,v 1.21 2007/06/12 21:13:00 doug Exp $ ";
+static char sccsid[] = "$Id: sdr_utils.c,v 1.22 2011/08/19 16:13:31 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -694,7 +694,6 @@ int write_blockettes
    (DATA_HDR	*hdr,		/* ptr to data_hdr			*/
     char	*str)		/* ptr to output SDR.			*/
 {
-    SDR_HDR *ohdr =	(SDR_HDR *)str;
     BS *bs = hdr->pblockettes;
     int offset = hdr->first_blockette;
     SEED_UWORD next;
@@ -750,10 +749,8 @@ int add_blockette
     int		where)		/* i -> i-th blockette from start,	*/
 				/* -1 -> append as last blockette.	*/
 {
-    BLOCKETTE_HDR *bh = (BLOCKETTE_HDR *)str;
     BS *bs;
     BS *prev;
-    int status;
 
     /*	BEWARE:								*/
     /*  Allow the user to specify where the blockette should be placed	*/
@@ -1097,10 +1094,7 @@ int is_sdr_vol_header
    (SDR_HDR	*p,		/* ptr to buffer containing header.	*/
     int		nr)		/* max number of bytes for header.	*/
 {
-    char *vol = (char *)p;
-    return (nr >= SDR_HDR_SIZE && is_vol_hdr_ind(p->data_hdr_ind)
-	    /* && strncmp(vol+8,"008",3)==0 */ 
-	    );
+    return (nr >= SDR_HDR_SIZE && is_vol_hdr_ind(p->data_hdr_ind));
 }
 
 /************************************************************************/
@@ -1294,7 +1288,6 @@ int init_sdr_hdr
     BS *last_bs;		/* ptr to last permanent blockette.	*/
     int align;			/* alignment in bytes required for data.*/
     int swapflag;		/* flag to indicate byteswapping.	*/
-    short int stmp[2];
     MS_ATTR attr;
     int blksize = hdr->blksize;
 

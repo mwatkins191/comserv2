@@ -14,6 +14,7 @@ Edit History:
     5 27 Feb 95 WHO Start of conversion to run on OS9.
     6  3 Dec 96 WHO Add support for Blockette Records.
     7 12 Jun 97 WHO Show seed sequence number for each record.
+    8  3 Feb 2012 DSN Only disallow verbose option on little endian systems.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -128,6 +129,13 @@ extern pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                 sname[4] = '\0' ;
               }
         }
+
+/* For non-OS9 disallow verbose option on little endian systems. */
+#ifndef	_OSK
+#ifdef	ENDIAN_LITTLE
+      verbose = FALSE;
+#endif
+#endif
 
 /* Generate an entry for all available stations */      
       cs_setup (&stations, name, sname, TRUE, TRUE, 10, 5, CSIM_MSG |  CSIM_DATA | CSIM_CAL |

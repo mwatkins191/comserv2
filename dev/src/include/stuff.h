@@ -71,6 +71,13 @@ extern "C" {
 /* Return integer representation of a byte, making sure it is not sign extended */
   short ord (byte b) ;
 
+/*** ADDED FUNCTIONS FOR LITTLE ENDIAN SUPPORT */
+/* flip short and integer */
+short flip2( short shToFlip );
+int flip4( int iToFlip );
+float flip_float(float fToFlip);
+int flip4array (long *in, short bytes);
+
 #ifdef __cplusplus
 }
 #endif

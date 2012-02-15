@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2002 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: drm_utils.c,v 1.7 2004/04/08 00:45:15 doug Exp $ ";
+static char sccsid[] = "$Id: drm_utils.c,v 1.8 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -195,8 +195,6 @@ DATA_HDR *decode_hdr_drm
     int		blksize = 0;
     int		itmp[2];
     short int	stmp[2];
-    unsigned short int ustmp[2];
-    
 
     /* Perform data integrity check, and pick out pertinent header info.*/
     if (my_wordorder < 0) get_my_wordorder();
@@ -270,7 +268,6 @@ STORE_DATA *encode_hdr_drm
     STORE_DATA	*ohdr;
     int		itmp[2];
     short int	stmp[2];
-    unsigned short int ustmp[2];
 
     /* Perform data integrity check, and pick out pertinent header info.*/
     if (my_wordorder < 0) get_my_wordorder();

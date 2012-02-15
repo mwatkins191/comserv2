@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qtime.h,v 1.8 2007/04/24 20:00:13 doug Exp $ 	*/
+/*	$Id: qtime.h,v 1.11 2008/04/17 19:04:48 doug Exp $ 	*/
 
 #ifndef	__qtime_h
 #define	__qtime_h
@@ -83,6 +83,12 @@ extern double int_to_nepoch
 
 extern INT_TIME nepoch_to_int
    (double	nepoch);	/* Nominal epoch to convert to INT_TIME.*/
+
+extern double nepoch_to_tepoch
+   (double	nepoch);	/* Nominal epoch to convert to true.	*/
+
+extern double tepoch_to_nepoch
+   (double	tepoch);	/* True epoch to convert to nominal.	*/
 
 extern int sec_per_year
    (int		year);		/* year (input).			*/
@@ -284,6 +290,20 @@ extern int f_parse_date_month
    (INT_TIME	*it,		/* INT_TIME to be converted.		*/
     char	*str,		/* output characters string.		*/
     int		slen);		/* (fortran supplied) length of string.	*/
+
+#ifdef	fortran_suffix
+extern double f_nepoch_to_tepoch_
+#else
+extern double f_nepoch_to_tepoch
+#endif
+   (double	*nepoch);	/* Nominal epoch to convert to true.	*/
+
+#ifdef	fortran_suffix
+extern double f_tepoch_to_nepoch_
+#else
+extern double f_tepoch_to_nepoch
+#endif
+   (double	*tepoch);	/* True epoch to convert to nominal.	*/
 
 #endif
 

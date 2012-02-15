@@ -23,7 +23,11 @@ Edit History:
     0 2006-09-28 rdr Created
     1 2006-10-29 rdr Remove "addr" function when passing thread address. Fix posix
                      thread function return type.
+    2 2007-08-04 rdr Add conditionals for omitting network code.
+    3 2010-01-04 rdr Use fcntl instead of ioctl to set socket non-blocking.
 */
+#ifndef OMIT_NETWORK
+
 #ifndef q330types_h
 #include "q330types.h"
 #endif
@@ -184,7 +188,7 @@ end
 
 static void open_socket (ppocstr pocstr)
 begin
-  integer err ;
+  integer err, flags ;
   longint flag ;
   struct sockaddr_in *psock ;
 
@@ -219,7 +223,8 @@ begin
 #ifdef X86_WIN32
   ioctlsocket (pocstr->cpath, FIONBIO, addr(flag)) ;
 #else
-  ioctl (pocstr->cpath, FIONBIO, addr(flag)) ;
+  flags = fcntl (pocstr->cpath, F_GETFL, 0) ;
+  fcntl (pocstr->cpath, F_SETFL, flags or O_NONBLOCK) ;  
 #endif
   pocstr->sockopen = TRUE ;
 end
@@ -338,3 +343,4 @@ begin
   close_socket (pocstr) ;
 end
 
+#endif

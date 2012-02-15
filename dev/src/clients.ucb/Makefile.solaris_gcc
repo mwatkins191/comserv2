@@ -9,7 +9,6 @@ LD_RUN_PATH = /usr/lib
 
 ########################################################################
 # Solaris 2 definitions
-#BINDIR	= ../../bin
 CC	= gcc
 CFLAGS	= -I$(CSINCL) -I$(QDIR) -DSOLARIS2 $(DEBUG)
 DEBUG	= 
@@ -96,7 +95,7 @@ $(CSULIB):	FORCE
 FORCE:
 
 clean:
-		-rm *.o
+		-rm *.o $(ALL)
 
 veryclean:	clean
 		-rm *.o $(ALL)

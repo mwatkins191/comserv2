@@ -1,5 +1,5 @@
 /*   Lib330 Q330 I/O Communications routine
-     Copyright 2006 Certified Software Corporation
+     Copyright 2006-2010 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -31,7 +31,20 @@ Edit History:
     6 2007-06-27 rdr Fix return type of cksum function. Change method of setting serial baud.
                      Initialize control character array. Add conditional for flow control
                      constants.
+    7 2007-07-16 rdr Add support for baler simulation on serial port.
+    8 2007-08-04 rdr Add conditionals for omitting network code. Add CMEX32 support.
+                     Add baler callback for foreign received packets along with packet
+                     injection routine.
+    9 2007-08-21 rdr Add baler socket setup callback.
+   10 2007-10-03 rdr Remove setting access_timer.
+   11 2008-08-20 rdr Add TCP support.
+   12 2010-01-04 rdr Use fcntl instead of ioctl to set socket non-blocking.
+   13 2010-03-27 rdr Add Q335 support.
+   14 2010-05-13 rdr Add detection of 127.0.0.1 as additional baler port.
 */
+#ifdef CMEX32
+#include "cmexserial.h"
+#endif
 #ifndef q330io_h
 #include "q330io.h"
 #endif
@@ -71,8 +84,6 @@ Edit History:
 #define OUTQSIZE 5000
   /* IP constants */
 #define IPT_ICMP 1 /* protocol type for ICMP packets */
-#define IPT_UDP 17 /* protocol type for UDP packets */
-#define IPT_TCP 6 /* protocol type for TCP packets */
 #define IP_VERSION 4 /* current version value */
 #define CIP_TTL 255 /* Initial time-to-live value */
 #define IPP_NORMAL 0x00 /* normal */
@@ -86,9 +97,12 @@ Edit History:
 #define ESC_ESC 0xDD /* SLIP_ESC|ESC_ESC = 0xDB */
 #endif
 
+#define LOOPBACK_PORT 2066 /* For getting C2_BACK */
+
 void close_sockets (pq330 q330)
 begin
 
+#ifndef OMIT_NETWORK
   if (q330->usesock)
     then
       begin
@@ -113,25 +127,67 @@ begin
               q330->dpath = INVALID_SOCKET ;
             end
       end
-  else if (q330->comid != INVALID_IO_HANDLE)
+#endif
+#ifndef OMIT_SERIAL
+  if (q330->usesock == 0)
     then
       begin
+        if (q330->comid != INVALID_IO_HANDLE)
+          then
+            begin
 #ifdef X86_WIN32
-        CloseHandle(q330->comid) ;
+              CloseHandle(q330->comid) ;
 #else
-        close(q330->comid) ;
+              close(q330->comid) ;
 #endif
-        q330->comid = INVALID_IO_HANDLE ;
+              q330->comid = INVALID_IO_HANDLE ;
+            end
       end
+#endif
 end
 
-boolean open_sockets (pq330 q330, boolean both)
+#ifndef OMIT_NETWORK
+static longword baler_socket (pq330 q330, integer sockpath, enum tbaler_socket socktype)
 begin
-  integer lth, err ;
+
+  if (q330->par_create.call_baler)
+    then
+      begin
+        q330->baler_call.context = q330 ;
+        q330->baler_call.baler_type = BT_SOCKET ;
+        memcpy(addr(q330->baler_call.station_name), addr(q330->station_ident), sizeof(string9)) ;
+        q330->baler_call.info = socktype ;
+        q330->baler_call.info2 = (pointer) sockpath ;
+        q330->baler_call.response = 0 ;
+        q330->par_create.call_baler (addr(q330->baler_call)) ;
+        return q330->baler_call.response ;
+      end
+    else
+      return 0 ;
+end
+
+void tcp_error (pq330 q330, string95 *msgsuf)
+begin
+
+  lib_change_state (q330, LIBSTATE_WAIT, LIBERR_NOTR) ;
+  close_sockets (q330) ;
+  q330->reg_wait_timer = 60 * 10 ;
+  q330->registered = FALSE ;
+  libmsgadd (q330, LIBMSG_TCPTUN, msgsuf) ;
+end
+
+boolean open_sockets (pq330 q330, boolean both, boolean fromback)
+begin
+  integer lth, j, err ;
   integer flag ;
   integer bufsize ;
   struct sockaddr xyz ;
   boolean isd ;
+#ifdef X86_WIN32
+  BOOL flag2 ;
+#else
+  int flag2 ;
+#endif
   struct sockaddr_in *psock ;
   string95 msg ;
 
@@ -139,20 +195,45 @@ begin
     then
       return FALSE ;
   close_sockets (q330) ;
-  if (strcmp(q330->par_register.q330id_address, "255.255.255.255") == 0)
+  q330->got_connected = TRUE ;
+  if (lnot fromback)
     then
-      q330->q330ip = 0xFFFFFFFF ;
-    else
-      begin
-        q330->q330ip = getip (q330->par_register.q330id_address, addr(isd)) ;
-        if (q330->q330ip == INADDR_NONE)
+      begin /* C2_BACK sets q330ip and ports */
+        if (strcmp(q330->par_register.q330id_address, "255.255.255.255") == 0)
           then
             begin
-              libmsgadd(q330, LIBMSG_BADIPADDR, "") ;
-              return TRUE ;
+              q330->q330ip = 0xFFFFFFFF ;
+              q330->q330cport = 0xFFFF ;
+              both = FALSE ; /* don't both with data port for announcement */
+              q330->balesim = TRUE ;
+              q330->tcp = FALSE ; /* TCP doesn't do broadcasts */
+            end
+        else if (strcmp(q330->par_register.q330id_address, "127.0.0.1") == 0)
+          then
+            begin
+              q330->q330ip = 0x7F000001 ;
+              q330->q330cport = LOOPBACK_PORT ;
+              both = FALSE ; /* don't both with data port for announcement */
+              q330->balesim = TRUE ;
+              q330->tcp = FALSE ; /* TCP doesn't do broadcasts */
+            end
+          else
+            begin
+              q330->balesim = FALSE ;
+              q330->q330ip = getip (q330->par_register.q330id_address, addr(isd)) ;
+              if (q330->q330ip == INADDR_NONE)
+                then
+                  begin
+                    libmsgadd(q330, LIBMSG_BADIPADDR, "") ;
+                    return TRUE ;
+                  end
             end
       end
-  q330->cpath = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP) ;
+  if (q330->tcp)
+    then
+      q330->cpath = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP) ;
+    else
+      q330->cpath = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP) ;
   if (q330->cpath == INVALID_SOCKET)
     then
       begin
@@ -162,35 +243,12 @@ begin
 #else
                errno ;
 #endif
-        sprintf(addr(msg), "%d on control port", err) ;
+        if (q330->tcp)
+          then
+            sprintf(addr(msg), "%d on tcp port", err) ;
+          else
+            sprintf(addr(msg), "%d on control port", err) ;
         libmsgadd(q330, LIBMSG_SOCKETERR, addr(msg)) ;
-        return TRUE ;
-      end
-  psock = (pointer) addr(q330->csockin) ;
-  memset(psock, 0, sizeof(struct sockaddr)) ;
-  psock->sin_family = AF_INET ;
-  psock->sin_port = htons(q330->par_register.host_ctrlport) ;
-  psock->sin_addr.s_addr = INADDR_ANY ;
-#ifdef X86_WIN32
-  err = bind(q330->cpath, addr(q330->csockin), sizeof(struct sockaddr)) ;
-  if (err)
-#else
-  err = bind(q330->cpath, addr(q330->csockin), sizeof(struct sockaddr)) ;
-  if (err)
-#endif
-    then
-      begin
-        err =
-#ifdef X86_WIN32
-               WSAGetLastError() ;
-        closesocket (q330->cpath) ;
-#else
-               errno ;
-        close (q330->cpath) ;
-#endif
-        q330->cpath = INVALID_SOCKET ;
-        sprintf(addr(msg), "%d on control port", err) ;
-        libmsgadd(q330, LIBMSG_BINDERR, addr(msg)) ;
         return TRUE ;
       end
   psock = (pointer) addr(q330->csockout) ;
@@ -198,22 +256,98 @@ begin
   psock->sin_family = AF_INET ;
   psock->sin_port = htons(q330->q330cport) ;
   psock->sin_addr.s_addr = htonl(q330->q330ip) ;
-  lth = sizeof(struct sockaddr) ;
   flag = 1 ;
 #ifdef X86_WIN32
   ioctlsocket (q330->cpath, FIONBIO, addr(flag)) ;
+#else
+  flag = fcntl (q330->cpath, F_GETFL, 0) ;
+  fcntl (q330->cpath, F_SETFL, flag or O_NONBLOCK) ;
+#endif
+  if (q330->tcp)
+    then
+      begin
+        q330->tcpidx = 0 ;
+        flag2 = 1 ;
+#ifdef X86_WIN32
+        j = sizeof(BOOL) ;
+        setsockopt (q330->cpath, SOL_SOCKET, SO_REUSEADDR, addr(flag2), j) ;
+#else
+        j = sizeof(int) ;
+        setsockopt (q330->cpath, SOL_SOCKET, SO_REUSEADDR, addr(flag2), j) ;
+#endif
+        err = connect (q330->cpath, addr(q330->csockout), sizeof(struct sockaddr)) ;
+        if (err)
+          then
+            begin
+              err =
+#ifdef X86_WIN32
+                     WSAGetLastError() ;
+#else
+                     errno ;
+#endif
+              if (err != EWOULDBLOCK)
+                then
+                  begin
+                    close_sockets (q330) ;
+                    sprintf(addr(msg), "%d on tcp port", err) ;
+                    libmsgadd(q330, LIBMSG_SOCKETERR, addr(msg)) ;
+                    return TRUE ;
+                  end
+              q330->got_connected = FALSE ; /* OK, but not yet connected */
+            end
+      end
+    else
+      begin
+        psock = (pointer) addr(q330->csockin) ;
+        memset(psock, 0, sizeof(struct sockaddr)) ;
+        psock->sin_family = AF_INET ;
+        psock->sin_port = htons(q330->par_register.host_ctrlport) ;
+        psock->sin_addr.s_addr = INADDR_ANY ;
+#ifdef X86_WIN32
+        err = bind(q330->cpath, addr(q330->csockin), sizeof(struct sockaddr)) ;
+        if (err)
+#else
+        err = bind(q330->cpath, addr(q330->csockin), sizeof(struct sockaddr)) ;
+        if (err)
+#endif
+          then
+            begin
+              err =
+#ifdef X86_WIN32
+                     WSAGetLastError() ;
+              closesocket (q330->cpath) ;
+#else
+                     errno ;
+              close (q330->cpath) ;
+#endif
+              q330->cpath = INVALID_SOCKET ;
+              sprintf(addr(msg), "%d on control port", err) ;
+              libmsgadd(q330, LIBMSG_BINDERR, addr(msg)) ;
+              return TRUE ;
+            end
+        if (q330->q330ip == 0xFFFFFFFF)
+          then /* Enable sending broadcasts */
+            baler_socket (q330, q330->cpath, BS_BCASTCTRL) ;
+          else
+            baler_socket (q330, q330->cpath, BS_CONTROL) ;
+      end
+  lth = sizeof(struct sockaddr) ;
+#ifdef X86_WIN32
   getsockname (q330->cpath, addr(xyz), addr(lth)) ;
 #else
-  ioctl (q330->cpath, FIONBIO, addr(flag)) ;
   getsockname (q330->cpath, addr(xyz), addr(lth)) ;
 #endif
   psock = (pointer) addr(xyz) ;
   q330->ctrlport = ntohs(psock->sin_port) ;
-  sprintf(addr(msg), "on control port %d", q330->ctrlport) ;
+  if (q330->tcp)
+    then
+      sprintf(addr(msg), "on tcp port %d", q330->ctrlport) ;
+    else
+      sprintf(addr(msg), "on control port %d", q330->ctrlport) ;
   libmsgadd(q330, LIBMSG_SOCKETOPEN, addr(msg)) ;
   q330->share.opstat.current_ip = q330->q330ip ;
   q330->share.opstat.current_port = q330->q330cport ;
-  if (both)
+  if ((both) land (lnot q330->tcp))
     then
       begin
         q330->dpath = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP) ;
@@ -273,6 +407,7 @@ begin
               libmsgadd(q330, LIBMSG_BINDERR, addr(msg)) ;
               return TRUE ;
             end
+        baler_socket (q330, q330->dpath, BS_DATA) ;
         psock = (pointer) addr(q330->dsockout) ;
         memset(psock, 0, sizeof(struct sockaddr)) ;
         psock->sin_family = AF_INET ;
@@ -284,7 +419,8 @@ begin
         ioctlsocket (q330->dpath, FIONBIO, addr(flag)) ;
         getsockname (q330->dpath, addr(xyz), addr(lth)) ;
 #else
-        ioctl (q330->dpath, FIONBIO, addr(flag)) ;
+        flag = fcntl (q330->dpath, F_GETFL, 0) ;
+        fcntl (q330->dpath, F_SETFL, flag or O_NONBLOCK) ;
         getsockname (q330->dpath, addr(xyz), addr(lth)) ;
 #endif
         psock = (pointer) addr(xyz) ;
@@ -294,72 +430,7 @@ begin
       end
   return FALSE ;
 end
-
-void read_cmd_socket (pq330 q330)
-begin
-  longint thiscrc ;
-  integer lth ;
-  pbyte p ;
-  integer err ;
-  string95 msg ;
-
-  if (q330->cpath == INVALID_SOCKET)
-    then
-      return ;
-  lth = sizeof(struct sockaddr) ;
-  err = recvfrom (q330->cpath, addr(q330->commands.cmsgin.qdp), QDP_HDR_LTH + MAXDATA, 0, addr(q330->csockin), addr(lth)) ;
-  if (err == SOCKET_ERROR)
-    then
-      begin
-        err =
-#ifdef X86_WIN32
-               WSAGetLastError() ;
-#else
-               errno ;
 #endif
-        if (err != EWOULDBLOCK)
-          then
-            if (err == ECONNRESET)
-              then
-                begin
-                  purge_cmdq (q330) ;
-                  set_liberr (q330, LIBERR_NOTR) ;
-                  close_sockets (q330) ;
-                  q330->reg_wait_timer = 60 * 10 ;
-                  if ((q330->libstate == LIBSTATE_RUNWAIT) lor (q330->libstate == LIBSTATE_RUN))
-                    then
-                      begin
-                        start_deallocation (q330) ;
-                        libmsgadd (q330, LIBMSG_ROUTEFAULT, "Deallocating and waiting 10 minutes") ;
-                      end
-                    else
-                      begin
-                        new_state (q330, LIBSTATE_WAIT) ;
-                        q330->registered = FALSE ;
-                        libmsgadd (q330, LIBMSG_ROUTEFAULT, "Waiting 10 minutes") ;
-                      end
-                end
-              else
-                begin
-                  sprintf(msg, "%d", err) ;
-                  libmsgadd(q330, LIBMSG_RECVERR, addr(msg)) ;
-                  add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
-                end
-      end
-  else if (err > 0)
-    then
-      begin
-        add_status (q330, AC_READ, err + IP_HDR_LTH + UDP_HDR_LTH) ;
-        p = addr(q330->commands.cmsgin.qdp) ;
-        thiscrc = gcrccalc (addr(q330->crc_table), (pointer)((integer)p + 4), err - 4) ;
-        loadqdphdr (addr(p), addr(q330->recvhdr)) ;
-        if (thiscrc != q330->recvhdr.crc)
-          then
-            add_status (q330, AC_CHECK, 1) ;
-          else
-            lib_command_response (q330, p) ;
-      end
-end
 
 /* because of the original encoding, lth will always be a multiple of
   4 bytes (1 group) plus 2. Returns -1 if not valid */
@@ -454,10 +525,14 @@ begin
   if (flgs and LNKFLG_BASE96)
     then
       begin /* am expecting encoded */
+        memcpy (addr(q330->datasave.qdp), addr(q330->datain.qdp), plth) ;
         actual = decode(q330, plth) ; /* convert to binary */
         if (actual < 0)
           then
-            actual = check_crc (q330, plth) ;
+            begin
+              memcpy (addr(q330->datain.qdp), addr(q330->datasave.qdp), plth) ;
+              actual = check_crc (q330, plth) ;
+            end
       end
     else
       begin /* am expecting binary */
@@ -473,6 +548,7 @@ begin
       process_data (q330) ;
 end ;
 
+#ifndef OMIT_NETWORK
 void read_data_socket (pq330 q330)
 begin
   integer lth, err ;
@@ -482,7 +558,7 @@ begin
     then
       return ;
   lth = sizeof(struct sockaddr) ;
-  err = recvfrom (q330->dpath, addr(q330->datain.qdp), QDP_HDR_LTH + MAXDATA, 0, addr(q330->dsockin), addr(lth)) ;
+  err = recvfrom (q330->dpath, addr(q330->datain.qdp), QDP_HDR_LTH + MAXDATA96, 0, addr(q330->dsockin), addr(lth)) ;
   if (err == SOCKET_ERROR)
     then
       begin
@@ -529,6 +605,144 @@ begin
       end
 end
 
+static void process_cmd_socket (pq330 q330, integer msglth, boolean isdata)
+begin
+  longint thiscrc ;
+  pbyte p ;
+
+  add_status (q330, AC_READ, msglth + IP_HDR_LTH + UDP_HDR_LTH) ;
+  p = addr(q330->commands.cmsgin.qdp) ;
+  thiscrc = gcrccalc (addr(q330->crc_table), (pointer)((integer)p + 4), msglth - 4) ;
+  loadqdphdr (addr(p), addr(q330->recvhdr)) ;
+  if (thiscrc != q330->recvhdr.crc)
+    then
+      add_status (q330, AC_CHECK, 1) ;
+  else if ((q330->tcp) land (isdata))
+    then
+      begin /* this is actually a data packet */
+        memcpy (addr(q330->datain.qdp), addr(q330->commands.cmsgin.qdp), msglth) ; /* where it's expected */
+        check_for_encoded (q330, msglth) ;
+      end
+    else
+      lib_command_response (q330, p) ;
+end
+
+void read_cmd_socket (pq330 q330)
+begin
+  integer lth ;
+  pbyte p ;
+  integer err ;
+  word poff, qdplth ;
+  string95 msg ;
+
+  if (q330->cpath == INVALID_SOCKET)
+    then
+      return ;
+  if (q330->tcp)
+    then
+      begin
+        err = recv (q330->cpath, (pchar) addr((q330->tcpbuf)[q330->tcpidx]), TCPBUFSZ - q330->tcpidx, 0) ;
+        if (err == SOCKET_ERROR)
+          then
+            begin
+              err =
+#ifdef X86_WIN32
+                    WSAGetLastError() ;
+#else
+                    errno ;
+#endif
+              if (err != EWOULDBLOCK)
+                then
+                  begin
+                    sprintf(msg, "%d, Waiting 10 minutes", err) ;
+                    tcp_error (q330, addr(msg)) ;
+                  end
+            end
+        else if (err == 0)
+          then
+            tcp_error (q330, "Connection Closed, Waiting 10 minutes") ; /* connection closed */
+        else if (err > 0)
+          then
+            begin
+              q330->tcpidx = q330->tcpidx + err ;
+              while (q330->tcpidx >= 4)
+                begin
+                  p = addr(q330->tcpbuf) ;
+                  poff = loadword (addr(p)) ;
+                  qdplth = loadword (addr(p)) ;
+                  if ((poff > 1) lor (qdplth < sizeof(tqdp)) lor
+                      (qdplth > MAXMTU))
+                    then
+                      begin
+                        tcp_error (q330, "Invalid header, Waiting 10 minutes") ;
+                        return ;
+                      end
+                  if (q330->tcpidx >= (qdplth + 4))
+                    then
+                      begin /* have a full packet, or more */
+                        err = qdplth ; /* actual size */
+                        memcpy (addr(q330->commands.cmsgin.qdp), addr((q330->tcpbuf)[4]), err) ;
+                        q330->tcpidx = q330->tcpidx - (qdplth + 4) ; /* amount left over */
+                        if (q330->tcpidx > 0)
+                          then
+                            memcpy (addr(q330->tcpbuf), addr((q330->tcpbuf)[qdplth + 4]), q330->tcpidx) ; /* move to start of buffer */
+                        process_cmd_socket (q330, err, (poff != 0)) ;
+                      end
+                    else
+                      break ; /* not enough to process */
+                end
+            end
+      end
+    else
+      begin
+        lth = sizeof(struct sockaddr) ;
+        err = recvfrom (q330->cpath, addr(q330->commands.cmsgin.qdp), QDP_HDR_LTH + MAXDATA96, 0, addr(q330->csockin), addr(lth)) ;
+        if (err == SOCKET_ERROR)
+          then
+            begin
+              err =
+#ifdef X86_WIN32
+                     WSAGetLastError() ;
+#else
+                     errno ;
+#endif
+              if (err != EWOULDBLOCK)
+                then
+                  if (err == ECONNRESET)
+                    then
+                      begin
+                        purge_cmdq (q330) ;
+                        set_liberr (q330, LIBERR_NOTR) ;
+                        close_sockets (q330) ;
+                        q330->reg_wait_timer = 60 * 10 ;
+                        if ((q330->libstate == LIBSTATE_RUNWAIT) lor (q330->libstate == LIBSTATE_RUN))
+                          then
+                            begin
+                              start_deallocation (q330) ;
+                              libmsgadd (q330, LIBMSG_ROUTEFAULT, "Deallocating and waiting 10 minutes") ;
+                            end
+                          else
+                            begin
+                              new_state (q330, LIBSTATE_WAIT) ;
+                              q330->registered = FALSE ;
+                              q330->share.target_state = LIBSTATE_WAIT ;
+                              libmsgadd (q330, LIBMSG_ROUTEFAULT, "Waiting 10 minutes") ;
+                            end
+                      end
+                    else
+                      begin
+                        sprintf(msg, "%d", err) ;
+                        libmsgadd(q330, LIBMSG_RECVERR, addr(msg)) ;
+                        add_status (q330, AC_IOERR, 1) ; /* add one I/O error */
+                      end
+            end
+        else if (err > 0)
+          then
+            process_cmd_socket (q330, err, FALSE) ;
+      end
+end
+#endif
+
 #ifndef OMIT_SERIAL
 static word cksum(ppsuedo psuedo, pointer data, integer count)
 begin
@@ -572,7 +786,26 @@ begin
 #endif
 end
 
-static void proc_udp (pq330 q330, pbyte *p)
+void baler_ip_callback (pq330 q330, enum tbaler_type btype, word datalength,
+      void *iphdr, void *udptcphdr, void *dataptr)
+begin
+
+  if (q330->par_create.call_baler)
+    then
+      begin
+        q330->baler_call.context = q330 ;
+        q330->baler_call.baler_type = btype ;
+        memcpy(addr(q330->baler_call.station_name), addr(q330->station_ident), sizeof(string9)) ;
+        q330->baler_call.info = datalength ;
+        q330->baler_call.info2 = iphdr ;
+        q330->baler_call.info3 = udptcphdr ;
+        q330->baler_call.info4 = dataptr ;
+        q330->baler_call.response = 0 ;
+        q330->par_create.call_baler (addr(q330->baler_call)) ;
+      end
+end
+
+static void proc_udp (pq330 q330, pbyte *p, boolean foreign)
 begin
   tpsuedo psuedo ;
   pbyte psave ;
@@ -582,7 +815,7 @@ begin
   q330->recvudp.u_dst = loadword (p) ;
   q330->recvudp.u_len = loadword (p) ;
   q330->recvudp.u_cksum = loadword (p) ;
-  if (q330->recvudp.u_len < QDP_HDR_LTH)
+  if ((q330->recvudp.u_len < QDP_HDR_LTH) land (not foreign))
     then
       return ;
   psuedo.up_src = q330->recvip.ip_src ;
@@ -596,7 +829,14 @@ begin
         add_status (q330, AC_CHECK, 1) ;
         return ;
       end
-  psave = *p ; /* start of QDP header */
+  psave = *p ; /* start of QDP header or foreign data */
+  if (foreign)
+    then
+      begin
+        baler_ip_callback (q330, BT_UDPRECV, q330->recvudp.u_len - UDP_HDR_LTH,
+                           addr(q330->recvip), addr(q330->recvudp), *p) ;
+        return ;
+      end
   if (q330->recvudp.u_dst == q330->dataport)
     then
       begin
@@ -606,7 +846,11 @@ begin
       end
   if (q330->recvudp.u_dst != q330->ctrlport)
     then
-      return ; /* not for me */
+      begin
+        baler_ip_callback (q330, BT_UDPRECV, q330->recvudp.u_len - UDP_HDR_LTH,
+                           addr(q330->recvip), addr(q330->recvudp), *p) ;
+        return ;
+      end
   p = psave ;
   loadqdphdr (addr(p), addr(q330->recvhdr)) ;
   if (q330->recvhdr.datalength > MAXDATA)
@@ -622,10 +866,50 @@ begin
   lib_command_response (q330, p) ;
 end
 
+static void proc_tcp (pq330 q330, pbyte *p)
+begin
+  tpsuedo psuedo ;
+  pbyte psave ;
+  ttcp recvtcp ;
+  word hlth, tlth, dlth ;
+
+  psave = *p ; /* start of TCP header */
+  recvtcp.t_src = loadword (p) ;
+  recvtcp.t_dst = loadword (p) ;
+  recvtcp.t_seq = loadlongword (p) ;
+  recvtcp.t_ack = loadlongword (p) ;
+  recvtcp.t_offset = loadbyte (p) ;
+  recvtcp.t_code = loadbyte (p) ;
+  recvtcp.t_window = loadword (p) ;
+  recvtcp.t_cksum = loadword (p) ;
+  recvtcp.t_urgptr = loadword (p) ;
+  hlth = (q330->recvip.ip_verlen and 0xf) shl 2 ;
+  tlth = ((recvtcp.t_offset and 0xF0) shr 2) ; /* size of tcp header */
+  dlth = q330->recvip.ip_len - hlth - tlth ; /* size of data */
+  while (tlth > TCP_HDR_LTH)
+    begin
+      loadbyte (p) ; /* skip over extra TCP header fields if any */
+      tlth-- ;
+    end
+  psuedo.up_src = q330->recvip.ip_src ;
+  psuedo.up_dst = q330->recvip.ip_dst ;
+  psuedo.up_zero = 0 ;
+  psuedo.up_proto = IPT_TCP ;
+  psuedo.up_length = q330->recvip.ip_len - hlth ;
+  if (cksum(addr(psuedo), psave, psuedo.up_length))
+    then
+      begin
+        add_status (q330, AC_CHECK, 1) ;
+        return ;
+      end
+  baler_ip_callback (q330, BT_TCPRECV, dlth, addr(q330->recvip), addr(recvtcp), *p) ;
+end
+
 static boolean proc_ip (pq330 q330, integer lth)
 begin
   pbyte p, pudp ;
   integer hlth ;
+  boolean foreign ;
 
   p = addr(q330->commands.cmsgin.headers) ;
   q330->recvip.ip_verlen = loadbyte (addr(p)) ;
@@ -651,15 +935,19 @@ begin
   if ((q330->recvip.ip_verlen shr 4) != IP_VERSION)
     then
       return TRUE ;
-  if ((q330->recvip.ip_dst != q330->par_register.serial_hostip) land (q330->recvip.ip_dst != 0xFFFFFFFF))
-    then
-      return TRUE ;
+  foreign = ((q330->recvip.ip_dst != q330->serial_ip) land (q330->recvip.ip_dst != 0xFFFFFFFF)) ;
   switch (q330->recvip.ip_proto) begin
     case IPT_UDP :
       hlth = (q330->recvip.ip_verlen and 0xf) shl 2 ;
       pudp = addr(q330->commands.cmsgin.headers) ;
       incn(pudp, hlth) ; /* skip header */
-      proc_udp (q330, addr(pudp)) ;
+      proc_udp (q330, addr(pudp), foreign) ;
+      break ;
+    case IPT_TCP :
+      hlth = (q330->recvip.ip_verlen and 0xf) shl 2 ;
+      pudp = addr(q330->commands.cmsgin.headers) ;
+      incn(pudp, hlth) ; /* skip header */
+      proc_tcp (q330, addr(pudp)) ;
       break ;
   end
   return TRUE ;
@@ -704,7 +992,7 @@ begin
 #endif
   pin = addr(inbuf) ;
   pout = q330->bufptr ;
-  maxp = addr((q330->commands.cmsgin.qdp_data)[MAXDATA - 1]) ;
+  maxp = addr((q330->commands.cmsgin.qdp_data)[MAXDATA96 - 1]) ;
   for (i = 1 ; i <= numread ; i++)
     begin
       c = *pin++ ;
@@ -764,12 +1052,11 @@ begin
   q330->bufptr = pout ;
 end
 
-static void build_ip (pq330 q330, longword src, longword dest, byte protocol, integer datalength)
+static void build_ip (pq330 q330, pbyte p, longword src, longword dest, byte protocol, integer datalength)
 begin
-  pbyte p, psave ;
+  pbyte psave ;
   integer ck ;
 
-  p = addr(q330->commands.cmsgout.qdp) ;
   decn (p, IP_HDR_LTH + UDP_HDR_LTH) ;
   psave = p ; /* start of IP header */
   storebyte (addr(p), (IP_VERSION shl 4) + (IP_HDR_LTH shr 2)) ;
@@ -788,14 +1075,13 @@ begin
   storeword (addr(psave), ck) ;
 end
 
-static void build_udp (pq330 q330, longword src, longword dest,
+static void build_udp (pbyte p, longword src, longword dest,
                      word p_src, word p_dest, integer datalength)
 begin
   tpsuedo psuedo ;
-  pbyte p, psave ;
+  pbyte psave ;
   integer ck ;
 
-  p = addr(q330->commands.cmsgout.qdp) ;
   decn (p, UDP_HDR_LTH) ;
   psave = p ; /* start of UDP header */
   storeword (addr(p), p_src) ;
@@ -812,6 +1098,42 @@ begin
     then
       ck = -1 ;
   incn(psave, 6) ; /* point at checksum field */
+  storeword (addr(psave), ck) ;
+end
+
+static void build_tcp (pbyte p, longword src, longword dest,
+                       word p_src, word p_dest, integer datalength,
+                       longword seq, longword ack, word window, byte flags)
+begin
+  tpsuedo psuedo ;
+  pbyte psave ;
+  integer ck ;
+  byte t_offset ;
+
+  decn (p, TCP_HDR_LTH) ;
+  psave = p ; /* start of TCP header */
+  storeword (addr(p), p_src) ;
+  storeword (addr(p), p_dest) ;
+  storelongword (addr(p), seq) ;
+  storelongword (addr(p), ack) ;
+  if (datalength == -4) /* option field set */
+    then
+      t_offset = 0x60 ; /* option is in data area */
+    else
+      t_offset = 0x50 ; /* no options */
+  datalength = abs(datalength) ;
+  storebyte (addr(p), t_offset) ;
+  storebyte (addr(p), flags) ;
+  storeword (addr(p), window) ;
+  storeword (addr(p), 0) ; /* for now */
+  storeword (addr(p), 0) ; /* no urgency */
+  psuedo.up_src = src ;
+  psuedo.up_dst = dest ;
+  psuedo.up_zero = 0 ;
+  psuedo.up_proto = IPT_TCP ;
+  psuedo.up_length = datalength + TCP_HDR_LTH ;
+  ck = cksum(addr(psuedo), psave, datalength + TCP_HDR_LTH) ;
+  incn(psave, 16) ; /* point at checksum field */
   storeword (addr(psave), ck) ;
 end
 
@@ -836,10 +1158,10 @@ begin
   *cnt = 0 ;
 end
 
-static void sendpkt (pq330 q330)
+static void sendpkt (pq330 q330, pbyte pin)
 begin
 #define OBSIZE 1500 /* should handle almost any packet */
-  pbyte p, pin, pout ;
+  pbyte p, pout ;
   integer i ;
   byte c ;
   integer outcnt ;
@@ -849,7 +1171,6 @@ begin
   if (q330->comid == INVALID_IO_HANDLE)
     then
       return ;
-  pin = addr(q330->commands.cmsgout.qdp) ;
   decn(pin, IP_HDR_LTH + UDP_HDR_LTH) ; /* IP header */
   p = pin ;
   incn(p, 2) ; /* point at IP length */
@@ -894,13 +1215,34 @@ end
 void send_packet (pq330 q330, integer lth, word toport, word fromport)
 begin
 
-  build_udp (q330, q330->par_register.serial_hostip, q330->q330ip, fromport, toport, lth) ;
-  build_ip (q330, q330->par_register.serial_hostip, q330->q330ip, IPT_UDP, lth + UDP_HDR_LTH) ;
-  sendpkt (q330) ;
+  build_udp (addr(q330->commands.cmsgout.qdp), q330->serial_ip, q330->q330ip, fromport, toport, lth) ;
+  build_ip (q330, addr(q330->commands.cmsgout.qdp), q330->serial_ip, q330->q330ip, IPT_UDP, lth + UDP_HDR_LTH) ;
+  sendpkt (q330, addr(q330->commands.cmsgout.qdp)) ;
+end
+
+void inject_packet (pq330 q330, pbyte payload, byte protocol, longword srcaddr,
+                    longword destaddr, word srcport, word destport, word datalength,
+                    longword seq, longword ack, word window, byte flags)
+begin
+
+  if (protocol == IPT_UDP)
+    then
+      begin
+        build_udp (payload, srcaddr, destaddr, srcport, destport, datalength) ;
+        build_ip (q330, payload, srcaddr, destaddr, IPT_UDP, datalength + UDP_HDR_LTH) ;
+      end
+    else
+      begin
+        build_tcp (payload, srcaddr, destaddr, srcport, destport, datalength,
+                   seq, ack, window, flags) ;
+        build_ip (q330, payload, srcaddr, destaddr, IPT_TCP, abs(datalength) + TCP_HDR_LTH) ;
+      end
+  sendpkt (q330, payload) ;
 end
 
 boolean open_serial (pq330 q330)
 begin
+#ifndef CMEX32
 #ifdef X86_WIN32
   longword errs ;
   DCB dcb ;
@@ -911,6 +1253,7 @@ begin
   struct termios sttyold ;
   longword cflag ;
   integer err ;
+#endif
 #endif
   word port ;
   boolean isd ;
@@ -927,9 +1270,14 @@ begin
       end
   if (strcmp(q330->par_register.q330id_address, "255.255.255.255") == 0)
     then
-      q330->q330ip = 0xFFFFFFFF ;
+      begin
+        q330->balesim = TRUE ; /* simulate baler */
+        q330->q330ip = 0xFFFFFFFF ;
+        q330->q330cport = 0xFFFF ;
+      end
     else
       begin
+        q330->balesim = FALSE ;
         q330->q330ip = getip (q330->par_register.q330id_address, addr(isd)) ;
         if (q330->q330ip == INADDR_NONE)
           then
@@ -970,6 +1318,12 @@ begin
         timeouts.WriteTotalTimeoutConstant = (30000 div q330->par_register.serial_baud) + 10 ;
         SetCommTimeouts(q330->comid, addr(timeouts)) ;
         ClearCommError(q330->comid, addr(errs), addr(comstat)) ;
+#elif defined (CMEX32)
+  q330->comid = serial_open (DATA_UART, q330->par_register.serial_baud,
+                            (q330->par_register.serial_flow != 0), OUTQSIZE, INQSIZE) ;
+  if (q330->comid != INVALID_IO_HANDLE)
+    then
+      begin /* nothing else to do */
 #else
   q330->comid = open (q330->par_register.host_interface, O_RDWR or O_NONBLOCK) ;
   if (q330->comid != INVALID_IO_HANDLE)
@@ -1011,8 +1365,10 @@ begin
             q330->dataport = q330->ctrlport + 1 ;
           else
             q330->dataport = q330->par_register.host_dataport ;
+        q330->serial_ip = q330->par_register.serial_hostip ; /* starting value */
         q330->share.opstat.current_ip = q330->q330ip ;
         q330->share.opstat.current_port = q330->q330cport ;
+        q330->got_connected = TRUE ;
       end
     else
       begin
@@ -1020,6 +1376,9 @@ begin
         q330->comid = INVALID_IO_HANDLE ;
         return TRUE ;
       end
+#ifdef CMEX32
+  enable_data_serial_thread () ;
+#endif
   return FALSE ;
 end
 #endif

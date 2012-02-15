@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qutils.h,v 1.8 2007/06/12 21:13:00 doug Exp $ 	*/
+/*	$Id: qutils.h,v 1.10 2011/02/16 06:27:02 doug Exp $ 	*/
 
 #ifndef	__qutils_h
 #define	__qutils_h
@@ -187,7 +187,7 @@ extern void swabt
    (SDR_TIME	*st);		/* ptr to SDR_TIME to byteswap.		*/
 
 extern void swabf
-   (float	*in);		/* ptr to double to byteswap.		*/
+   (float	*in);		/* ptr to float to byteswap.		*/
 
 #ifdef	qlib2_fortran
 

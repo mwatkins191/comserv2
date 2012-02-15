@@ -9,7 +9,6 @@ LD_RUN_PATH = /usr/lib
 
 ########################################################################
 # Solaris 2 definitions
-#BINDIR	= ../../bin
 CC	= cc
 CFLAGS	= -I$(CSINCL) -I$(QDIR) -DSOLARIS2 $(DEBUG)
 DEBUG	= 
@@ -37,7 +36,7 @@ OBJS3	= $(SRCS3:.c=.o)
 SRCS4 	= $(P4).c syserr.c fnmatch.c
 OBJS4	= $(SRCS4:.c=.o)
 
-SRCS5 	= $(P5).c 
+SRCS5 	= $(P5).c swap_mseed_header.c
 OBJS5	= $(SRCS5:.c=.o)
 
 ALL	= $(P1) $(P2) $(P3) $(P4) $(P5)
@@ -85,6 +84,10 @@ dataspy.o:	dataspy.c \
 		$(CSINCL)/timeutil.h $(CSINCL)/service.h 
 		$(CC) $(CFLAGS) -c $<
 
+swap_mseed_header.o:	swap_mseed_header.c \
+		$(CSINCL)/stuff.h 
+		$(CC) $(CFLAGS) -c $<
+
 fast_cs_check.o:	fast_cs_check.c \
 		$(CSINCL)/dpstruc.h $(CSINCL)/stuff.h \
 		$(CSINCL)/service.h $(CSINCL)/cfgutil.h 
@@ -96,7 +99,7 @@ $(CSULIB):	FORCE
 FORCE:
 
 clean:
-		-rm *.o
+		-rm *.o $(ALL)
 
 veryclean:	clean
 		-rm *.o $(ALL)
@@ -104,4 +107,3 @@ veryclean:	clean
 install:	$(ALL)
 		cp -p $(ALL) $(BINDIR)
 		chmod u+s $(BINDIR)/netmon
-

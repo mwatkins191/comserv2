@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2004 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -38,11 +38,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: pack.c,v 1.6 2004/03/07 00:00:53 doug Exp $ ";
+static char sccsid[] = "$Id: pack.c,v 1.12 2011/08/19 16:13:30 doug Exp $ ";
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <memory.h>
 #ifdef	SUNOS4
 #include <malloc.h>
@@ -102,6 +103,16 @@ static char sccsid[] = "$Id: pack.c,v 1.6 2004/03/07 00:00:53 doug Exp $ ";
     (points_remaining >= 1 && \
      (minbits[i] <= 30))
 
+#define	FULLPACK(i,points_remaining)   \
+    (points_remaining >= 1 && (minbits[i] <= 32))
+
+/* NOTE:  I am disallowing a difference of INT_MIN and INT_MAX		*/
+/* because they are used in ms_pack2_steim to indicated a negative or	*/
+/* positive overflow in the difference values.				*/
+/* Technically we can represent both of these differences in STEIM1	*/
+/* compression, but given the existing API, I had no way other way to	*/
+/* signal a 32-bit integer positive or negative overflow.		*/
+
 #define	MINBITS(diff,minbits)	\
 	if (diff >= -8 && diff < 8) minbits= 4; \
 	else if (diff >= -16 && diff < 16) minbits = 5; \
@@ -111,7 +122,8 @@ static char sccsid[] = "$Id: pack.c,v 1.6 2004/03/07 00:00:53 doug Exp $ ";
 	else if (diff >= -16384 && diff < 16384) minbits = 15; \
 	else if (diff >= -32768 && diff < 32768) minbits = 16; \
         else if (diff >= -536870912 && diff < 536870912) minbits = 30; \
-	else minbits = 32;
+	else if (diff > INT_MIN && diff < INT_MAX) minbits = 32; \
+	else minbits = 33;
 
 #define PACK(bits,n,m1,m2)  {\
     int i = 0; \
@@ -197,25 +209,39 @@ int pack_steim1
 	    }
 	    points_remaining -= 2;
 	}
-	else {
+	else if (FULLPACK(ipt,points_remaining)) {
 	    mask = STEIM1_FULLWORD_MASK;
 	    itmp = diff[ipt++];
 	    if (swapflag) swab4 (&itmp);
 	    p_sdf->f[fn].w[wn].fw = itmp;
 	    points_remaining -= 1;
 	}
-
+	else {
+	    fprintf (stderr, "Error: Unable to represent difference in <= 32 bits\n");
+	    fflush (stderr);
+	    if (QLIB2_CLASSIC) exit(1);
+	    status = MS_COMPRESS_ERROR;
+	}
 	/* Append mask for this word to current mask.			*/
-	p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
+	if (status == 0) {
+	    p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
+	    ++wn;
+	}
 
 	/* Check for full frame or full block.				*/
-	if (++wn >= VALS_PER_FRAME) {
+	if (wn >= VALS_PER_FRAME) {
 	    if (swapflag) swab4 ((int *)&p_sdf->f[fn].ctrl);
 	    /* Reset output index to beginning of frame.		*/
 	    wn = 0;
 	    /* If block is full, output block and reinitialize.		*/
 	    if (++fn >= nf) break;
 	    p_sdf->f[fn].ctrl = 0;
+	}
+
+	/* Check for compression error.	*/
+	if (status == MS_COMPRESS_ERROR) {
+	    /* Terminate data compression and packing. */
+	    break;
 	}
     }
 
@@ -261,12 +287,9 @@ int pack_steim2
     int		ipt = 0;	/* index of initial data to pack.	*/
     int		fn = 0;		/* index of initial frame to pack.	*/
     int		wn = 2;		/* index of initial word to pack.	*/
-    int		itmp;
-    short int	stmp;
     int		swapflag;
     int		nb;		/* number of minbits to compute.	*/
     int		max_samples_per_frame;
-    int		terminate_record = 0;
     int		status = 0;
 
     if (my_wordorder < 0) get_my_wordorder();
@@ -347,10 +370,13 @@ int pack_steim2
 	}
 
 	/* Append mask for this word to current mask.			    */
-	if (status == 0) p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
+	if (status == 0) {
+	    p_sdf->f[fn].ctrl = (p_sdf->f[fn].ctrl<<2) | mask;
+	    ++wn;
+	}
 
 	/* Check for full frame or full block.				*/
-	if (status == 0 && ++wn >= VALS_PER_FRAME) {
+	if (status == 0 && wn >= VALS_PER_FRAME) {
 	    if (swapflag) swab4 ((int *)&p_sdf->f[fn].ctrl);
 	    /* Reset output index to beginning of frame.		*/
 	    wn = 0;
@@ -361,7 +387,6 @@ int pack_steim2
 
 	/* Check for compression error.	*/
 	if (status == MS_COMPRESS_ERROR) {
-	    if (swapflag) swab4 ((int *)&p_sdf->f[fn].ctrl);
 	    /* Terminate data compression and packing. */
 	    break;
 	}
@@ -562,6 +587,92 @@ int pack_int_24
 }
 
 /************************************************************************/
+/*  pack_fp_sp:							        */
+/*	Pack floating point data into single precision(float) format.	*/
+/*	Return: 0 on success, -1 on failure.				*/
+/************************************************************************/
+int pack_fp_sp 
+   (float	p_packed[],	/* output data array - packed.		*/
+    float	*data,		/* input data array - unpacked.		*/
+    int		ns,		/* desired number of samples to pack.	*/
+    int		max_bytes,	/* max # of bytes for output buffer.	*/
+    int		pad,		/* flag to specify padding to max_bytes.*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    int		*pnbytes,	/* number of bytes actually packed.	*/
+    int		*pnsamples)	/* number of samples actually packed.	*/
+{
+    int bytes_per_sample = sizeof(float);	/* number of bytes per packed sample.	*/
+    int points_remaining = ns;	/* number of samples remaining to pack.	*/
+    int		i = 0;
+    int		swapflag;
+
+    if (my_wordorder < 0) get_my_wordorder();
+    swapflag = (my_wordorder != data_wordorder);
+
+    while (points_remaining > 0 && max_bytes >= bytes_per_sample) {
+	/* Pack the next available data into float format.		*/
+	*p_packed = data[i];
+	if (swapflag) swabf (p_packed);
+	p_packed++;
+	max_bytes -= bytes_per_sample;
+	points_remaining--;
+	i++;
+    }
+    *pnbytes = (ns - points_remaining) * bytes_per_sample;
+
+    /* Pad miniSEED block if necessary.				*/
+    if (pad) {
+	memset ((void *)p_packed, 0, max_bytes);
+	*pnbytes += max_bytes;
+    }
+    *pnsamples = ns - points_remaining;
+    return (0);
+}
+
+/************************************************************************/
+/*  pack_fp_dp:							        */
+/*	Pack floating point data into double precision (double) format. */
+/*	Return: 0 on success, -1 on failure.				*/
+/************************************************************************/
+int pack_fp_dp 
+   (double	p_packed[],	/* output data array - packed.		*/
+    double 	*data,		/* input data array - unpacked.		*/
+    int		ns,		/* desired number of samples to pack.	*/
+    int		max_bytes,	/* max # of bytes for output buffer.	*/
+    int		pad,		/* flag to specify padding to max_bytes.*/
+    int		data_wordorder,	/* wordorder of data (NOT USED).	*/
+    int		*pnbytes,	/* number of bytes actually packed.	*/
+    int		*pnsamples)	/* number of samples actually packed.	*/
+{
+    int bytes_per_sample = sizeof(double);	/* number of bytes per packed sample.	*/
+    int points_remaining = ns;	/* number of samples remaining to pack.	*/
+    int		i = 0;
+    int		swapflag;
+
+    if (my_wordorder < 0) get_my_wordorder();
+    swapflag = (my_wordorder != data_wordorder);
+
+    while (points_remaining > 0 && max_bytes >= bytes_per_sample) {
+	/* Pack the next available data into double format.		*/
+        *p_packed = data[i];
+	if (swapflag) swab8 (p_packed);
+	p_packed++;
+	max_bytes -= bytes_per_sample;
+	points_remaining--;
+	i++;
+    }
+    *pnbytes = (ns - points_remaining) * bytes_per_sample;
+
+    /* Pad miniSEED block if necessary.				*/
+    if (pad) {
+	memset ((void *)p_packed, 0, max_bytes);
+	*pnbytes += max_bytes;
+    }
+    *pnsamples = ns - points_remaining;
+    return (0);
+}
+
+/************************************************************************/
 /*  pack_text:								*/
 /*	Pack text data into text format.				*/
 /*	Return: 0 on success, -1 on failure.				*/
@@ -586,7 +697,7 @@ int pack_text
     /* Split lines only if a single line will not fit in 1 record.	*/
     if (points_remaining > max_bytes) {
 	/* Look for the last newline that will fit in output buffer.	*/
-	for (i=points_remaining-1; i>=0; i--) {
+	for (i=max_bytes-1; i>=0; i--) {
 	    if (data[i] == '\n') {
 		last = i;
 		break;

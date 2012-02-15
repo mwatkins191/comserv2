@@ -1,3 +1,24 @@
+Feb 13 2012	Doug Neuhauser, doug@seismo.berkeley.edu
+
+1.  Merged sources for multiple distributions together
+	Solaris/Sparc
+	Solaris/X86
+	Linux/X86
+	Linux/armbe
+2.  Create complete Makefiles for environments:
+	Makefile.armbe-linux
+	Makefile.linux
+	Makefile.solaris_cc
+	Makefile.solaris_cc_x86
+	Makefile.solaris_gcc
+3.  Updated qlib2 to
+4.  Updated Quanterra lib330 to
+5.  Fixed various bugs in clients for little-endian builds.
+6.  Changed qmaserv2 multicast 1-second packets to multicast only the
+	required number of samples for each channel.
+
+------------------------------------------------------------------------------
+
 Sept 13, 2007  - updated with Doug Neuhauser's modifications, and latest C-lib330
 
 The version of cLib330 that was included with this build was 2007-09-04

@@ -17,6 +17,8 @@
  * Modifications:
  *   13 Nov 2006 - HJS - Ripped out all QMA related code
  *   24 Aug 2007 - DSN - Change from SIG_IGN to signal handler for SIGALRM.
+ *    6 Feb 2012 - DSN - Limit max number of open files (RLIMIT_NOFILE) 
+ *                       to be no more than compile-time limie FD_SETSIZE.
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -34,8 +36,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <sys/resource.h>
 
 // our includes
+#define	DEFINE_EXTERNAL
 #include "global.h"
 #include "Logger.h"
 #include "Verbose.h"
@@ -81,6 +85,11 @@ Lib330Interface  *g_libInterface = NULL;
 int main(int argc, char *argv[]) {
   g_log.logToStdout(true);
   g_log.logToFile(false);
+
+#ifdef	ENDIAN_LITTLE
+  g_log << "Compiled with ENDIAN_LITTLE" << std::endl;
+#endif
+
   if(argc < 2) {
     Usage();
     return(0);
@@ -95,6 +104,24 @@ int main(int argc, char *argv[]) {
   } else {
     strlcpy(station_code,argv[1],MAX_CHARS_IN_STATION_CODE+1);
   }
+
+  // Limit the max number of open file descriptors to the compliation value 
+  // FD_SETSIZE, since this is used to create the fd_set options used by select().
+  struct rlimit rlp;
+  int status = getrlimit (RLIMIT_NOFILE, &rlp);
+  if (status != 0) {
+    g_log << "XXX Program unable to query max_open_file_limit RLIMIT_NOFILE" << std::endl;
+    return (1);
+  }
+  if (rlp.rlim_cur > FD_SETSIZE) {
+    rlp.rlim_cur = FD_SETSIZE;
+    status = setrlimit (RLIMIT_NOFILE, &rlp);
+    if (status != 0) {
+	g_log << "XXX Program unable to set max_open_file_limit RLIMIT_NOFILE" << std::endl;
+	return (1);
+    }
+  }
+
   initializeSignalHandlers();
   g_done  = false;
   g_reset = false;

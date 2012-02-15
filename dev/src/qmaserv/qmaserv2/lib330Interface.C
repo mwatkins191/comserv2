@@ -1,6 +1,7 @@
 #include "global.h"
 #include "clink.h"
-#include "PacketQueue.h"
+#include "lib330Interface.h"
+//#include "PacketQueue.h"
 #include "portingtools.h"
 #include <unistd.h>
 #include <sys/types.h>
@@ -9,12 +10,6 @@
 #include <errno.h>
 
 double g_timestampOfLastRecord = 0;
-
-PacketQueue packetQueue;
-
-struct sockaddr_in mcastAddr;
-int mcastSocketFD;
-char multicastChannelList[256][5];
 
 Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   pmodules mods;
@@ -218,6 +213,9 @@ void Lib330Interface::state_callback(pointer p) {
 }
 
 
+// Caltech 2011 modification to one-second multicast packet:
+//  1.  New structure with explicitly sized data types.
+//  2.  All values are in network byte order.
 void Lib330Interface::onesec_callback(pointer p) {
   onesec_pkt msg;
   tonesec_call *src = (tonesec_call*)p;
@@ -225,8 +223,6 @@ void Lib330Interface::onesec_callback(pointer p) {
   char *filterItem;
   char temp[32];
 
-  // memcpy(&msg, (tonesec_call *) p, sizeof(msg));
- 
   //translate tonesec_call to onesec_pkt;
   strncpy(temp,src->station_name,9);
   strcpy(msg.net,strtok((char*)temp,(char*)"-"));
@@ -239,7 +235,7 @@ void Lib330Interface::onesec_callback(pointer p) {
   msg.timestamp_sec = htonl((int)src->timestamp);
   msg.timestamp_usec = htonl((int)((src->timestamp - (double)(((int)src->timestamp)))*1000000));
 
-  //#ifdef LITTLE_ENDIAN
+  //#ifdef ENDIAN_LITTLE
   //std::cout <<" TimeStamp for "<<msg.net<<"."<<msg.station<<"."<<msg.channel<<std::endl;
   //g_log <<" : "<<msg.timestamp<<std::endl;
   //SwapDouble((double*)&msg.timestamp);
@@ -250,7 +246,7 @@ void Lib330Interface::onesec_callback(pointer p) {
   for(int i=0;i<src->rate;i++){
     msg.samples[i] = htonl((int)src->samples[i]);
   }
-
+  int msgsize = ONESEC_PKT_HDR_LEN + src->rate * sizeof(int);
 
   for(int i=0; i < 255; i++) {
     filterItem = &(multicastChannelList[i][0]);
@@ -258,7 +254,7 @@ void Lib330Interface::onesec_callback(pointer p) {
       break;
     }
     if(!strcmp(filterItem, msg.channel)) {
-      retval = sendto(mcastSocketFD, &msg, sizeof(msg), 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
+      retval = sendto(mcastSocketFD, &msg, msgsize, 0, (struct sockaddr *) &(mcastAddr), sizeof(mcastAddr));
       if(retval < 0) {
 	g_log << "XXX Unable to send multicast packet: " << strerror(errno) << std::endl;
       } 

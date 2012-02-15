@@ -10,7 +10,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2003 The Regents of the University of California.
+ * Copyright (c) 1996-2011 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -38,7 +38,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: unpack.c,v 1.4 2003/04/18 21:17:28 doug Exp $ ";
+static char sccsid[] = "$Id: unpack.c,v 1.6 2011/08/19 16:13:31 doug Exp $ ";
 #endif
 
 #include <stdio.h>
@@ -58,6 +58,7 @@ static char sccsid[] = "$Id: unpack.c,v 1.4 2003/04/18 21:17:28 doug Exp $ ";
 
 #define	X0  pf->w[0].fw
 #define	XN  pf->w[1].fw
+
 
 /************************************************************************/
 /*  unpack_steim1:							*/
@@ -355,7 +356,7 @@ int unpack_steim2
 		break;
 	      default:
 		/* Should NEVER get here.				*/
-		fprintf (info, "Error: unpack_steim2 - invalid ck, fn, wn = %d, %d %d\n", c);
+		fprintf (info, "Error: unpack_steim2 - invalid ck, fn, wn = %d, %d %d\n", c, fn, wn);
 		fflush (info);
 		if (QLIB2_CLASSIC) exit(1);
 		return (MS_ERROR);
@@ -429,11 +430,9 @@ int unpack_int_16
     int		data_wordorder,	/* wordorder of data.			*/
     char	**p_errmsg)	/* ptr to ptr to error message.		*/
 {
-    int		*data = databuff;
     int		nd = 0;		/* # of data points in packet.		*/
     short int	stmp;
     int		swapflag;
-    static char	errmsg[256];
 
     if (my_wordorder < 0) get_my_wordorder();
     swapflag = (my_wordorder != data_wordorder);
@@ -468,11 +467,9 @@ int unpack_int_32
     int		data_wordorder,	/* wordorder of data.			*/
     char	**p_errmsg)	/* ptr to ptr to error message.		*/
 {
-    int		*data = databuff;
     int		nd = 0;		/* # of data points in packet.		*/
     int		itmp;
     int		swapflag;
-    static char	errmsg[256];
 
     if (my_wordorder < 0) get_my_wordorder();
     swapflag = (my_wordorder != data_wordorder);
@@ -511,10 +508,8 @@ int unpack_int_24
     char	**p_errmsg)	/* ptr to ptr to error message.		*/
 {
     U_DIFF	tmp;
-    int		*data = databuff;
     int		nd = 0;		/* # of data points in packet.		*/
     int		swapflag;
-    static char	errmsg[256];
     int		sbc;		/* starting byte index for 24-bit copy.	*/
     int		sb24;		/* byte index with 24-bit sign.		*/
     int		sb32;		/* byte index for 32-bit sign.		*/
@@ -545,6 +540,86 @@ int unpack_int_24
 	tmp.byte[sb32] = (getbit(tmp.byte[sb24],7)) ? 0xff : 0x00;
 	databuff[nd] = tmp.fw;
 	ibuf += 3;
+    }
+
+    return (nd);
+}
+
+/************************************************************************/
+/*  unpack_fp_sp:							*/
+/*	Unpack float miniSEED data and place in supplied buffer.	*/
+/*	If req_samples < 0, perform fast decompression of |req_samples|.*/
+/*	(not useful with this data format).				*/
+/*  Return:								*/
+/*	# of samples returned on success.				*/
+/*	negative QLIB2 error code on error.				*/
+/************************************************************************/
+int unpack_fp_sp
+   (float	*ibuf,		/* ptr to input data.			*/
+    int		nbytes,		/* number of bytes in all data frames.	*/
+    int		num_samples,	/* number of data samples in all frames.*/
+    int		req_samples,	/* number of data desired by caller.	*/
+    float	*databuff,	/* ptr to unpacked data array.		*/
+    int		data_wordorder,	/* wordorder of data.			*/
+    char	**p_errmsg)	/* ptr to ptr to error message.		*/
+{
+#ifdef FOO
+    int		*data = databuff;
+#endif
+    int		nd = 0;		/* # of data points in packet.		*/
+    float	itmp;
+    int		swapflag;
+
+    if (my_wordorder < 0) get_my_wordorder();
+    swapflag = (my_wordorder != data_wordorder);
+
+    if (num_samples < 0) return (MS_ERROR);
+    if (req_samples < 0) req_samples = -req_samples;
+
+    for (nd=0; nd<req_samples && nd<num_samples; nd++) {
+	itmp = ibuf[nd];
+	if (swapflag) swabf (&itmp);
+	databuff[nd] = itmp;
+    }
+
+    return (nd);
+}
+
+/************************************************************************/
+/*  unpack_fp_dp:							*/
+/*	Unpack double miniSEED data and place in supplied buffer.	*/
+/*	If req_samples < 0, perform fast decompression of |req_samples|.*/
+/*	(not useful with this data format).				*/
+/*  Return:								*/
+/*	# of samples returned on success.				*/
+/*	negative QLIB2 error code on error.				*/
+/************************************************************************/
+int unpack_fp_dp
+   (double	*ibuf,		/* ptr to input data.			*/
+    int		nbytes,		/* number of bytes in all data frames.	*/
+    int		num_samples,	/* number of data samples in all frames.*/
+    int		req_samples,	/* number of data desired by caller.	*/
+    double	*databuff,	/* ptr to unpacked data array.		*/
+    int		data_wordorder,	/* wordorder of data.			*/
+    char	**p_errmsg)	/* ptr to ptr to error message.		*/
+{
+#ifdef FOO
+    int		*data = databuff;
+#endif
+    int		nd = 0;		/* # of data points in packet.		*/
+    double	itmp;
+    int		swapflag;
+
+    if (my_wordorder < 0) get_my_wordorder();
+    swapflag = (my_wordorder != data_wordorder);
+
+    if (num_samples < 0) return (MS_ERROR);
+    if (req_samples < 0) req_samples = -req_samples;
+
+    for (nd=0; nd<req_samples && nd<num_samples; nd++) {
+	itmp = ibuf[nd];
+	if (swapflag) swab8 (&itmp);
+	databuff[nd] = itmp;
     }
 
     return (nd);

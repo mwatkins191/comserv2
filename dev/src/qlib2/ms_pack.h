@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: ms_pack.h,v 1.4 2007/06/12 21:13:00 doug Exp $ 	*/
+/*	$Id: ms_pack.h,v 1.6 2008/10/24 19:53:55 doug Exp $ 	*/
 
 #ifndef	__ms_pack_h
 #define	__ms_pack_h
@@ -51,7 +51,7 @@ extern int ms_pack_data
    (DATA_HDR	*hdr,		/* ptr to initial data hdr.		*/
     BS		*init_bs,	/* ptr to onetime blockettes.		*/
     int		num_samples,	/* number of data samples.		*/
-    int		*data,		/* ptr to data buffer.			*/
+    void	*data,		/* ptr to data buffer.			*/
     int		*n_blocks,	/* # miniSEED blocks (returned).	*/
     char	**pp_ms,	/* ptr **miniSEED (returned).		*/
     int		ms_len,		/* miniSEED buffer len (if supplied).	*/
@@ -61,7 +61,7 @@ extern int ms_pack_update_hdr
    (DATA_HDR	*hdr,		/* ptr to data hdr to update.		*/
     int		num_records,	/* number of mseed records just packed.	*/
     int		num_samples,	/* number of samples just packed.	*/
-    int		*data);		/* data buffer used for last ms_pack.	*/
+    int 	*data);		/* data buffer used for last ms_pack.	*/
 
 extern int init_miniseed_hdr
    (SDR_HDR	*sh,		/* ptr to space for miniSEED data hdr.	*/
@@ -87,6 +87,16 @@ extern int ms_pack_int
    (DATA_HDR	*hdr0,		/* ptr to initial data hdr.		*/
     BS		*init_bs,	/* ptr to onetime blockettes.		*/
     int		*data,		/* ptr to data buffer.			*/
+    int		num_samples,	/* number of data samples.		*/
+    int		*n_blocks,	/* # miniSEED blocks (returned).	*/
+    char	**pp_ms,	/* ptr **miniSEED (returned).		*/
+    int		ms_len,		/* miniSEED buffer len (if supplied).	*/
+    char	*p_errmsg);	/* ptr to error msg buffer.		*/
+
+extern int ms_pack_fp 
+   (DATA_HDR	*hdr0,		/* ptr to initial data hdr.		*/
+    BS		*init_bs,	/* ptr to onetime blockettes.		*/
+    void	*data,		/* ptr to data buffer.			*/
     int		num_samples,	/* number of data samples.		*/
     int		*n_blocks,	/* # miniSEED blocks (returned).	*/
     char	**pp_ms,	/* ptr **miniSEED (returned).		*/
@@ -129,7 +139,7 @@ extern int ms_pack_update_hdr
    (DATA_HDR	*hdr,		/* ptr to data hdr to update.		*/
     int		*num_records,	/* number of mseed records just packed.	*/
     int		*num_samples,	/* number of samples just packed.	*/
-    int		*data);		/* data buffer used for last ms_pack.	*/
+    int 	*data);		/* data buffer used for last ms_pack.	*/
 
 #endif
 

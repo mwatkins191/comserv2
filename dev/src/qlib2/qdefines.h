@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qdefines.h,v 1.8 2007/04/24 20:00:12 doug Exp $ 	*/
+/*	$Id: qdefines.h,v 1.12 2010/04/19 23:26:00 doug Exp $ 	*/
 
 #ifndef	__qdefines_h
 #define	__qdefines_h
@@ -81,6 +81,7 @@ extern char *qlib2_version;
 #define	DATA_HDR_IND_D	'D'
 #define	DATA_HDR_IND_R	'R'
 #define	DATA_HDR_IND_Q	'Q'
+#define	DATA_HDR_IND_M	'M'
 #define	VOL_HDR_IND	'V'
 #define	DATA_HDR_IND	DATA_HDR_IND_D
 
@@ -102,12 +103,13 @@ extern char *qlib2_version;
 #define	TRUE		1
 #define	FALSE		0
 
+#if defined(__LINUX__) || defined(__MACH__) || defined( __ARM_ARCH_4T__)
+#include <math.h>
+#else
 /* Library definitions that are not always in math.h	*/
 #ifndef M_LN2
 #define M_LN2	    0.69314718055994530942
 #endif
-
-#ifndef	__MACH__
 #define	log2(x)	    ((double)(log(x)/M_LN2))
 #define	exp2(x)	    pow(2.,x)
 #endif

@@ -30,6 +30,22 @@ struct onesec_pkt{
   int32_t samples[MAX_RATE];
 };
 
+#define ONESEC_PKT_HDR_LEN 52
+
+// Strict compilers and loaders only allow externals to be defined in 1 file.
+// One and only one source file should define DEFINE_EXTERNAL.
+
+#ifdef	DEFINE_EXTERNAL
+#define	EXTERN
+#else
+#define	EXTERN extern
+#endif
+
+EXTERN PacketQueue packetQueue;
+
+EXTERN struct sockaddr_in mcastAddr;
+EXTERN int mcastSocketFD;
+EXTERN char multicastChannelList[256][5];
 
 class Lib330Interface {
  public:

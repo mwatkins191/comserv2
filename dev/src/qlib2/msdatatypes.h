@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: msdatatypes.h,v 1.2 2000/10/25 20:40:22 doug Exp $ 	*/
+/*	$Id: msdatatypes.h,v 1.3 2008/10/24 19:53:56 doug Exp $ 	*/
 
 #ifndef	SEED_BIG_ENDIAN
 
@@ -66,6 +66,11 @@
 #define	HGLP				31
 #define	DWWSSN_GR			32
 #define	RSTN_16_GR			33
+
+/*  Data format.   	 		*/
+#define DATA_FMT_INT			1
+#define DATA_FMT_FLOAT			2
+#define DATA_FMT_DOUBLE			3
 
 /*  Definitions for blockette 1000	*/
 #define SEED_LITTLE_ENDIAN		0
