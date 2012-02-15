@@ -2,9 +2,9 @@
 #
 # Makefile     : csstat
 #
-# Author       : Paul Friberg, ISTI for CIT
+# Author       : Paul Friberg
 #
-# Last Revised : 2004/11/05
+# Last Revised : 2004/11/01
 #
 ########################################################################
 
@@ -13,7 +13,7 @@
 #
 CXX	 = g++
 CC	 = gcc
-CXXFLAGS = -I$(INCL)
+CXXFLAGS =  -D_SPARC -D_SOLARIS -features=no%altspell  -I$(INCL)
 CFLAGS	 = 
 LD	 = $(CXX)
 
@@ -22,9 +22,11 @@ CSLIB	 = ../../util
 LDLIBS	 = -L$(CSLIB) -lsocket -lnsl -lutil -lposix4
 ########################################################################
 
-files = chan_stat.C cs_site_map.C csstat.C
+files = chan_stat.C csstat.C cs_site_map.C
 
-headers = RetCodes.h cdpstruc.h cpascal.h un_pascal.h
+headers = RetCodes.h cdpstruc.h cpascal.h un_passcal.h cs_site_map.h chan_stat.h
+
+csstat = chan_stat.o csstat.o
 
 sources = $(headers) $(files)
 objects = $(files:.C=.o)
@@ -46,10 +48,10 @@ all: $(ALL)
 
 
 clean:
-	-rm -f *.o *~ core $(PROGRAM) 
+	-rm -rf *.o *~ core $(program)  SunWS_cache
 
 veryclean:
-	-rm -f *.o *~ core $(PROGRAM) 
+	-rm -rf *.o *~ core $(program)   SunWS_cache
 
 install:
-	cp $(PROGRAM) ${BINDIR}
+	cp $(program) ${BINDIR}

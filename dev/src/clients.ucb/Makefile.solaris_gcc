@@ -36,7 +36,7 @@ OBJS3	= $(SRCS3:.c=.o)
 SRCS4 	= $(P4).c syserr.c fnmatch.c
 OBJS4	= $(SRCS4:.c=.o)
 
-SRCS5 	= $(P5).c 
+SRCS5 	= $(P5).c swap_mseed_header.c
 OBJS5	= $(SRCS5:.c=.o)
 
 ALL	= $(P1) $(P2) $(P3) $(P4) $(P5)
@@ -84,13 +84,17 @@ dataspy.o:	dataspy.c \
 		$(CSINCL)/timeutil.h $(CSINCL)/service.h 
 		$(CC) $(CFLAGS) -c $<
 
+swap_mseed_header.o:	swap_mseed_header.c \
+		$(CSINCL)/stuff.h 
+		$(CC) $(CFLAGS) -c $<
+
 fast_cs_check.o:	fast_cs_check.c \
 		$(CSINCL)/dpstruc.h $(CSINCL)/stuff.h \
 		$(CSINCL)/service.h $(CSINCL)/cfgutil.h 
 		$(CC) $(CFLAGS) -DALLOW_RECONFIG -c $<
 
 $(CSULIB):	FORCE
-	(cd $(CSUDIR); make -f Makefile.solaris_gcc)
+	(cd $(CSUDIR); make -f Makefile.solaris_cc)
 
 FORCE:
 
@@ -103,4 +107,3 @@ veryclean:	clean
 install:	$(ALL)
 		cp -p $(ALL) $(BINDIR)
 		chmod u+s $(BINDIR)/netmon
-
