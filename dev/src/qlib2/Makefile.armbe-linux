@@ -54,14 +54,14 @@ CFLAGS	= -Dfortran_suffix -Dqlib2_fortran
 ALLHDRS	= $(HDR) $(FHDR) 
 ALLLIBS32 = $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 ALLLIBS64 = $(TARGET5) $(TARGET6) $(TARGET7) $(TARGET8)
-ALLLIBS = $(ALLLIBS32) $(ALLLIBS64)
+ALLLIBS = $(ALLLIBS32)
 ALL	= $(ALLHDRS) $(ALLLIBS)
 
 ########################################################################
 
 all32:	$(ALLHDRS) $(ALLLIBS32)
 all64:	$(ALLHDRS) $(ALLLIBS64)
-all:	all32 all64
+all:	all32
 
 $(HDR):	$(HDRS)
 	cat $(HDRS)  | grep -v '#include "'> $@
@@ -125,6 +125,7 @@ install_man:	qlib2.man
 
 clean:
 	-rm -f *.o $(ALL)
+	-rm -f *.a
 
 veryclean:	clean
 
