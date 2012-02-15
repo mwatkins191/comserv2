@@ -1,0 +1,57 @@
+########################################################################
+#
+# Makefile     : cs2mcast
+#
+# Author       : Phil Maechling
+#
+# Last Revised : 2004/07/12
+#
+########################################################################
+
+########################################################################
+# Linux definitions
+#
+CXX	 = g++
+CC	 = gcc
+CXXFLAGS = -I$(INCL)  -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32 -g
+CFLAGS	 = -I$(INCL)  -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32 -g
+LD	 = $(CXX)
+
+INCL	 = ../../include
+CSLIB	 = ../../util
+LDLIBS	 = -L$(CSLIB) -lutil 
+########################################################################
+
+files = mcast.C cs2mcast.C
+
+headers = RetCodes.h cdpstruc.h cpascal.h
+
+cs2mcast = mcast.o cs2mcast.o
+
+sources = $(headers) $(files)
+objects = $(files:.C=.o)
+
+program = cs2mcast
+
+#implicit rules for converting C and c files to object files
+#
+.C.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+ALL = $(program)
+
+$(program):$(objects) $(files)
+	$(LD) $(CXXFLAGS) $(cs2mcast) -o $@ $(LDLIBS)
+
+
+all: $(ALL)
+
+
+clean:
+	-rm -f *.o *~ core cs2mcast 
+
+veryclean:
+	-rm -f *.o *~ core cs2mcast 
+
+install:
+	cp cs2mcast ${BINDIR}
