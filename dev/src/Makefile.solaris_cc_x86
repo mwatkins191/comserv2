@@ -14,6 +14,7 @@ MAKEFILE = Makefile.solaris_cc_x86
 # BINDIR defined with respect to the subdirectories.
 BINDIR	 = ../../bin/Solaris_x86
 LIBDIR	 = ../../lib/Solaris_x86
+
 ALLLIBS	 =  qlib2
 ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
 ALL	 =  $(ALLLIBS) $(ALLPROGS)

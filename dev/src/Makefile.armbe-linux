@@ -13,6 +13,7 @@ MAKEFILE = Makefile.armbe-linux
 
 # BINDIR defined with respect to the subdirectories.
 BINDIR	 = ../../bin/Linux_armbe
+LIBDIR	 = ../../lib/Linux_armbe
 
 ALLLIBS	 =  qlib2
 ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv

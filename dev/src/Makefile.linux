@@ -13,6 +13,7 @@ MAKEFILE = Makefile.linux
 
 # BINDIR defined with respect to the subdirectories.
 BINDIR	 = ../../bin/Linux_x86
+LIBDIR	 = ../../lib/Linux_x86
 
 ALLLIBS	 =  qlib2
 ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv

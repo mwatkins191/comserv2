@@ -13,6 +13,7 @@ MAKEFILE = Makefile.solaris_cc
 
 # BINDIR defined with respect to the subdirectories.
 BINDIR	 = ../../bin/Solaris_sparc
+LIBDIR	 = ../../lib/Solaris_sparc
 
 ALLLIBS	 =  qlib2
 ALLPROGS =  util comserv clients clients.ucb clients.cit qmaserv
