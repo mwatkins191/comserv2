@@ -403,6 +403,8 @@ void Lib330Interface::handleError(enum tliberr errcode) {
 }
 
 void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
+  // First zero the creationInfo structure.
+  memset (&this->registrationInfo, 0, sizeof(this->creationInfo));	
   qma_uint64 auth = ourConfig.getQ330AuthCode();
   memcpy(this->registrationInfo.q330id_auth, &auth, sizeof(qma_uint64));
   strcpy(this->registrationInfo.q330id_address, ourConfig.getQ330UdpAddr());
@@ -425,6 +427,8 @@ void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
 }
 
 void Lib330Interface::initializeCreationInfo(char *stationName, ConfigVO ourConfig) {
+  // First zero the creationInfo structure.
+  memset (&this->creationInfo, 0, sizeof(this->creationInfo));	
   // Fill out the parts of the creationInfo that we know about
   qma_uint64 serial = ourConfig.getQ330SerialNumber();
   char continuityFile[512];
