@@ -22,6 +22,7 @@ Edit History:
                         IGD  In version 7 which I have read_cfg () expression "if     (feof(cs->cfgfile))"
                                  was "if feof(cs->cfgfile)" causing a compiler parsing error. Fixed.
     9  4 Jan 2011 Paulf  - added @include directive handling
+   10 17 Feb 2012 DSN Fixed read_cfg() to not close top level cfg file on EOF.
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +49,7 @@ Edit History:
 
 #define COMSERV_PARAMS_ENV "COMSERV_PARAMS"	/* the params dir where @ included file will be found */
 
-short VER_CFGUTIL = 9 ;
+short VER_CFGUTIL = 10 ;
 
 
 #define MAX_INDIRECTION 10
@@ -226,14 +227,14 @@ char filename[2*CFGWIDTH];
           {
               return; /* something closed the file */
           }
-          if  (feof(cs->cfgfile[cs->current_file])) 
+          if  (feof(cs->cfgfile[cs->current_file]))
           {
-              close_cfg(cs);	/* close the current file that is open */
-              if (cs->current_file == -1) 
+              if (cs->current_file > 0)	/* only close include files on EOF */
               {
-                 return; /* we have reached the last file in the stack */
-              }
-              continue;
+                  close_cfg(cs);	/* close the include file */
+                  continue;
+	      }
+             return; /* we have reached the last file in the stack */
           }
 /* read a line and remove trailing spaces */
           tmp = fgets(cs->lastread, CFGWIDTH-1, cs->cfgfile[cs->current_file]) ;
