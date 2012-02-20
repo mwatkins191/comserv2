@@ -42,6 +42,7 @@ Edit History:
                     Implemented byte swapping for the messages sent to DA for case    CSCM_CAL
       18 Dec 99 IGD Number of changes ; presumably swapping for every case of handler()
    22 24 Aug 07 DSN Separate ENDIAN_LITTLE from LINUX logic.
+   23 20 Feb 2012 DSN Fix new debugging code to output only on rambling or insane setting.
 */
 #include <stdio.h>
 #include <errno.h>
@@ -68,6 +69,7 @@ short VER_COMMANDS = 22 ;     /*IGD LINUX compatible */
 
 extern tuser_privilege user_privilege ;
 extern boolean verbose ;
+extern boolean rambling ;
 extern boolean insane ;
 extern boolean detavail_ok ;
 extern boolean detavail_loaded ;
@@ -208,7 +210,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
       DP_to_DA_msg_type msg ;
       int ii;  /*IGD swapping counter */
       
-      if (verbose==verbose) {
+      if (insane) {
 	printf ("Enter handler client %d\n", clientnum);
 	fflush (stdout);
       }
@@ -241,7 +243,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
           }
 
 /* Have permission to proceed */
-      if (verbose==verbose) {
+      if (insane) {
 	printf ("handler cmd=%d\n", client->command);
 	fflush(stdout);
       }
@@ -254,7 +256,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
 /* If starting fresh, clear pointers and counters */
               if (client->seqdbuf != CSQ_NEXT)
                   {
-		    if (verbose==verbose) {
+		    if (rambling) {
 			printf ("request = CSQ_FIRST | CSQ_LAST| CSQ_TIME\n");
 			fflush (stdout);
 		    }
@@ -275,7 +277,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
 /* Go through records gotten last time to unblock */
               if (client->seqdbuf != CSQ_FIRST) 
 		{
-		  if (verbose==verbose) {
+		  if (rambling) {
 		    printf ("request = CSQ_NEXT | CSQ_LAST | CSQ_TIME\n");
 		    fflush (stdout);
 		  }
@@ -301,7 +303,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                           plast->packet = bscan[i]->packet_num ;
 			}
 /*:: start debug */
-		      if (verbose==verbose) {
+		      if (rambling) {
 			if (debug_most_recent >= 0) {
 			    printf ("ack queue %d thru packet_num=%d client %d\n", i, debug_most_recent, clientnum);
 			    fflush (stdout);
@@ -365,7 +367,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                               memcpy ((pchar) pdata, (pchar) &bscan[lowi]->user_data, rings[lowi].xfersize) ;
                               client->valdbuf++ ;
                               pdata = (pdata_user) ((long) pdata + client->dbufsize) ;
-			      if (verbose==verbose) {
+			      if (insane) {
 				printf ("send queue %d packet_num %d client %d\n",
 					lowi, bscan[lowi]->packet_num, clientnum);
 				fflush(stdout);
