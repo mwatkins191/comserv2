@@ -86,6 +86,7 @@ Edit History:
  31   12 Mar 09 DSN Another fix for reference through NULL pointer for dead client.
  32   01 Dec 09 DCK Fix/add logging for corrupt data packet with odd length, set proper workorder for
 		    blockettes in comments.
+ 33   01 Mar 2012 DSN Removed (again) the unneeded flip2 calls for blockette info for COMMENTS.
  	 */
 #include <stdio.h>
 #include <errno.h>
@@ -133,7 +134,7 @@ Edit History:
 #define SET_LITTLE_ENDIAN 0  /* of fixed SEED header */
 
 
-short VER_COMLINK = 32 ;
+short VER_COMLINK = 33 ;
 
 extern seed_net_type network ;
 extern complong station ;
@@ -1195,8 +1196,6 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 		     * from the previous case are applicable o what we do here
 		     */			
 		    flip_fixed_header(pseed);	
-                    pseed->deb.blockette_type = flip2(pseed->deb.blockette_type);
-                    pseed->deb.next_offset = flip2(pseed->deb.next_offset);
 #endif
 #endif
 
