@@ -54,6 +54,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <pthread.h>
+#include <synch.h>
 #include "QmaTypes.h"
 
 #define LOG_BUFFER_SIZE 1024
@@ -87,6 +89,7 @@ class Logger {
     std::ostringstream logBuff;
     bool stdoutLogging;
     bool fileLogging;
+    mutex_t mutex;
 };
 
 #endif

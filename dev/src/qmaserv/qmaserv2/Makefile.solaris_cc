@@ -12,10 +12,10 @@ COPT	 =
 USE_FIRST_DEFINED = -z muldefs
 LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl -lsocket -l330 -lutil -lposix4 -lpthread -R$(CLIBDIR)
 
-CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
+CXXFLAGS = -mt $(INCL) $(DEBUG) $(COPT)
 LD	 = $(CXX)
 INCL	 = -I../cserv -I. -I$(LIB330)
-LDFLAGS	 = $(DEBUG) $(LDLIBS)
+LDFLAGS	 = -mt $(DEBUG) $(LDLIBS)
 
 
 files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C PacketQueue.C
