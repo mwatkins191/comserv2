@@ -67,10 +67,10 @@ Logger::Logger() {
     //clearBuffer();
     stdoutLogging = false;
     fileLogging = false;
-    memset (&this->mutex, 0, sizeof(mutex_t));
-    int rc = mutex_init (&mutex, USYNC_THREAD, NULL);
+    memset (&this->logger_mutex, 0, sizeof(pthread_mutex_t));
+    int rc = pthread_mutex_init (&logger_mutex, NULL);
     if (rc != 0) {
-	fprintf (stderr, "Error %d iniiialing logger mutex\n", rc);
+	fprintf (stderr, "Error %d iniiialing logger logger_mutex\n", rc);
 	exit (rc);
     }
 }
@@ -79,9 +79,9 @@ Logger::~Logger() {
     if(strlen(logBuff.str().c_str()) != 0) {
         endEntry();
     }
-    int rc = mutex_destroy (&mutex);
+    int rc = pthread_mutex_destroy (&logger_mutex);
     if (rc != 0) {
-	fprintf (stderr, "Error %d destroying logger mutex\n", rc);
+	fprintf (stderr, "Error %d destroying logger logger_mutex\n", rc);
 	exit (rc);
     }
 }
@@ -96,58 +96,58 @@ void Logger::logToFile(bool val) {
 }
 
 Logger& Logger::operator<<(char *val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << (char *) val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(char val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_int8 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_uint8 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_int16 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_uint16 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_int32 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(qma_uint32 val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
@@ -159,9 +159,9 @@ Logger& Logger::operator<<(qma_int64 val) {
   sprintf(f, "%8.8x%8.8x", m.highAndLow.highVal, m.highAndLow.lowVal);
   logBuff << f;
 #else
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
 #endif
   return *this;
 }
@@ -174,49 +174,49 @@ Logger& Logger::operator<<(qma_uint64 val) {
   sprintf(f, "%8.8x%8.8x", m.highAndLow.highVal, m.highAndLow.lowVal);
   logBuff << f;
 #else
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
 #endif
   return *this;
 }
 
 Logger& Logger::operator<<(float val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(double val) {
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << val;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 // the following are needed for rendering of std::endl
 Logger& Logger::operator<<(std::ostream& (*f)(std::ostream&)){
   // we'll consider an endl a plea for an endEntry()
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << f;
   if(logBuff.str().c_str()[strlen(logBuff.str().c_str())-1] == '\n') {
     endEntry();
   }
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 Logger& Logger::operator<<(std::ios& (*f)(std::ios&)){
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << f;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
 Logger& Logger::operator<<(std::ios_base& (*f)(std::ios_base&)){
-  int rc = mutex_lock (&mutex);
+  int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << f;
-  rc = mutex_unlock (&mutex);
+  rc = pthread_mutex_unlock (&logger_mutex);
   return *this;
 }
 
@@ -265,8 +265,8 @@ int main(int argc, char **argv) {
   log.logToStdout(true);
   log << "Configured to send packets to " <<
     inet_ntoa(in) << " on port " <<
-//    int rc = mutex_lock (&mutex);
+//    int rc = pthread_mutex_lock (&logger_mutex);
     std::hex <<  5330 << std::endl;
-//    rc = mutex_unlock (&mutex);
+//    rc = pthread_mutex_unlock (&logger_mutex);
 }
 #endif
