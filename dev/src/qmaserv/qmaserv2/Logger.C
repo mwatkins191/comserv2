@@ -51,6 +51,7 @@
 
 
 #include <iostream>
+#include <cstdlib>
 #include "Logger.h"
 #include "stdio.h"
 #include "string.h"
