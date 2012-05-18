@@ -41,6 +41,7 @@ Edit History:
    12 2010-01-04 rdr Use fcntl instead of ioctl to set socket non-blocking.
    13 2010-03-27 rdr Add Q335 support.
    14 2010-05-13 rdr Add detection of 127.0.0.1 as additional baler port.
+   15 2012-05-02 dsn/rdr Fix boolean expression in read_data_socket.
 */
 #ifdef CMEX32
 #include "cmexserial.h"
@@ -546,7 +547,7 @@ begin
       add_status (q330, AC_CHECK, 1) ;
     else
       process_data (q330) ;
-end ;
+end
 
 #ifndef OMIT_NETWORK
 void read_data_socket (pq330 q330)
@@ -577,7 +578,7 @@ begin
                   set_liberr (q330, LIBERR_NOTR) ;
                   close_sockets (q330) ;
                   q330->reg_wait_timer = 60 * 10 ;
-                  if ((q330->libstate == LIBSTATE_RUNWAIT) land (q330->libstate == LIBSTATE_RUN))
+                  if ((q330->libstate == LIBSTATE_RUNWAIT) lor (q330->libstate == LIBSTATE_RUN))
                     then
                       begin
                         start_deallocation (q330) ;

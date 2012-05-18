@@ -96,6 +96,13 @@ void Logger::logToFile(bool val) {
   fileLogging = val;
 }
 
+Logger& Logger::operator<<(const char *val) {
+  int rc = pthread_mutex_lock (&logger_mutex);
+  logBuff << (const char *) val;
+  rc = pthread_mutex_unlock (&logger_mutex);
+  return *this;
+}
+
 Logger& Logger::operator<<(char *val) {
   int rc = pthread_mutex_lock (&logger_mutex);
   logBuff << (char *) val;

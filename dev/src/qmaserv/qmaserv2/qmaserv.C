@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
   g_log.logToStdout(true);
   g_log.logToFile(false);
 
+  showVersion();
 #ifdef	ENDIAN_LITTLE
   g_log << "Compiled with ENDIAN_LITTLE" << std::endl;
 #endif
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
   time_t nextStatusUpdate;
 
   if( (strcmp(argv[1],"-v") == 0) || (strcmp(argv[1],"-V") == 0) ) {
-    showVersion();
+//    showVersion();
     exit(12);
   } else {
     strlcpy(station_code,argv[1],MAX_CHARS_IN_STATION_CODE+1);
@@ -122,6 +123,7 @@ int main(int argc, char *argv[]) {
 	return (1);
     }
   }
+  g_log << "XXX Program max_open_file_limit = " << rlp.rlim_cur << std::endl;
 
   initializeSignalHandlers();
   g_done  = false;
@@ -201,7 +203,7 @@ void showVersion() {
 void Usage() {
     showVersion();
     std::cout << " Usage: " << std::endl; 
-    std::cout << "    qmaserv [stationName]" << std::endl;
+    std::cout << "    qmaserv -v | -V | stationName" << std::endl;
 }
 
 //

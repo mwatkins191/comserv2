@@ -66,6 +66,7 @@ class Logger {
 
     void logToStdout(bool);    
     void logToFile(bool);    
+    Logger& operator<<(const char *);
     Logger& operator<<(char *);
     Logger& operator<<(char);
     Logger& operator<<(qma_int8);
