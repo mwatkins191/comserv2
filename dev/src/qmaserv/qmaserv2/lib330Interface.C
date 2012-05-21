@@ -9,6 +9,11 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
+/* 
+ * Modifications:
+ *   21 May 2012 - DSN - Close mcastSocketFD on Lib330Interface destruction.
+ */
+
 double g_timestampOfLastRecord = 0;
 
 Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
@@ -43,8 +48,8 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   if(ourConfig.getMulticastEnabled()) {
     g_log << "+++ Multicast Enabled:" << std::endl;
     if( (mcastSocketFD = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
-      ourConfig.setMulticastEnabled(0);
-      g_log << "XXX Unable to create multicast socket" << std::endl;
+      ourConfig.setMulticastEnabled((char *)"0");
+      g_log << "XXX Unable to create multicast socket: errno=" << errno << " (" << strerror(errno) << ")"<< std::endl;
     }
     
     memset(&(mcastAddr), 0, sizeof(mcastAddr));
@@ -84,6 +89,12 @@ Lib330Interface::~Lib330Interface() {
   this->changeState(LIBSTATE_TERM, LIBERR_CLOSED);
   while(getLibState() != LIBSTATE_TERM) {
     sleep(1);
+  }
+  if (mcastSocketFD >= 0) {
+    g_log << "+++ Multicast socket close" << std::endl;
+    int err = close(mcastSocketFD);
+    if (err != 0) g_log << "XXX Error closing multicast socket: errno=" << errno << " (" << strerror(errno) << ")"<< std::endl;
+    mcastSocketFD = -1;
   }
   errcode = lib_destroy_context(&(this->stationContext));
   if(errcode != LIBERR_NOERR) {

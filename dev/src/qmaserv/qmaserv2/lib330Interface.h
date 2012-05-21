@@ -44,7 +44,7 @@ struct onesec_pkt{
 EXTERN PacketQueue packetQueue;
 
 EXTERN struct sockaddr_in mcastAddr;
-EXTERN int mcastSocketFD;
+EXTERN int mcastSocketFD = -1;
 EXTERN char multicastChannelList[256][5];
 
 class Lib330Interface {
