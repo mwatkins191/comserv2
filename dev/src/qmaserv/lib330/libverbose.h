@@ -25,7 +25,7 @@ Edit History:
 #ifndef libverbose_h
 /* Flag this file as included */
 #define libverbose_h
-#define VER_LIBVERBOSE 3
+#define VER_LIBVERBOSE 6
 
 #ifndef libtypes_h
 #include "libtypes.h"

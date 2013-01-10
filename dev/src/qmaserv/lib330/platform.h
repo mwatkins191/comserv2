@@ -29,7 +29,7 @@ Edit History:
     6 2009-09-17 rdr Add DOUBLE_HYBRID_ENDIAN for platforms with mixed endians
                      for double types.
     7 2010-02-18 fcs Slate computer needs same platform settings as BALER44
-    7 2012-02-08 dsn Added configuration for ARM-LINUX Big Endian (ARMEB).
+    8 2012-02-08 dsn/rdr Added configuration for ARM-LINUX Big Endian (ARMEB).
 */
 #ifndef platform_h
 #define platform_h

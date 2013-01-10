@@ -26,6 +26,7 @@ Edit History:
     3 2010-03-27 rdr Add Q335 support.
     4 2010-05-09 rdr Some cosemetic Q335 changes.
     5 2010-07-25 rdr Change in Q335 PGA encoding.
+    6 2012-07-08 rdr Fix clock type 2 display.
 */
 #ifndef libverbose_h
 #include "libverbose.h"
@@ -244,7 +245,7 @@ begin
       strcpy(s1, "Motorola M12") ;
       break ;
     case 2 :
-      strcpy(s1, "Seascan") ;
+      strcpy(s1, "Fastrax IT530") ;
     default :
       strcpy(s1, "None") ;
   end

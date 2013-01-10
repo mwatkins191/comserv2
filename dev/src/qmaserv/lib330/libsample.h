@@ -25,7 +25,7 @@ Edit History:
 #ifndef libsample_h
 /* Flag this file as included */
 #define libsample_h
-#define VER_LIBSAMPLE 10
+#define VER_LIBSAMPLE 11
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

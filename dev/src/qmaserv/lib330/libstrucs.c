@@ -36,7 +36,6 @@ Edit History:
    10 2009-09-15 rdr Add DSS support for serial connection to Q330.
    11 2010-03-27 rdr Add Q335 support.
    12 2010-08-21 rdr In lib_destroy_330 clear ct before doing any deallocations.
-   13 2012-05-02 rdr/dsn Check for INVALID_SOCKET in libthread before calling FS_SET.
 */
 /* Make sure libstrucs.h is included */
 #ifndef libstrucs_h
@@ -518,7 +517,7 @@ begin
                             then
                               FD_SET (q330->dpath, addr(readfds)) ;
                         end
-                  end 
+                  end
 #ifndef OMIT_SEED
               if ((q330->dssstruc) land (q330->dsspath != INVALID_SOCKET))
                 then

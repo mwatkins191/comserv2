@@ -35,6 +35,8 @@ Edit History:
     8 2009-09-05 rdr Ignore data for EP channels that don't yet have a valid delay.
     9 2010-03-27 rdr Fix building segmented data structure.
    10 2011-03-17 rdr For Q335 new usage of deb_flags.
+   11 2011-09-22 rdr In process_mult make sure have first segment, if not then don't
+                     call process_lcq.
 */
 #ifndef libsample_h
 #include "libsample.h"
@@ -1045,6 +1047,7 @@ begin
   word offset ;
   psegment_ring ps, lps ;
   byte seg_freq ;
+  boolean have_first ;
   word size ;
   pbyte p ;
   plcq q ;
@@ -1145,16 +1148,20 @@ begin
         inc(q->seg_count) ;
       end
   ps = q->pseg ;
+  have_first = FALSE ;
   if ((q->seg_high) land (q->seg_high == q->seg_count))
     then
       begin
+        pcmp->blocks = 0 ;
         while (ps)
           begin
-            if (ps == q->pseg) /* first one */
+            p = (pointer)addr(ps->seg) ;
+            loadbyte (addr(p)) ;
+            seg_freq = loadbyte (addr(p)) ;
+            size = loadword (addr(p)) and DMSZ ;
+            if (seg_freq <= 7) /* first one is COMP type, not MULT. */
               then
                 begin
-                  p = (pointer)((integer)addr(ps->seg) + 2) ;
-                  size = loadword (addr(p)) ;
                   pcmp->prev_sample = loadlongint (addr(p)) ;
                   offset = loadword (addr(p)) ;
                   pcmp->pmap = p ; /* flags start here */
@@ -1163,11 +1170,10 @@ begin
                   p = (pointer)((integer)addr(ps->seg) + offset) ; /* data starts here */
                   memcpy (addr((*(q->mergedbuf))[0]), p, size - offset) ;
                   pcmp->blocks = (size - offset) shr 2 ; /* number of 32 bit blocks so far */
+                  have_first = TRUE ;
                 end
               else
                 begin
-                  p = (pointer)((integer)addr(ps->seg) + 2) ;
-                  size = loadword (addr(p)) and DMSZ ;
                   memcpy (addr((*(q->mergedbuf))[pcmp->blocks]), p, size - 4) ;
                   pcmp->blocks = pcmp->blocks + ((size - 4) shr 2) ; /* add in more 32 bit blocks */
                 end
@@ -1175,7 +1181,9 @@ begin
           end
         q->seg_count = 0 ;
         q->seg_seq = 0xFFFFFFFF ; /* flag as all used up */
-        process_lcq (paqs, q, -1, 0.0) ;
+        if (have_first)
+          then
+            process_lcq (paqs, q, -1, 0.0) ;
       end
   if (q->dholdq)
     then
