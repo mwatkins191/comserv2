@@ -11,6 +11,7 @@
 
 /* 
  * Modifications:
+ *   27 Feb 2013 - DSN - fix memset arg in Lib330Interface::initializeRegistrationInfo
  *   21 May 2012 - DSN - Close mcastSocketFD on Lib330Interface destruction.
  */
 
@@ -415,7 +416,7 @@ void Lib330Interface::handleError(enum tliberr errcode) {
 
 void Lib330Interface::initializeRegistrationInfo(ConfigVO ourConfig) {
   // First zero the creationInfo structure.
-  memset (&this->registrationInfo, 0, sizeof(this->creationInfo));	
+  memset (&this->registrationInfo, 0, sizeof(this->registrationInfo));
   qma_uint64 auth = ourConfig.getQ330AuthCode();
   memcpy(this->registrationInfo.q330id_auth, &auth, sizeof(qma_uint64));
   strcpy(this->registrationInfo.q330id_address, ourConfig.getQ330UdpAddr());
