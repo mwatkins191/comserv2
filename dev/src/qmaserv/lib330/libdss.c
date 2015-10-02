@@ -28,6 +28,7 @@ Edit History:
     4 2009-09-17 jms fix timeout msg. add BALER44 condx for ARM double storage.
                      report secs since Q330 reboot, not dss server.
     5 2010-01-04 rdr Use fcntl instead of ioctl to set socket non-blocking.
+    6 2013-02-02 rdr Set high_socket.
 */
 #ifndef OMIT_SEED /* Can't use without seed generation */
 #ifndef OMIT_NETWORK /* or without network */
@@ -572,6 +573,11 @@ begin
         strcpy (addr(dssstr->dss_server_display), addr(s)) ;
         return ;
       end
+#ifndef X86_WIN32
+  if (dssstr->q330->dsspath > dssstr->q330->high_socket)
+    then
+      dssstr->q330->high_socket = dssstr->q330->dsspath ;
+#endif
   psock = (pointer) addr(dssstr->dsockin) ;
   memset(psock, 0, sizeof(struct sockaddr)) ;
   psock->sin_family = AF_INET ;

@@ -26,7 +26,7 @@ Edit History:
 #ifndef libsupport_h
 /* Flag this file as included */
 #define libsupport_h
-#define VER_LIBSUPPORT 6
+#define VER_LIBSUPPORT 7
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h

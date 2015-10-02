@@ -11,6 +11,8 @@
  *
  * Mod Date :
  *  28 March 2002
+ *  2015/09/25 - DSN - Added close_cfg() calls to close all config files.
+ *	
  *
  * This program is free software; you can redistribute it and/or modify
  * it with the sole restriction that:
@@ -75,7 +77,7 @@ int getQmacfg(struct qma_cfg* out_cfg)
               strcpy(source, str2) ;
         }
       while (1) ;
-    close_cfg(&cfg);
+      close_cfg(&cfg);
       
 /* Check for that this is a comlink station */
       if (strcasecmp((pchar) &source, "comlink") != 0)
@@ -173,6 +175,7 @@ int getQmacfg(struct qma_cfg* out_cfg)
 	  
       }
       while (1) ;
+      close_cfg(&cfg);
       
       if (open_cfg(&cfg, "/etc/network.ini", "mountainair")) {
 	return 1; //terminate ("xxx Could not find a valid mountainair station.ini\n") ;
@@ -196,6 +199,7 @@ int getQmacfg(struct qma_cfg* out_cfg)
 	    strcpy(out_cfg->multicastChannelList, str2);
 	  }
       } while (1);
+      close_cfg(&cfg);
 
       return 1;
 }

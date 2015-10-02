@@ -11,8 +11,9 @@
 
 /* 
  * Modifications:
- *   27 Feb 2013 - DSN - fix memset arg in Lib330Interface::initializeRegistrationInfo
  *   21 May 2012 - DSN - Close mcastSocketFD on Lib330Interface destruction.
+ *   27 Feb 2013 - DSN - fix memset arg in Lib330Interface::initializeRegistrationInfo
+ *   2015/09/25  - DSN - added log message when creating lib330 interface.
  */
 
 double g_timestampOfLastRecord = 0;
@@ -22,6 +23,7 @@ Lib330Interface::Lib330Interface(char *stationName, ConfigVO ourConfig) {
   tmodule *mod;
   int x;
 
+  g_log << "+++ lib330 Interface created" << std::endl;	//::
   this->currentLibState = LIBSTATE_IDLE;
   this->initializeCreationInfo(stationName, ourConfig);
   this->initializeRegistrationInfo(ourConfig);

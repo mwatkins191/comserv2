@@ -55,6 +55,7 @@ Edit History:
    21 2010-04-20 rdr Add processing for LPSF_PWROFF request.
    22 2010-05-07 rdr If opt_connwait is zero then use a value of ten minutes.
    23 2010-05-17 rdr Add sending Q335 Aware flag in C1_RQFGLS.
+   24 2013-08-18 rdr Change reboot to lib330_reboot to avoid conflict with some nonsense.
 */
 #ifndef libcmds_h
 #include "libcmds.h"
@@ -552,7 +553,7 @@ begin
   return sz ;
 end
 
-static void reboot (pq330 q330, boolean keep_link)
+static void lib330_reboot (pq330 q330, boolean keep_link)
 begin
 
   q330->reboot_done = FALSE ;
@@ -929,7 +930,7 @@ begin
                         libmsgadd (q330, LIBMSG_REGISTERED, addr(s)) ;
                         q330->registered = TRUE ;
                         q330->reg_tries = 0 ;
-                        reboot (q330, FALSE) ;
+                        lib330_reboot (q330, FALSE) ;
                         q330->need_regmsg = (q330->cur_verbosity and VERB_REGMSG) ;
                       end
                   break ;

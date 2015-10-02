@@ -76,6 +76,7 @@ class Logger {
     Logger& operator<<(qma_int32);
     Logger& operator<<(qma_uint32);
     Logger& operator<<(qma_int64);
+    Logger& operator<<(void * val);
     Logger& operator<<(qma_uint64);
     Logger& operator<<(float);
     Logger& operator<<(double);

@@ -19,6 +19,7 @@
  *   24 Aug 2007 - DSN - Change from SIG_IGN to signal handler for SIGALRM.
  *    6 Feb 2012 - DSN - Limit max number of open files (RLIMIT_NOFILE) 
  *                       to be no more than compile-time limie FD_SETSIZE.
+ *   25 Sep 2015 - DSN - Added logging for station thread address.
  *
  *
  * This program is free software; you can redistribute it and/or modify
@@ -51,7 +52,6 @@
 
 // comserv includes
 extern "C" {
-
 #include "qmacfg.h"
 #include "cserv.h"
 #include "clink.h"
@@ -89,7 +89,10 @@ int main(int argc, char *argv[]) {
 
   showVersion();
 #ifdef	ENDIAN_LITTLE
-  g_log << "Compiled with ENDIAN_LITTLE" << std::endl;
+  g_log << "Compiled for LITTLE ENDIAN" << std::endl;
+#else
+  g_log << "Compiled for BIG ENDIAN" << std::endl;
+
 #endif
 
   if(argc < 2) {
@@ -139,6 +142,7 @@ int main(int argc, char *argv[]) {
     // Make sure we have a lib330 interface, create one if not
     if(!g_libInterface) {
       g_libInterface = new Lib330Interface(station_code, g_cvo);
+      g_log << "+++ Station thread address is " << static_cast<void *>(g_libInterface) << std::endl;
     }
 
     // We may have gotten here if a client blocked, if so, wait until that

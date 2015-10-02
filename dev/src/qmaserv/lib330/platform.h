@@ -30,6 +30,7 @@ Edit History:
                      for double types.
     7 2010-02-18 fcs Slate computer needs same platform settings as BALER44
     8 2012-02-08 dsn/rdr Added configuration for ARM-LINUX Big Endian (ARMEB).
+    9 2013-08-18 rdr For Unix definitions move OMIT_SERIAL conditional to after unistd.h.
 */
 #ifndef platform_h
 #define platform_h
@@ -108,8 +109,8 @@ typedef struct _stat tfile_state ;
 #include <signal.h>
 
 #include <fcntl.h>
-#ifndef OMIT_SERIAL
 #include <unistd.h>     // required for ARM Linux. maybe for others as well.
+#ifndef OMIT_SERIAL
 #include <sys/termios.h>
 #endif
 
@@ -145,7 +146,7 @@ typedef struct stat tfile_state ;
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/ioctl.h>
-/* #include <sys/time.h> */
+#include <sys/time.h>
 #include <netdb.h>
 #include <signal.h>
 

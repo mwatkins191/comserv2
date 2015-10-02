@@ -30,13 +30,18 @@ Edit History:
     5 2008-01-10 rdr If file owner is specified then use baler callback to translate file
                      names and handle media access for file open, close, and delete.
     6 2009-07-30 rdr uppercase routine moved here from libtokens, renamed to lib330_upper
+    7 2013-08-18 rdr Add some includes.
 */
 #ifndef libsupport_h
 #include "libsupport.h"
 #endif
+#include <ctype.h>
 #include <stdio.h>
 #ifndef X86_WIN32
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 
 const dms_type days_mth = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31} ;

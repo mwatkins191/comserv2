@@ -159,6 +159,13 @@ Logger& Logger::operator<<(qma_uint32 val) {
   return *this;
 }
 
+Logger& Logger::operator<<(void * val) {
+  int rc = pthread_mutex_lock (&logger_mutex);
+  logBuff << val;
+  rc = pthread_mutex_unlock (&logger_mutex);
+  return *this;
+}
+
 Logger& Logger::operator<<(qma_int64 val) {
 #ifdef _WIN32
   my64 m;

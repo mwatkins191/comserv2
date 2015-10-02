@@ -54,4 +54,4 @@ veryclean:
 	-rm -rf *.o *~ core $(program)   SunWS_cache
 
 install:
-	cp $(program) ${BINDIR}
+	cp -p $(program) ${BINDIR}

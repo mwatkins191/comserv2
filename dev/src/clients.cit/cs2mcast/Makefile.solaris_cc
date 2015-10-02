@@ -54,4 +54,4 @@ veryclean:
 	-rm -f *.o *~ core cs2mcast 
 
 install:
-	cp cs2mcast ${BINDIR}
+	cp -p cs2mcast ${BINDIR}

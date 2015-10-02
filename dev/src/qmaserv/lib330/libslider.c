@@ -42,6 +42,7 @@ Edit History:
    13 2009-09-13 rdr Fix error message for ST32_DRIFT.
    14 2010-12-22 rdr Add Sensor control blockette handling.
    15 2011-02-18 rdr Add handling of FE PLL blockettes.
+   16 2013-08-09 rdr Check for missing timing blockette when moving to next second of data.
 */
 #ifndef libtypes_h
 #include "libtypes.h"
@@ -358,6 +359,23 @@ begin
           begin
             sprintf(s, "%d to %d", v1, v2) ;
             libdatamsg (q330, LIBMSG_SEQRESUME, addr(s)) ;
+          end
+      else if (dsn == (paqs->dt_data_sequence + 1))
+        then
+          begin /* Check for missed timing blockette */
+            p2 = p ;
+            chan = loadbyte (addr(p2)) ; /* get channel */
+            if (chan != DC_MN232)
+              then
+                begin /* Missed, need to wait for next timing blockette */
+                  sprintf(s, "1, %d to %d", v1, v2) ;
+                  libdatamsg (q330, LIBMSG_SEQGAP, addr(s)) ;
+                  add_status (q330, AC_GAPS, 1) ;
+                  inc(q330->share.opstat.totalgaps) ;
+                  seqgap_occurred = TRUE ;
+                  q330->lasttime = 0 ;
+                  paqs->data_timetag = 0 ;
+                end
           end
 #ifndef OMITSEED
       if ((q330->dssstruc) land (q330->dsspath != INVALID_SOCKET) land (dsn == (q330->lastseq + 1)))

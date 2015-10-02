@@ -25,7 +25,7 @@ Edit History:
 #ifndef libslider_h
 /* Flag this file as included */
 #define libslider_h
-#define VER_LIBSLIDER 15
+#define VER_LIBSLIDER 16
 
 #ifndef libstrucs_h
 #include "libstrucs.h"

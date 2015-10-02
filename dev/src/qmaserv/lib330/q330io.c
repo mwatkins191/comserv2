@@ -251,6 +251,11 @@ begin
         libmsgadd(q330, LIBMSG_SOCKETERR, addr(msg)) ;
         return TRUE ;
       end
+#ifndef X86_WIN32
+  if (q330->cpath > q330->high_socket)
+    then
+      q330->high_socket = q330->cpath ;
+#endif
   psock = (pointer) addr(q330->csockout) ;
   memset(psock, 0, sizeof(struct sockaddr)) ;
   psock->sin_family = AF_INET ;
@@ -368,6 +373,9 @@ begin
 #ifdef X86_WIN32
         err = getsockopt (q330->dpath, SOL_SOCKET, SO_RCVBUF, addr(bufsize), addr(lth)) ;
 #else
+        if (q330->dpath > q330->high_socket)
+          then
+            q330->high_socket = q330->dpath ;
         err = getsockopt (q330->dpath, SOL_SOCKET, SO_RCVBUF, addr(bufsize), addr(lth)) ;
 #endif
         if ((err == 0) land (bufsize < 30000))

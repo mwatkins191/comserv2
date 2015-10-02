@@ -1,5 +1,5 @@
 /*   Lib330 Netserver (LISS) Routines
-     Copyright 2006 Certified Software Corporation
+     Copyright 2006-2013 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -32,6 +32,8 @@ Edit History:
     5 2008-04-20 rdr Fix missing assignment to err in read_from_client.
     6 2010-01-04 rdr Use fcntl instead of ioctl to set socket non-blocking. Fix setting non-blocking
                      on accepted socket.
+    7 2013-02-02 rdr Use actual highest socket for select.
+    8 2013-08-08 rdr Fix checking for EPIPE in send_netserv_packet.
 */
 #ifndef OMIT_SEED /* Can't use without seed generation */
 #ifndef OMIT_NETWORK /* or without network */
@@ -77,6 +79,7 @@ typedef struct {
   struct sockaddr nsockin, nsockout ; /* netserv address descriptors */
   integer sockpath ;
   struct sockaddr client ;
+  integer high_socket ;
 #endif
   integer nsq_in, nsq_out ;
   double last_sent ;
@@ -161,6 +164,9 @@ begin
 #endif
         nsstr->sockpath = INVALID_SOCKET ;
       end
+#ifndef X86_WIN32
+  nsstr->high_socket = 0 ;
+#endif
 end
 
 static void open_socket (pnsstr nsstr)
@@ -194,6 +200,11 @@ begin
         lib_msg_add(nsstr->ns_par.stnctx, AUXMSG_SOCKETERR, 0, addr(s)) ;
         return ;
       end
+#ifndef X86_WIN32
+  if (nsstr->npath > nsstr->high_socket)
+    then
+      nsstr->high_socket = nsstr->npath ;
+#endif
   psock = (pointer) addr(nsstr->nsockin) ;
   memset(psock, 0, sizeof(struct sockaddr)) ;
   psock->sin_family = AF_INET ;
@@ -257,7 +268,7 @@ begin
   err = listen (nsstr->npath, 1) ;
 #else
   flag = fcntl (nsstr->npath, F_GETFL, 0) ;
-  fcntl (nsstr->npath, F_SETFL, flag or O_NONBLOCK) ;  
+  fcntl (nsstr->npath, F_SETFL, flag or O_NONBLOCK) ;
   err = listen (nsstr->npath, 1) ;
 #endif
   if (err)
@@ -335,8 +346,11 @@ begin
         flag = 1 ;
         ioctlsocket (nsstr->sockpath, FIONBIO, addr(flag)) ;
 #else
+        if (nsstr->sockpath > nsstr->high_socket)
+          then
+            nsstr->high_socket = nsstr->sockpath ;
         flag = fcntl (nsstr->sockpath, F_GETFL, 0) ;
-        fcntl (nsstr->sockpath, F_SETFL, flag or O_NONBLOCK) ;  
+        fcntl (nsstr->sockpath, F_SETFL, flag or O_NONBLOCK) ;
 #endif
         psock = (pointer) addr(nsstr->client) ;
         showdot (ntohl(psock->sin_addr.s_addr), addr(hostname)) ;
@@ -483,7 +497,7 @@ begin
 #ifdef X86_WIN32
         else if ((err == ECONNRESET) lor (err == ECONNABORTED))
 #else
-        else if (err = EPIPE)
+        else if (err == EPIPE)
 #endif
           then
             begin
@@ -651,7 +665,7 @@ begin
               end
           timeout.tv_sec = 0 ;
           timeout.tv_usec = 25000 ; /* 25ms timeout */
-          res = select (getdtablesize(), addr(readfds), addr(writefds), addr(exceptfds), addr(timeout)) ;
+          res = select (nsstr->high_socket + 1, addr(readfds), addr(writefds), addr(exceptfds), addr(timeout)) ;
           if (res > 0)
             then
               begin

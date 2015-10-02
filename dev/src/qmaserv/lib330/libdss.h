@@ -25,7 +25,7 @@ Edit History:
 #ifndef libdss_h
 /* Flag this file as included */
 #define libdss_h
-#define VER_LIBDSS 5
+#define VER_LIBDSS 6
 
 #ifndef OMIT_SEED
 

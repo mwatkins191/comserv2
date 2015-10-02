@@ -30,7 +30,9 @@ Edit History:
     7 2009-02-09 rdr Add EP Support.
     8 2009-09-28 rdr Add AUXMSG_DSS.
     9 2010-03-27 rdr Add messages for Q335.
-   10 2010-08-21 rdr Change order of evaluation in msgadd and dump_msgqueue. 
+   10 2010-08-21 rdr Change order of evaluation in msgadd and dump_msgqueue.
+   11 2013-08-09 rdr Add conditional compilation to make string parameter to msgadd,
+                     libmsgadd and libdataadd a const.
 */
 #ifndef libmsgs_h
 #include "libmsgs.h"
@@ -231,7 +233,11 @@ begin
 end
 #endif
 
+#ifdef CONSTMSG
+void msgadd (pq330 q330, word msgcode, longword dt, const string95 *msgsuf, boolean client)
+#else
 void msgadd (pq330 q330, word msgcode, longword dt, string95 *msgsuf, boolean client)
+#endif
 begin
   string s, s1, s2 ;
   paqstruc paqs ;
@@ -290,13 +296,21 @@ begin
   msgunlock (q330) ;
 end
 
+#ifdef CONSTMSG
+void libmsgadd (pq330 q330, word msgcode, const string95 *msgsuf)
+#else
 void libmsgadd (pq330 q330, word msgcode, string95 *msgsuf)
+#endif
 begin
 
   msgadd (q330, msgcode, 0, msgsuf, FALSE) ;
 end
 
+#ifdef CONSTMSG
+void libdatamsg (pq330 q330, word msgcode, const string95 *msgsuf)
+#else
 void libdatamsg (pq330 q330, word msgcode, string95 *msgsuf)
+#endif
 begin
   longword dt ;
   paqstruc paqs ;

@@ -52,4 +52,4 @@ veryclean:
 	-rm -f *.o *~ core $(PROGRAM) 
 
 install:
-	cp $(program) ${BINDIR}
+	cp -p $(program) ${BINDIR}

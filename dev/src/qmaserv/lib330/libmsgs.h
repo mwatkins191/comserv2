@@ -29,7 +29,7 @@ Edit History:
 #ifndef libmsgs_h
 /* Flag this file as included */
 #define libmsgs_h
-#define VER_LIBMSGS 10
+#define VER_LIBMSGS 11
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h
@@ -190,17 +190,25 @@ Edit History:
 
 #define HOSTMSG_ALL 800
 
+#ifdef CONSTMSG
+extern void libmsgadd (pq330 q330, word msgcode, const string95 *msgsuf) ;
+extern void libdatamsg (pq330 q330, word msgcode, const string95 *msgsuf) ;
+extern void msgadd (pq330 q330, word msgcode, longword dt, const string95 *msgsuf, boolean client) ;
+#else
 extern void libmsgadd (pq330 q330, word msgcode, string95 *msgsuf) ;
 extern void libdatamsg (pq330 q330, word msgcode, string95 *msgsuf) ;
+extern void msgadd (pq330 q330, word msgcode, longword dt, string95 *msgsuf, boolean client) ;
+#endif
+
 #ifndef OMIT_SEED
 extern void dump_msgqueue (pq330 q330) ;
 #endif
+
 extern char *lib_get_msg (word code, string95 *result) ;
 extern char *lib_get_errstr (enum tliberr err, string63 *result) ;
 extern char *lib_get_statestr (enum tlibstate state, string63 *result) ;
 extern char *showdot (longword num, string15 *result) ;
 extern char *command_name (byte cmd, string95 *result) ;
-extern void msgadd (pq330 q330, word msgcode, longword dt, string95 *msgsuf, boolean client) ;
 extern char *lib_gps_state (enum tgps_stat gs, string63 *result) ;
 extern char *lib_gps_fix (enum tgps_fix gf, string63 *result) ;
 extern char *lib_pll_state (enum tpll_stat ps, string31 *result) ;

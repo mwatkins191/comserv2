@@ -1,5 +1,5 @@
 /*   Lib330 internal data structures
-     Copyright 2006-2010 Certified Software Corporation
+     Copyright 2006-2013 Certified Software Corporation
 
     This file is part of Lib330
 
@@ -37,11 +37,12 @@ Edit History:
    10 2009-09-15 rdr Add DSS support when connected to 330 via serial.
    11 2010-03-27 rdr Add Q335 flag.
    12 2010-05-07 rdr Add comm structure.
+   13 2013-02-02 rdr Add high_socket.
 }*/
 #ifndef libstrucs_h
 /* Flag this file as included */
 #define libstrucs_h
-#define VER_LIBSTRUCS 16
+#define VER_LIBSTRUCS 18
 
 /* Make sure libtypes.h is included */
 #ifndef libtypes_h
@@ -284,6 +285,7 @@ typedef struct { /* this is the actual context which is hidden from clients */
   integer cpath ; /* commands socket */
   integer dpath ; /* data socket */
   integer dsspath ; /* dss socket */
+  integer high_socket ; /* Highest socket number */
   struct sockaddr csockin, csockout ; /* commands socket address descriptors */
   struct sockaddr dsockin, dsockout ; /* data socket address descriptors */
 #endif

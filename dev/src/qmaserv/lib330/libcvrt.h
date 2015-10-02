@@ -40,7 +40,6 @@ extern void storelongword (pbyte *p, longword lw) ;
 extern void storelongint (pbyte *p, longint li) ;
 extern void storesingle (pbyte *p, single s) ;
 extern void storestring (pbyte *p, integer fieldwidth, string *s) ;
-extern void storemac (pbyte *p, tsix *mac) ;
 extern void storeblock (pbyte *p, integer size, pointer psrc) ;
 extern byte loadbyte (pbyte *p) ;
 extern word loadword (pbyte *p) ;
