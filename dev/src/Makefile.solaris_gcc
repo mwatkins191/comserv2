@@ -46,6 +46,6 @@ install:
 		(cd $$dir; make -f $(MAKEFILE) install BINDIR=$(BINDIR) );  \
 	done
 	for dir in $(ALLLIBS) util ; do \
-		(cd $$dir; cp -p *.a $(LIBDIR)); \
+		(cd $$dir; cp -p lib/*.a $(LIBDIR)); \
 	done
 

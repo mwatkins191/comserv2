@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2011 The Regents of the University of California.
+ * Copyright (c) 1996-2013 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -38,7 +38,7 @@
 
 /* Explicitly set overall qlib2 version here by hand.	*/
 #ifndef lint
-char *qlib2_version = "@(#)qlib2 version 1.51 (2011.222)";
+char *qlib2_version = "@(#)qlib2 version 1.53 (2013.260)";
 #endif
 
 /************************************************************************/
@@ -46,6 +46,13 @@ char *qlib2_version = "@(#)qlib2 version 1.51 (2011.222)";
 Modifications:
 Ver	Date and Action
 ------------------------------------------------------------------------
+1.53	2013.260    DSN
+	Updated sccsid string definitions to avoid warnings.
+	Updated Makefile
+1.52	2013.256    DSN
+	Update qtime.c to support ISO 8601 Calendar and Ordinal date-times.
+	Added support in qtime.c to check expiration date of leapsecond file.
+	Changed default location of leapsecond file.
 1.51	2011.222    DSN
 	Fix ms_unpack() to return 0 if 0 samples in record rather than error.
 	Updated all source files to remove many compiler warnings.

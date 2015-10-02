@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qtime.h,v 1.11 2008/04/17 19:04:48 doug Exp $ 	*/
+/*	$Id: qtime.h,v 1.12 2013/09/13 22:26:54 doug Exp $ 	*/
 
 #ifndef	__qtime_h
 #define	__qtime_h
@@ -48,6 +48,15 @@ extern "C" {
 #endif
 
 extern int init_leap_second_table ();
+
+extern int is_leap_second
+   (INT_TIME it);		/* INT_TIME structure			*/
+
+extern int is_leap_second_te
+   (double tepoch);		/* True epoch time			*/
+
+extern int is_leap_second_ne
+   (double nepoch);		/* Nominal epoch time			*/
 
 extern void dy_to_mdy 
    (int		doy,		/* day of year (input).			*/

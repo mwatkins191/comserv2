@@ -37,7 +37,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ms_pack2.c,v 1.6 2011/08/19 16:13:30 doug Exp $ ";
+static const char sccsid[] = "$Id: ms_pack2.c,v 1.7 2013/09/17 18:10:36 doug Exp $ ";
 #endif
 
 #include <stdio.h>

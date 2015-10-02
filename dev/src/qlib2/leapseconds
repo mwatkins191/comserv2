@@ -1,6 +1,9 @@
 # @(#)leapseconds	7.9
 
-# NOTE:  THIS FILE IS VALID UNTIL (BUT NOT INCLUDING) DEC 31, 2012.
+# Line below is structured comment parsed by qtime routine.
+# VALID TO: 2015/12/30
+
+# Updates available at:	http://www.ncedc.org/ftp/pub/programs/leapseconds
 
 # Allowance for leapseconds added to each timezone file.
 
@@ -47,3 +50,4 @@ Leap	1998	Dec	31	23:59:60	+	S
 Leap	2005	Dec	31	23:59:60	+	S
 Leap	2008	Dec	31	23:59:60	+	S
 Leap	2012	Jun	30	23:59:60	+	S
+Leap	2015	Jun	30	23:59:60	+	S

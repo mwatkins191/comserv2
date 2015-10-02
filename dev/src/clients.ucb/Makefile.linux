@@ -2,6 +2,7 @@
 # Set to the location of software on your system
 CSDIR	= ..
 QDIR	= $(CSDIR)/qlib2
+QLDIR	= $(QDIR)/lib
 CSINCL	= $(CSDIR)/include
 CSUDIR	= $(CSDIR)/util
 CSULIB	= $(CSUDIR)/libutil.a
@@ -11,20 +12,20 @@ LD_RUN_PATH =
 # LINUX definitions
 CC	=  gcc  
 CFLAGS	=  -m32 -I$(CSINCL) -I$(QDIR) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER
-LIBS	=  $(QDIR)/libqlib2.a  -lm -lnsl  -ldl
+LIBS	=  $(QLDIR)/libqlib2.a  -lm -lnsl  -ldl
 ########################################################################
 # Solaris 2 definitions
 #CC	= cc
 #CFLAGS	= -g -I$(CSINCL) -I$(QDIR) -DSOLARIS2 -g
-#LIBS	= $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
-#LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
-#LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lm -lnsl  -ldl
+#LIBS	= $(QLDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#LIBS	= -R$(LD_RUN_PATH) $(QLDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#LIBS	= -R$(LD_RUN_PATH) $(QLDIR)/libqlib2.a -lposix4 -lm -lnsl  -ldl
 
 ########################################################################
 # SunOS definitions
 #CC	= acc
 #CFLAGS	= -g -I$(CSINCL) -I$(QDIR)
-#LIBS	= $(QDIR)/libqlib2.a -lm
+#LIBS	= $(QLDIR)/libqlib2.a -lm
 
 ########################################################################
 

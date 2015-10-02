@@ -9,7 +9,7 @@
 /************************************************************************/
 
 /*
- * Copyright (c) 1996-2002 The Regents of the University of California.
+ * Copyright (c) 1996-2013 The Regents of the University of California.
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify, and distribute this software and its
@@ -36,7 +36,7 @@
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
-/*	$Id: qdefines.h,v 1.12 2010/04/19 23:26:00 doug Exp $ 	*/
+/*	$Id: qdefines.h,v 1.14 2013/09/14 01:12:27 doug Exp $ 	*/
 
 #ifndef	__qdefines_h
 #define	__qdefines_h
@@ -99,11 +99,13 @@ extern char *qlib2_version;
 #define	JULIANC_FMT_1	5
 #define	MONTHS_FMT	6
 #define	MONTHS_FMT_1	7
+#define	ISO_CALENDAR	8
+#define	ISO_ORDINAL	9
 
 #define	TRUE		1
 #define	FALSE		0
 
-#if defined(__LINUX__) || defined(__MACH__) || defined( __ARM_ARCH_4T__)
+#if defined(__linux__) || defined(__LINUX__) || defined(__MACH__) || defined( __ARM_ARCH_4T__)
 #include <math.h>
 #else
 /* Library definitions that are not always in math.h	*/

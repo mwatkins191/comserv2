@@ -11,7 +11,7 @@ LD_RUN_PATH = /opt/SUNWspro:/misc/opt/SUNWspro:/usr/lib
 
 ########################################################################
 # Solaris 2 definitions
-CC	= cc
+#:: CC	= cc
 #:: CFLAGS	= -g -I$(CSINCL) -I$(QDIR) -DSOLARIS2 -g
 #:: CFLAGS	= -g -I$(CSINCL) -DSOLARIS2 -g
 #LIBS	= $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
