@@ -1,0 +1,55 @@
+########################################################################
+#
+# Makefile     : csstat
+#
+# Author       : Paul Friberg, ISTI for CIT
+#
+# Last Revised : 2004/11/05
+#
+########################################################################
+
+########################################################################
+# Linux definitions
+#
+CXX	 = g++
+CC	 = gcc
+CXXFLAGS = -I$(INCL) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m$(NUMBITS) -g
+CFLAGS	 = -I$(INCL) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m$(NUMBITS) -g
+LD	 = $(CXX)
+
+INCL	 = ../../include
+CSLIB	 = ../../util
+LDLIBS	 = -L$(CSLIB) -lutil
+########################################################################
+
+files = chan_stat.C cs_site_map.C csstat.C
+
+headers = RetCodes.h cdpstruc.h cpascal.h un_pascal.h
+
+sources = $(headers) $(files)
+objects = $(files:.C=.o)
+
+program = csstat
+
+#implicit rules for converting C and c files to object files
+#
+.C.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+ALL = $(program)
+
+$(program):$(objects) $(files)
+	$(LD) $(CXXFLAGS) $(objects) -o $@ $(LDLIBS) 
+
+
+all: $(ALL)
+
+
+clean:
+	-rm -f *.o *~ core $(PROGRAM) 
+
+veryclean:
+	-rm -f *.o *~ core $(PROGRAM) 
+
+install:
+	cp -p $(program) ${BINDIR}

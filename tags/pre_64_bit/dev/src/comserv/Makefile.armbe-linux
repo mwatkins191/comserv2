@@ -1,0 +1,100 @@
+########################################################################
+#
+# Makefile     : Comserv
+#
+# Original Author       : Phil Maechling
+# Modifications		: Ilya Dricker, ISTI	
+#
+# Last Revised : March, 17 2001
+#
+########################################################################
+# $Id: Makefile.linux,v 1.2 2004/07/29 15:39:27 isti Exp $
+########################################################################
+# Linux definitions  IGD
+########################################################################
+# 03/03/01 IGD	
+# 	New flags are introduced in this version
+#	-D_BIG_ENDIAN_HEADER flag means that the headers of MSEED records are
+#		going to be stored in BIG ENDIAN byte order (non-native) on
+#		LITTLE-ENDIAN OS (Intel Linux)
+##	-D_LITTLE_ENDIAN_HEADER flag means that the headers of MSEED records are
+#		going to be stored in LITTLE ENDIAN byte order (native) on
+#		LITTLE-ENDIAN OS (Intel Linux)
+#	If neither  -D_BIG_ENDIAN_HEADER or -D_LITTLE_ENDIAN_HEADER , the default
+#	is -D_LITTLE_ENDIAN_HEADER and MSEEED record headars are stored in LITTLE
+#	ENDIAN BYTE ORDER IN SHARED MEMORY of COMSERV
+CC	= armbe-linux-gcc -g
+INCL	= ../include
+CFLAGS	= -I$(INCL) -DMYIPADDR -DLINUX -mstructure-size-boundary=8
+LDFLAGS	= 
+CSUDIR	= ../util
+CSULIB = $(CSUDIR)/libutil.a
+LDLIBS =
+########################################################################
+# Solaris 2 definitions
+# Comment out Linux definitions and uncomment his section to compile 
+# the bundle for Solaris
+########################################################################
+# CC	= cc
+# INCL	= ../include
+# CFLAGS	= -I$(INCL) +w -DSOLARIS2 -g
+# LDFLAGS	= -g
+# CSUDIR	= ../util
+# CSULIB = $(CSUDIR)/libutil.a
+# LDLIBS	= -lposix4 -lnsl -lsocket
+
+########################################################################
+# SunOS definitions
+#
+#CC	= acc
+#INCL	= ../include
+#CFLAGS	= -I$(INCL)
+#LDFLAGS	=
+#CSUDIR	= ../util
+#CSULIB = $(CSUDIR)/libutil.a
+#LDLIBS	=
+
+########################################################################
+
+ALL =	comserv
+
+all:		$(ALL)
+
+comserv:	server.o cscfg.o buffers.o comlink.o commands.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o comserv server.o cscfg.o buffers.o \
+		comlink.o commands.o $(CSULIB) $(LDLIBS)
+
+server.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h server.h server.c
+		$(CC) -c $(CFLAGS) server.c
+
+cscfg.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h server.h cscfg.c
+		$(CC) -c $(CFLAGS) cscfg.c
+
+buffers.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h buffers.c
+		$(CC) -c $(CFLAGS) buffers.c
+
+comlink.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h comlink.c
+		$(CC) -c $(CFLAGS) comlink.c
+
+commands.o:	$(INCL)/dpstruc.h $(INCL)/quanstrc.h $(INCL)/service.h \
+		$(INCL)/stuff.h server.h commands.c
+		$(CC) -c $(CFLAGS) commands.c
+
+$(CSULIB):	FORCE
+	(cd $(CSUDIR); make -f Makefile.linux)
+
+FORCE:
+
+clean:
+	 	-rm *.o 
+
+veryclean:	clean
+		-rm *.o *~ *% $(ALL)
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
+ 

@@ -1,0 +1,83 @@
+# $Id: Makefile.linux,v 1.2 2004/07/29 15:38:11 isti Exp $
+########################################################################
+# Linux definitions  IGD
+#
+CC	= gcc
+INCL	= ../include
+CFLAGS	= -I$(INCL) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m$(NUMBITS)
+LDFLAGS	= -m$(NUMBITS)
+CSUDIR	= ../util
+CSULIB = $(CSUDIR)/libutil.a
+LDLIBS =
+###########################################################################
+
+########################################################################
+# Solaris 2 definitions
+#
+#CC	= cc
+#INCL	= ../include
+#CFLAGS	= -I$(INCL) +w -DSOLARIS2 -g
+#LDFLAGS	= -g
+#CSUDIR	= ../util
+#CSULIB	= $(CSUDIR)/libutil.a
+#LDLIBS	= -lposix4 -lnsl -lsocket
+
+########################################################################
+# SunOS definitions
+#
+#CC	= acc
+#INCL	= ../include
+#CFLAGS	= -I$(INCL)
+#LDFLAGS	=
+#CSUDIR	= ../util
+#CSULIB	= $(CSUDIR)/libutil.a
+#LDLIBS	=
+
+########################################################################
+
+ALL =		config msgmon dpda dataread
+
+all:		$(ALL)
+
+config:		config.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o config config.o $(CSULIB) $(LDLIBS)
+
+msgmon:		msgmon.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o msgmon msgmon.o $(CSULIB) $(LDLIBS)
+
+dpda:		dpda.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o dpda dpda.o $(CSULIB) $(LDLIBS)
+
+dataread:	dataread.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o dataread dataread.o $(CSULIB) $(LDLIBS)
+
+config.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h config.c
+		$(CC) -c $(CFLAGS) config.c
+
+msgmon.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h msgmon.c
+		$(CC) -c $(CFLAGS) msgmon.c
+
+dpda.o:		$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h dpda.c
+		$(CC) -c $(CFLAGS) dpda.c
+
+dataread.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/seedstrc.h $(INCL)/stuff.h $(INCL)/timeutil.h dataread.c
+		$(CC) -c $(CFLAGS) dataread.c
+
+$(CSULIB):	FORCE
+	(cd $(CSUDIR); make -f Makefile.linux)
+
+FORCE:
+
+clean:
+		-rm -f *.o
+
+veryclean:	clean
+		-rm -f *.o *% *~ $(ALL)
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
+

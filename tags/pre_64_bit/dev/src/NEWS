@@ -1,0 +1,24 @@
+ COMSERV software bundle (version comserv4linux.010319) is a version of COMSERV,
+ which  is ported to Linux.  A distribution contains binary executable files 
+for Linux (bin/Linux) and Solaris (bin/Solaris).
+
+This version is based on version of COMSERV 000518 (comserv server version 31).
+
+This release is almost compatible with the version COMSERV.000518 (comserv version 31) 
+of the official SOLARIS/OS9 release.   The only newly added
+feature of version 32 is the ability of comserv to set the SEED byte-order bits
+(bit 6 and 7) in I/O and clock flags byte of the fixed MiniSEED header.
+In particular, comserv (v.32) running on big-endian computer (SUN),
+sets bit 7 to ON in I/O and clock flags byte of each MiniSEED header to indicate
+that the header byte order is big-endian. Previous versions of comserv do not modify
+the I/O and clock flags byte of a fixed header. See COMSERV section below for more
+information on setting byte-order bits.
+
+The precompiled Linux comserv program stores data in MiniSEED format in shared
+memory ring buffers according to the following convention: MiniSEED headers are
+stored in little-endian byte order; compressed data are stored in big-endian byte-order.
+
+You can modify Makefile in $(RELEASE)/src/comserv directory and recompile comserv
+to force it to store MiniSEED headers in big-endian byte order.
+In order to do this you have to add the -D_BIG_ENDIAN_HEADER flag to the CFLAG
+line of $(RELEASE)/src/comserv/Makefile.
