@@ -1,0 +1,74 @@
+			Proposed Quanterra Datalog File Format
+			By:	Douglas Neuhauser
+				UC Berkeley Seismographic Station
+				doug@seismo.berkeley.edu
+				510-642-0931
+			Rev:	0
+			Date:	1995/02/15
+
+
+Comserv output:
+
+The Comserv process provided data and related information from Quanterras
+dataloggers to clients in 512-byte SEED packets.  Comserv currently provide
+5 distinct types of packets:
+
+	1.  Data Packets:  512-byte MiniSEED data packets consisting of:
+		48-byte Fixed Data Header Blockette 1000 (data format and
+		blocksize description)	Possible additional blockettes
+		related to the data, such as
+			Blockette 1001 (enhanced timing blockette).
+		Data values, in Steim1, Steim2, ... frames.
+
+	2.  Detection Packets:  512-byte MiniSEED data packets consisting of:
+		48-byte Fixed Data Header
+		Blockette 1000 (data format and blocksize description)
+		Event detection blockette 2xx.
+			
+	3.  Calibration Packets:  512-byte MiniSEED data packets consistin of:
+		48-byte Fixed Data Header
+		Blockette 1000 (data format and blocksize description)
+		Calibration blockette 3xx.
+
+	4.  Timing Packets:  512-byte MiniSEED data packets consisting of:
+		48-byte Fixed Data Header
+		Blockette 1000 (data format and blocksize description)
+		Timing packet 500.
+			
+	5.  LOG Packets:  512-byte MiniSEED data packets consisting of:
+		48-byte Fixed Data Header (data rate = 0, channel = LOG)
+		Blockette 1000 (data format and blocksize description)
+		ASCII console log messages.
+			
+The datalog client is designed to log information from an individual
+Quanterra station to disk files.  Datalog treats each of the type of packets
+as separate streams of information, and logs them into separate files and
+directories.  Each stream of information is logged in a SEED Telemetry
+File with 512-byte blocksize, which has the following format:
+
+	SEED Telemetry Volume Header 8 (512-bytes)
+	0 ... N 512-byte packets of a consistent type (as shown above).
+
+This imples that each Quanterra data channel (eg BHZ) may have the following
+distinct streams of information, and thus distinct directories and files:
+	BHZ.D		BHZ data records.
+	BHZ.E		BHZ event detections.
+	BHZ.C		BHZ calibration info.
+
+The station as a whole will have the following channels:
+	ACE.T		Station timing info.
+	LOG.L		Log information
+
+Datalog requires a unique data directory for each station, and within that
+station data directory it creates a unique directory for each stream of
+information.  The directories are named:
+	channel.type
+where
+	channel		SEED channel name
+	type		type of info:	D = data, E = event, C = calib,
+					T = timing, L = log
+The type string is configurable by the [dlog] config section for the
+station.
+
+The current file for each channel.type information stream is named "active".
+

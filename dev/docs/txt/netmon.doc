@@ -1,0 +1,421 @@
+		NETMON - Quanterra NETwork MONitor program
+	Douglas Neuhauser, UC Berkeley Seismological Laboratory
+		Last Updated:	2000/04/19
+
+Netmon is a program responsible for controlling the startup, shutdown, and
+restart of comserv servers and their dedicated clients.  It is also used to
+manually observe the status of the servers and clients, and to explictly issue
+startup and shutdown requests for the clients and server for specific
+stations.
+
+Netmon has two distinct modes of operation.  In background daemon mode, it
+monitors the status of the server and specified clients for all stations, and
+will perform the automatic startup and restart of programs for these station.
+It will also process explicit station startup and shutdown requests that
+were submitted to it.  This monitoring is expecially necessary if you are
+using blocking clients, since a dead or missing blocking client can affect
+the telemetry of all data from the station.
+
+In interactive mode, netmon will report on the status of a station or all
+stations.  It is also used to submit explicit startup or shutdown request
+to be processed by a netmon daemon.
+
+In normal operation, you will want to start netmon in daemon mode at system
+boot time in order to properly start the appropriate comserv and comserv
+clients for your network.  A sample script S91netmon provides an example (for
+Solaris systems) of a script that can be placed in the /etc/rc3.d directory
+to start the background netmon daemon.
+
+I.  Network Config directives:
+
+Netmon looks for the (new) network configuration file:
+	/etc/network.ini
+
+The network config file contains the following directives, which control the
+operation of netmon (client name NETM), comserv server, and managed clients:
+
+	[netm]
+	logdir=/home/aq01/comserv/logs
+	cmddir=/home/aq01/comserv/cmds
+	poll_time=10
+	max_check_tries=5
+	server_startup_delay=10
+	client_startup_delay=10
+	max_shutdown_wait=30
+	min_notify=60
+	re_notify=240
+	notify_prog=/usr/ucb/mail -s "netmon timeout" doug
+
+LOGDIR is the name of the log directory where netmon places its own log, as
+well as those of the servers and clients that it spawns.  The netmon log
+file will be named NETM.log.  The log files for a station's process will
+be named STATION.server.log and STATION.client.log, where
+	STATION is the upper-case station name
+	server is the string "server"
+	client is the name of the client process (see below).
+
+CMDDIR is the directory where the startup and shutdown requests are placed
+for netmon to process.  The interactive commands:
+	netmon -s station(s)
+	netmon -t station(s)
+create command files in this directory to be processed by the background
+netmon process.
+
+POLL_TIME is the time (in seconds) between the polling of each server.
+
+SERVER_STARTUP_DELAY is the maximum amount of time (in seconds) that netmon
+should allow a server process to startup.  If netmon cannot connect to the
+server within this time period, netmon will attempt to restart the server on
+the assumption that the server died during initialization.  This time also
+allow any pre-existing clients to reconnect to the server so that netmon can
+determine which clients need to be started.  Set this to the MAXIMUM amount
+of time it will take to start and initialize a comserv server process on
+your system.
+
+CLIENT_STARTUP_DELAY is the maximum amount of time (in seconds) that netmon
+shoulw allow a client process to startup.  If the client has not connected
+to the server withing this time perid, netmon will attempt to restart the
+client on the assumption that the client died during initialization.  Set
+this to the MAXIMUM amount of time it will take to start and initialize all
+of the managed client processes for a single station your system.  
+
+MAX_SHUTDOWN_WAIT is the maximum time (in seconds) that netmon allows for
+all of the managed clients of a single station to orderly shutdown before it
+signals the termination of the server process.
+
+MIN_NOTIFY is the default minimum timeout (in seconds) for all stations.  If
+no sucessful packets have been received for MIN_NOTIFY seconds, netmon will
+consider the station "timed out", and issue a timeout notification.  This
+value can be overridden on a per-station basis in the [netm] configuration
+section of a station configuration file.
+
+RE_NOTIFY is the default time interval (in seconds) between successive
+timeout notifications for all stations.  Once the first timeout notification
+is issued, netmon will issue subsequent timeouts every RE_NOTIFY seconds if
+the station remains in a timed-out state.  A value less than or equal to
+zero will disable renotification.  This value can be overridden on a
+per-station basis in the [netm] configuration section of a station
+configuration file.
+
+RES_NOTIFY is a boolean flag indicating whether the notify program should be
+invoked when telemetry resumes for a station after a telemetry timeout.  If
+the value is greater than zero, the NOTIFY_PROG program will be run whenever
+telemtry resumes for a station, i.e. when a good packet has been received
+after a telemetry timeout for a station.  A value of zero will disable
+telemetry resume notification.  This value can be overridden on a
+per-station basis in the [netm] configuration section of a station
+configuration file.
+
+NOTIFY_PROG is the default command used to issue the timeout or resume
+notifications.  The program should expect to receive the timeout or resume
+message on stdin.  If no value is specified for this command, netmon will
+not generate station timeout or resume notification.  This value can be
+overridden on a per-station basis in the [netm] configuration section of a
+station configuration file.
+
+II.  Stations Configuration File:
+
+Netmon will look in the system-wide stations.ini file (normally
+/etc/stations.ini) for a list of possible stations.  The stations.ini file
+contains a section for each station in your network.  Each stations section
+must include a "DIR" directive that points to the directory that contains the
+staionn-specific station.ini file.  In addition, a station section may contain
+one or more optional GROUP directives which adds the station to the specified
+netmon group.
+
+	[BKS]
+	dir=/home/redi/config/etc/BKS
+	desc=Byerly Vault Quanterra, Berkeley
+	source=comlink
+	group1=bdsn
+	group2=bk
+
+III.  Station Config directives:
+
+Netmon looks for a NETM section in the station config file station.ini for
+each station:
+
+	[netm]
+	server=/home/aq01/comserv/bin/server
+	client1=dlog,/home/aq01/comserv/bin/datalog
+	inclient1==nsnf,/data/aqb1/config/bin/nsn2shear -C -c vsat.cfg
+	* State: A=auto-restart S=start-once R=runable N=non-runable I=ignore
+	state=A
+	server_startup_delay=10
+	client_startup_delay=10
+	max_shutdown_wait=30
+	min_notify=60
+	re_notify=240
+	res_notify=1
+	notify_prog=/usr/ucb/mail -s "netmon timeout" doug
+
+It there is no [netm] section in the station config file, the station will
+not be monitored or controlled by netmon.
+
+The SERVER directive specifies the pathname of the comserv server program to
+be run for this station.  This is a required directive in the NETM section.
+
+The MODE directive specifies the run-mode for this station.  Netmon 
+currently supports 5 modes:  
+
+	1.  N (Non-runnable):
+		The comserv server and clients for this station may not be
+		started up by netmon.
+
+	2.  S (Start-once):
+		The comserv server and clients for this station may be
+		started by netmon upon receipt of an explict startup command
+		issued by a netmon request.
+
+	3.  R (Runable):
+		The server and managed clients for this station should be
+		started when the netmon daemon starts in BOOT mode, but the
+		programs should not be restarted if they terminate.
+
+	4.  A (Auto-Restart):	
+		The server and managed clients for this station should be
+		started when the netmon daemon starts in BOOT mode, and the
+		program should be restarted if they terminate.
+
+	5.  I (Ignore)
+		Netmon should ignore this station.  Do not attempt to start,
+		stop, monitor, or report on this station.
+
+For each client that netmon should control, there should be a numbered
+CLIENT or INCLIENT directive which specifies the 4-character client name and
+command string used to start the client program.  The station name will
+automatically be appended to the command string as an argument.  Each CLIENT
+or INCLIENT directive should have a unique number, eg "client1", "client2",
+etc.  
+
+An INCLIENT is a program that registers as a client with comserv in order
+that is may be monitored and controlled by netmon, but in reality it
+performs data processing or filtering of the input datastream before it is
+received by comserv (the nsn2shear is this type of client).  During the
+termination of processes for a station, these clients must be shutdown
+before the comserv link is suspended.
+
+SERVER_STARTUP_DELAY
+CLIENT_STARTUP_DELAY
+MAX_SHUTDOWN_WAIT
+are per-station copies of the global netmon directives.  If these directive
+appear, the override the global values found in the network.ini file.
+
+MIN_NOTIFY is the minimum timeout (in seconds) for this station.  If no
+sucessful packets have been received for MIN_NOTIFY seconds, netmon will
+consider the station "timed out", and issue a timeout notification.  If this
+command is omited, or a value of 0 is specified, the network value of
+MIN_NOTIFY will be used for this station.
+
+RE_NOTIFY is the time interval (in seconds) between successive timeout
+notifications for this station.  Once the first timeout notification is
+issued, netmon will issue subsequent timeouts every RE_NOTIFY seconds if the
+station remains in a timed-out state.  If this command is omited, or a value
+of 0 is specified, the network value of RE_NOTIFY will be used for this
+station.
+
+RES_NOTIFY is a boolean flag indicating whether the notify program should be
+run when telemetry resumes for this station after a telemetry timeout.  If
+the value is greater than zero, the NOTIFY_PROG program will be run whenever
+telemtry resumes for this station, i.e. when a good packet has been received
+after a telemetry timeout for this station.  A value of zero will disable
+telemetry resume notification.  If this command is omited, or a value of
+less than 0 is specified, the network value of RE_NOTIFY will be used for
+this station.
+
+NOTIFY_PROG is the default command used to issue the timeout or telemtry
+resume notifications.  The program should expect to receive the timeout or
+resume message on stdin.  If this command is omited, or a zero-length string
+is specified, the network value of NOTIFY_PROG will be used for this station.
+
+For each managed client configured for a station, netmon will looks for a
+configuration section for that client within the station's station.ini file,
+and looks for the optional PIDFILE directive.  For example, if DLOG is
+specified as a client to be monitored by netmon, netmon will look for the
+following info:
+
+	[dlog]
+	pidfile=/home/aq01/comserv/data/pid/mcc.dlog
+
+The PIDFILE directive specifies the name of a file into which the the client
+will write its process id on startup.  Netmon can use this file as a
+additional check to ensure that the process is running.  It is the
+responsibility of the client to create the specified file on startup.  If
+the client does not create a pidfile, the directive should not be specified.
+
+III.  Operation - Daemon mode:
+	
+When netmon starts in daemon mode, it scans the network.ini config file for
+configuration parameters.  It then scans the stations.ini file to find all
+stations in the network, and then scans each station's station.ini file for
+a [NETM] section with SERVER and CLIENT directives, and PID directives for
+each managed client that netmon will monitor.  If no [NETM] section is
+found, or no [NETM] config directives are found, the station is ignored by
+the netmon.
+
+If the netmon daemon was started with the -b (BOOT) flag, it will initially
+attempt to start all stations that have a run mode of R or A.  Otherwise it
+assumes that the current station status is OK, and will only start station
+in response to explict startup requests, and will restart stations that 
+that have died since netmon's invocation.
+
+To start (or restart) a station, netmon performs the following actions:
+
+1.  Netmon starts the server program by spawning the server program with the
+station name as an argument.
+
+2.  After the server program has been running for SERVER_STARTUP_DELAY
+seconds, netmon queries the server for all currently registered clients.  If
+any of the specified managed clients are not registered, netmon will spawn
+the client programs with the station name as an argument.
+
+Once the stations (server and client processes) are started, it will
+continue to monitor all stations that are running.  If a server or client
+process dies or is killed, netmon will attempt to restart the program(s).
+
+To terminate a station, netmon performs the following actions:
+
+1.  It suspends the comlink for the station in order to prevent additional
+packets from reaching comserv by issuing a CSCM_SUSPEND command to the
+server.
+
+2.  It monitors the number of blocked packets for each managed client.
+When the blocked packet count has reached zero, or when MAX_SHUTDOWN_WAIT
+seconds have expired, it terminates the client process by sending a SIGKILL
+signal to the client process.
+
+3.  When all managed clients have been terminated, or when
+MAX_SHUTDOWN_WAIT seconds have passed since the last client was signalled,
+it issues a CSCM_TERMINATE command to the server to terminate the server.
+
+IV. Operation -  Interactive mode
+
+Netmon is also used to interactively query the status of a particular
+station or the entire network.  If invoked with no arguments, it will
+report on the status of the of the processes for all station (eg the
+entire network).  If one or more station names or groups names are specified, 
+netmon will report on the status of the processes for the specified
+stations and/or groups of stations.
+
+Netmon may also be used to explicitly start or terminate the processes for a
+station. 
+
+1.  If netmon is invoked with the "-s" option, it will queue a request to the
+netmon daemon requesting it to start the processes for the specified
+station(s) if they are not already running and if the run mode is not N
+(Non-runnable).  NOTE:  if no station names or group names are specified with
+the the "-s" option, the processes for ALL eligble stations will be started.
+
+2.  If netmon is invokes with the "-t" option, it will queue a request to the
+netmon daemon requesting it to terminate the processes for the specified
+station(s).  NOTE:  if no station names or group names are specified with the
+the "-t" option, the processes for ALL stations will be terminated.
+
+The current mechanism starting and stopping stations is for the interactive
+command to create a request file in 
+a specified directory.  This mechanism allows the standard filesystem
+permissions to be used to control who can issue netmon startup and terminate
+commands.  It is the responsibility of the background daemon to perform
+the actual process startup and/or termination.  If no background daemon
+is running, the start or terminate request will be queued, but no processes
+will be started or stopped.
+
+IV. Sample usage
+
+bdsn> netmon -h
+netmon [-B] [-D] [-b] [-l] [-V] [-r] [-v] [-h] [-d n] [-s | -t]	
+       [-g group_list] [station_list]
+    where:
+    Daemon options:
+	-D	    Run in "daemon" mode, and monitor the network of stations.
+		    Start all startable stations.
+	-B	    Run in background.
+	-l	    Log output (stdout and stderr) to logfile in logdir.
+	-b	    Boot mode.  Assume no running processes running.
+		    Delete pid files.
+    User options:
+	-s	    Send START request to daemon for the comma-delimited
+		    list of stations.  'ALL' or '*' signifies all stations.
+	-t 	    Send TERMINATE request to daemon for the comma-delimited
+		    list of stations.  'ALL' or '*' signifies all stations.
+	-r	    Send RECONFIGURE request to daemon.
+	-g	    group1,[...,groupN]
+		    A comma-delimited list of one or more groups of stations.
+	-v	    Verbose option
+	-h	    Print brief help message for syntax.
+	-d n	    Set debug flag N.
+		    1 = debug station and client status
+		    2 = debug polling
+		    4 = debug config
+		    128 = debug malloc
+	station_list
+		    List of stations to start, terminate or query status.
+		    List can be multiple tokens or comma-delimted list.
+
+bdsn> netmon
+
+station=BKS2 config_mode=A target_mode=A present_mode=U
+    server=comlink pid=4963 status=Good
+    client=DLOG pid=4455 status=Client Dead
+
+bdsn> netmon -v
+
+station=BKS2 config_mode=A target_mode=A present_mode=U
+    server=comlink pid=4963 status=Good
+        config_dir=/data/aq01/comserv/etc/BKS2
+        program=/data/aq01/comserv/bin/server
+        seg=2000 nclients=1
+        Ultra=1, Link Recv=1, Ultra Recv=1, Suspended=0, Data Format=QSL
+        Total Packets=31928, Sync Packets=10274, Sequence Errors=6
+        Checksum Errors=0, IO Errors=0, Last IO Error=0
+        Blocked Packets=3, Seed Format=V2.3A, Seconds in Operation=61168
+        Station Description=Berkeley Test Station, Byerly Vault
+    client=DLOG pid=4455 status=Client Dead
+        pidfile=/data/aq01/comserv/pid/bks2.dlog
+        program=/data/aq01/comserv/bin/datalog -v1
+
+Background daemon:
+To start the background daemon, use the command:
+	netmon -D -B -l -b &		- If no stations are running.
+	netmon -D -B -l &		- If restarting background netmon
+					and stations are currently running.
+There is a startup script:
+	run_netmon
+or	run_netmon -b
+that will accomplish the same thing.
+
+V.  Timeout notification
+
+If netmon detects that a station has not received a valid packet in
+MIN_NOTIFY seconds, it consideres the station to be in a timeout state, and
+will use the NOTIFY_PROGRAM to send a timeout notification.  The timeout
+notification message will be send to stdin of the NOTIFY_PROGRAM.  Netmon
+considers the station to remain in a timeout state until a packet has been
+successfully received.  Once in the timeout state, netmon will continue to
+send timeout notifications ever RE_NOTIFY seconds until the station reverts
+to an active state, or is terminated.
+
+VI.  Setuid
+
+Netmon communicates with the station comserv programs through shared memory
+and kill() signal notification.  It is recommended that you install netmon as
+a setuid program for the userid (NOT root) that you want to be running the
+comserv clients and programs, and that you start the background netmon process
+under this userid.  The station comserv and comserv client processes started
+by the background daemon will be running under the same userid.  The
+interactive netmon program will be able to efficiently communicate with the
+comserv processes to acquire the comserv and client status information since
+its effective uid will be the same as the comserv programs' uid.
+
+If netmon is not installed as a setuid program, the interactive status queries
+of your stations will take much longer since the interactive netmon program
+cannot efficiently communicate with the running comserv programs.
+
+VII.  Future enhancements:
+
+1.  Reread config files (stations.ini, network.ini individual station.ini
+confi files) on user signal, periodically, when station is started, or when
+config file(s) change.  Currently netmon re-reads the station config file
+every time a station is explicitly stopped and started.
+
+2.  Ability to monitor and restart multi-server clients.

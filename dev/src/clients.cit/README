@@ -1,0 +1,7 @@
+clients.cit
+
+mserv - This is a multicast version of comserv. It records miniseed files
+	from a multicast socket.
+
+cs2mcast - This is a comserv client that multicasts data out onto the network
+	for mserv to receive.
