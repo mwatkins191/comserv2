@@ -1,0 +1,71 @@
+########################################################################
+#
+# Makefile     : Comserv Clients
+#
+# Author       : Patrick Small
+#
+# Last Revised : 2004/07/12
+#
+########################################################################
+
+########################################################################
+# Solaris 2 definitions
+#
+CC	 = gcc
+CFLAGS	 = -I$(INCL) -DSOLARIS2 $(DEBUG)
+DEBUG	 =
+
+INCL	 = ../include
+LDFLAGS	 = $(DEBUG)
+CSUDIR	 = ../util
+CSULIB	 = $(CSUDIR)/libutil.a
+LDLIBS	 = -lnsl -lsocket -lposix4 
+
+########################################################################
+
+ALL =		config msgmon dpda dataread
+
+all:		$(ALL)
+
+config:		config.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o config config.o $(CSULIB) $(LDLIBS)
+
+msgmon:		msgmon.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o msgmon msgmon.o $(CSULIB) $(LDLIBS)
+
+dpda:		dpda.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o dpda dpda.o $(CSULIB) $(LDLIBS)
+
+dataread:	dataread.o $(CSULIB)
+		$(CC) $(LDFLAGS) -o dataread dataread.o $(CSULIB) $(LDLIBS)
+
+config.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h config.c
+		$(CC) -c $(CFLAGS) config.c
+
+msgmon.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h msgmon.c
+		$(CC) -c $(CFLAGS) msgmon.c
+
+dpda.o:		$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/cfgutil.h $(INCL)/stuff.h dpda.c
+		$(CC) -c $(CFLAGS) dpda.c
+
+dataread.o:	$(INCL)/dpstruc.h $(INCL)/service.h \
+		$(INCL)/seedstrc.h $(INCL)/stuff.h $(INCL)/timeutil.h dataread.c
+		$(CC) -c $(CFLAGS) dataread.c
+
+$(CSULIB):	FORCE
+	(cd $(CSUDIR); make -f Makefile.solaris_gcc)
+
+FORCE:
+
+clean:
+		-rm *.o $(ALL)
+
+veryclean:
+		-rm *.o $(ALL)
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
+

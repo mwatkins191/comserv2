@@ -1,0 +1,79 @@
+#	$Id: Makefile,v 1.1.1.1 2003/02/01 18:55:07 lombard Exp $
+
+#########################################################################
+# Set to the location of software on your system
+QDIR	= /usr/local/src/quanterra/qlib2
+CSDIR	= ..
+CSINCL	= $(CSDIR)/include
+CSUDIR	= $(CSDIR)/util
+CSULIB	= $(CSUDIR)/libutil.a
+LD_RUN_PATH = /opt/SUNWspro:/misc/opt/SUNWspro:/usr/lib
+
+########################################################################
+# Solaris 2 definitions
+#:: CC	= cc
+#:: CFLAGS	= -g -I$(CSINCL) -I$(QDIR) -DSOLARIS2 -g
+#:: CFLAGS	= -g -I$(CSINCL) -DSOLARIS2 -g
+#LIBS	= $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#:: LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lm -lnsl -lsocket -ldl
+LIBS	= -R$(LD_RUN_PATH) -lposix4 -lm -lnsl -lsocket -ldl
+
+########################################################################
+# Linux definitions
+CC	= gcc
+CFLAGS	= -g -I$(CSINCL) -g -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32
+#LIBS	= $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
+#:: LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lm -lnsl -lsocket -ldl
+LIBS	= -R$(LD_RUN_PATH) -lposix4 -lm -lnsl -lsocket -ldl
+
+########################################################################
+# SunOS definitions
+#CC	= acc
+#CFLAGS	= -g -I$(CSINCL) -I$(QDIR)
+#LIBS	= $(QDIR)/libqlib2.a -lm
+
+########################################################################
+
+P6 = cstrigserv
+P7 = cstrigtest
+
+SRCS6 	= $(P6).c
+OBJS6	= $(SRCS6:.c=.o)
+
+SRCS7 	= $(P7).c
+OBJS7	= $(SRCS7:.c=.o)
+
+ALL	= $(P6) $(P7)
+
+all:	$(ALL)
+
+$(P6):	$(OBJS6) $(CSULIB)
+	$(CC) $(CFLAGS) -o $@ $(OBJS6) $(CSULIB) $(LIBS)
+
+$(P7):	$(OBJS7) $(CSULIB)
+	$(CC) $(CFLAGS) -o $@ $(OBJS7) $(CSULIB) $(LIBS)
+
+$(P6).o:	$(P6).c \
+		$(CSINCL)/dpstruc.h $(CSINCL)/stuff.h \
+		$(CSINCL)/service.h $(CSINCL)/cfgutil.h 
+		$(CC) $(CFLAGS) -c $<
+
+cstrigger.o:	cstrigger.c 
+		$(CC) $(CFLAGS) -c $<
+
+$(CSULIB):	FORCE
+#	(cd $(CSUDIR); make)
+
+FORCE:
+
+clean:
+		-rm *.o
+
+veryclean:	clean
+		-rm *.o $(ALL)
+
+install:	$(ALL)
+		cp -p $(ALL) $(BINDIR)
+

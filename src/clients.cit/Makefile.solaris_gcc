@@ -1,0 +1,25 @@
+MAKEFILE = Makefile.solaris_gcc
+
+ALL	= mserv cs2mcast csstat
+
+all: 	
+	for dir in $(ALL) ; do \
+		echo build for $$dir ... ; \
+		(cd $$dir; make -f $(MAKEFILE) all); \
+	done
+
+clean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f $(MAKEFILE) clean); \
+	done
+
+
+veryclean:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f $(MAKEFILE) veryclean); \
+	done
+
+install:
+	for dir in $(ALL) ; do \
+		(cd $$dir; make -f $(MAKEFILE) BINDIR=../$(BINDIR) install); \
+	done
