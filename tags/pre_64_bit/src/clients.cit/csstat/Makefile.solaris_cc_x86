@@ -1,0 +1,57 @@
+########################################################################
+#
+# Makefile     : csstat
+#
+# Author       : Paul Friberg
+#
+# Last Revised : 2004/11/01
+#
+########################################################################
+
+########################################################################
+# Solaris 2 definitions
+#
+CXX	 = CC
+CC	 = cc
+CXXFLAGS =  -D_SPARC -D_SOLARIS -features=no%altspell  -I$(INCL) -DENDIAN_LITTLE
+CFLAGS	 = -DENDIAN_LITTLE
+LD	 = $(CXX)
+
+INCL	 = ../../include
+CSLIB	 = ../../util
+LDLIBS	 = -L$(CSLIB) -lsocket -lnsl -lutil -lposix4
+########################################################################
+
+files = chan_stat.C csstat.C cs_site_map.C
+
+headers = RetCodes.h cdpstruc.h cpascal.h un_passcal.h cs_site_map.h chan_stat.h
+
+csstat = chan_stat.o csstat.o
+
+sources = $(headers) $(files)
+objects = $(files:.C=.o)
+
+program = csstat
+
+#implicit rules for converting C and c files to object files
+#
+.C.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+ALL = $(program)
+
+$(program):$(objects) $(files)
+	$(LD) $(objects) -o $@ $(LDLIBS) 
+
+
+all: $(ALL)
+
+
+clean:
+	-rm -rf *.o *~ core $(program)  SunWS_cache
+
+veryclean:
+	-rm -rf *.o *~ core $(program)   SunWS_cache
+
+install:
+	cp -p $(program) ${BINDIR}

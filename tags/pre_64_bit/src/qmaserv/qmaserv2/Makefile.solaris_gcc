@@ -1,0 +1,51 @@
+# Code in this directory uses global.h (../lib33/platform.h) to define system and endian attributes.
+
+CSERV = ../cserv
+LIB330 = ../lib330
+
+CXX	 = g++
+CLIBDIR	 = /usr/local/lib
+DEBUG	 = -g 
+COPT	 = 
+
+# lib330 and libutil both define some of the same functions.  We'll rely on lib330's implementations (newer)
+USE_FIRST_DEFINED = -z muldefs
+LDLIBS	 = $(USE_FIRST_DEFINED) -L$(LIB330) -L../../util  -lnsl -lsocket -l330 -lutil -lposix4 -lpthread -R$(CLIBDIR)
+
+CXXFLAGS = $(INCL) $(DEBUG) $(COPT)
+LD	 = $(CXX)
+INCL	 = -I../cserv -I. -I$(LIB330)
+LDFLAGS	 = $(DEBUG) $(LDLIBS)
+
+
+files = qmaserv.C Logger.C ConfigVO.C Verbose.C ReadConfig.C portingtools.C lib330Interface.C PacketQueue.C
+
+headers = qmaserv.h Logger.h ConfigVO.h Verbose.h QmaTypes.h ReadConfig.h portingtools.h global.h PacketQueue.h\
+          lib330Interface.h 
+
+
+cserv = $(CSERV)/buffers.o $(CSERV)/clink.o $(CSERV)/cmands.o \
+        $(CSERV)/cscfg.o $(CSERV)/cserv.o $(CSERV)/qmacfg.o
+
+
+sources = $(headers) $(files)
+objects = $(files:.C=.o)
+
+program =  qmaserv2
+
+.C.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+$(program):$(objects) $(files)
+	$(LD) $(objects) $(cserv) -o $@ $(LDFLAGS)
+
+all:		$(program)
+
+clean:
+		-rm *.o $(program)
+
+veryclean:	clean
+		-rm -f *~ $(program) core
+
+install:	$(program)
+	cp -p $(program)  $(BINDIR)
