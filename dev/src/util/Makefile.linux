@@ -7,7 +7,7 @@
 #           Putting -DLINUX flag as a default
 CC	= gcc
 INCL	= ../include
-CFLAGS	= -m32 -I$(INCL)  -DLINUX -DENDIAN_LITTLE
+CFLAGS	= -m$(NUMBITS) -I$(INCL)  -DLINUX -DENDIAN_LITTLE
 RANLIB = ranlib 
 ########################################################################
 

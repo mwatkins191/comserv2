@@ -16,7 +16,7 @@ LD	 = $(CC)
 
 COMSERV	 = ../../comserv
 INCL	 = ../../include
-CFLAGS	 = -I$(INCL) -I$(COMSERV) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32 -g
+CFLAGS	 = -I$(INCL) -I$(COMSERV) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m$(NUMBITS) -g
 CSUDIR	 = ../../util
 LDLIBS	 = -L$(CSUDIR) -lutil
 

@@ -308,14 +308,14 @@ begin
     begin
       pdt1 = pop->tospt ;
       pdt2 = pop->nospt ;
-      if ((uninteger)pdt1 < EVALUATION_STACK_DEPTH)
+      if ((pntrint)pdt1 < EVALUATION_STACK_DEPTH)
         then
-          b1 = temps[(uninteger)pdt1] ;
+          b1 = temps[(pntrint)pdt1] ;
         else
           b1 = *pdt1 ;
-      if ((uninteger)pdt2 < EVALUATION_STACK_DEPTH)
+      if ((pntrint)pdt2 < EVALUATION_STACK_DEPTH)
         then
-          b2 = temps[(uninteger)pdt2] ;
+          b2 = temps[(pntrint)pdt2] ;
         else
           b2 = *pdt2 ;
       switch (pop->op) begin

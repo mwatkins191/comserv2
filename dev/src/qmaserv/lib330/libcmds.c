@@ -56,6 +56,7 @@ Edit History:
    22 2010-05-07 rdr If opt_connwait is zero then use a value of ten minutes.
    23 2010-05-17 rdr Add sending Q335 Aware flag in C1_RQFGLS.
    24 2013-08-18 rdr Change reboot to lib330_reboot to avoid conflict with some nonsense.
+   25 2016-01-26 rdr For CERR_INVREG just keep trying to register.
 */
 #ifndef libcmds_h
 #include "libcmds.h"
@@ -292,7 +293,7 @@ begin
                 unlock (q330) ;
                 break ;
             end
-        lth = (longint)p - (longint)pref ; /* length of data */
+        lth = (integer)((pntrint)p - (pntrint)pref) ; /* length of data */
         p = addr(pc->cmsgout.qdp) ;
         plth = p ;
         incn(plth, 6) ; /* point at length */
@@ -360,7 +361,7 @@ begin
         end
         msglth = QDP_HDR_LTH + lth ;
         p = addr(pc->cmsgout.qdp) ;
-        storelongint (addr(p), gcrccalc (addr(q330->crc_table), (pointer)((integer)p + 4), msglth - 4)) ;
+        storelongint (addr(p), gcrccalc (addr(q330->crc_table), (pointer)((pntrint)p + 4), msglth - 4)) ;
         if (q330->cur_verbosity and VERB_PACKET)
           then
             begin /* log the message sent */
@@ -384,7 +385,7 @@ begin
               if (q330->tcp)
                 then
                   begin
-                    p = (pointer)((integer)addr(pc->cmsgout.qdp) - 4) ;
+                    p = (pointer)((pntrint)addr(pc->cmsgout.qdp) - 4) ;
                     pref = p ; /* save start of tcp packet */
                     storeword (addr(p), 0) ; /* control port */
                     storeword (addr(p), msglth) ; /* qdp length */
@@ -808,9 +809,11 @@ begin
                     q330->reg_wait_timer = NR_TIME ;
                     break ;
                   case CERR_INVREG :
-                    lib_change_state (q330, LIBSTATE_IDLE, LIBERR_INVREG) ;
-                    libmsgadd(q330, LIBMSG_INVREG, "") ;
+                    lib_change_state (q330, LIBSTATE_WAIT, LIBERR_INVREG) ;
+                    sprintf(s, "%d seconds", q330->piu_retry) ;
+                    libmsgadd(q330, LIBMSG_INVREG, s) ;
                     q330->registered = FALSE ;
+                    q330->reg_wait_timer = q330->piu_retry ;
                     break ;
                   case CERR_PAR :
                     libmsgadd(q330, LIBMSG_PARERR, "") ;

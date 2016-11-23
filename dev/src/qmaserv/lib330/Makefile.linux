@@ -23,7 +23,7 @@ RANLIB	= ranlib
 .PRECIOUS:	$(TARGET)
 
 CC	= gcc
-CFLAGS  = -m32 -Dlinux -g
+CFLAGS  = -m$(NUMBITS) -Dlinux -g
 COPT	= -g
 
 

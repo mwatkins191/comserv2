@@ -2,7 +2,7 @@
 # Set to the location of software on your system
 CSDIR	= ..
 QDIR	= $(CSDIR)/qlib2
-QLDIR	= $(QDIR)/lib
+QLDIR	= $(QDIR)/$(QLIB2_LIB)
 CSINCL	= $(CSDIR)/include
 CSUDIR	= $(CSDIR)/util
 CSULIB	= $(CSUDIR)/libutil.a
@@ -11,7 +11,7 @@ LD_RUN_PATH =
 ########################################################################
 # LINUX definitions
 CC	=  gcc  
-CFLAGS	=  -m32 -I$(CSINCL) -I$(QDIR) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER
+CFLAGS	=  -m$(NUMBITS) -I$(CSINCL) -I$(QDIR) -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER
 LIBS	=  $(QLDIR)/libqlib2.a  -lm -lnsl  -ldl
 ########################################################################
 # Solaris 2 definitions

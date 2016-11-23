@@ -9,6 +9,14 @@
 #	clean
 #	install
 
+# export NUMBITS = 32
+export NUMBITS = 64
+ifeq ($(NUMBITS), 64)
+export QLIB2_LIB = lib64
+else
+export QLIB2_LIB = lib
+endif
+
 MAKEFILE = Makefile.linux
 
 # BINDIR defined with respect to the subdirectories.
@@ -45,7 +53,10 @@ install:
 	for dir in $(ALLPROGS) ; do \
 		(cd $$dir; make -f $(MAKEFILE) install BINDIR=$(BINDIR) );  \
 	done
-	for dir in $(ALLLIBS) util ; do \
-		(cd $$dir; cp -p *.a lib/*.a $(LIBDIR)); \
+	for dir in qlib2 ; do \
+		(cd $$dir; cp -p $(QLIB2_LIB)/*.a $(LIBDIR)); \
+	done
+	for dir in util ; do \
+		(cd $$dir; cp -p *.a $(LIBDIR)); \
 	done
 

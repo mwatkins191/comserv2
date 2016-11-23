@@ -22,7 +22,7 @@ LIBS	= -R$(LD_RUN_PATH) -lposix4 -lm -lnsl -lsocket -ldl
 ########################################################################
 # Linux definitions
 CC	= gcc
-CFLAGS	= -g -I$(CSINCL) -g -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m32
+CFLAGS	= -g -I$(CSINCL) -g -DLINUX -DENDIAN_LITTLE -D_BIG_ENDIAN_HEADER -m$(NUMBITS)
 #LIBS	= $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
 #LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lsunmath -lm -lnsl -lsocket -ldl
 #:: LIBS	= -R$(LD_RUN_PATH) $(QDIR)/libqlib2.a -lposix4 -lm -lnsl -lsocket -ldl

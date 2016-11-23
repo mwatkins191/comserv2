@@ -60,7 +60,11 @@ CFLAGS_SITE = -Wall
 CFLAGS	= $(CFLAGS_SITE) -Dfortran_suffix -Dqlib2_fortran 
 
 # 5.  Select default target (all32, all64, or both)
+ifeq ($(NUMBITS), 64)
+all:	all64
+else
 all:	all32
+endif
 
 # End Configuration Section
 
@@ -164,7 +168,11 @@ lib:
 	mkdir -p lib
 lib64:
 	mkdir -p lib64
+ifeq ($(NUMBITS), 64)
+install:	install64
+else
 install:	installall
+endif
 
 installall:	install_hdr install_leapseconds install_man install_libs
 
