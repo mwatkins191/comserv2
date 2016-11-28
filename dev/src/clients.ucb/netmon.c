@@ -1993,12 +1993,15 @@ int timeout_notify(char *station, char *notify_prog, double timeout_started,
     if ((tmpfile=tempnam(P_tmpdir,"netm")) != NULL) {
 	if ((fp=fopen(tmpfile,"w"))!= NULL) {
 	    char cmd[2048];
+            pchar last_good_text = "Never";
+            if (last_good > 0) {
+                last_good_text = localtime_string(last_good);
+            }
 	    fprintf (fp, "************************************************\n");
 	    fprintf (fp, "Report from %s on host %s\n", cmdname, hostname);
 	    fprintf (fp, "Timeout: station %s for %d hours %d minutes\n",
 		     station, hours, minutes);
-	    fprintf (fp, "Last good packet = %s\n", 
-		     (last_good > 0) ? (char *)localtime_string(last_good) : "Never");
+	    fprintf (fp, "Last good packet = %s\n", last_good_text);
 	    fprintf (fp, "Current time = %s\n", localtime_string(now));
 	    fprintf (fp, "************************************************\n");
 	    fclose(fp);
@@ -2035,12 +2038,15 @@ int resume_notify(char *station, char *notify_prog, double timeout_started,
     if ((tmpfile=tempnam(P_tmpdir,"netm")) != NULL) {
 	if ((fp=fopen(tmpfile,"w"))!= NULL) {
 	    char cmd[2048];
+            pchar timeout_started_text = "Startup";
+            if (timeout_started > 0) {
+                timeout_started_text = localtime_string(timeout_started);
+            }
 	    fprintf (fp, "************************************************\n");
 	    fprintf (fp, "Report from %s on host %s\n", cmdname, hostname);
 	    fprintf (fp, "Telemetry resumes: station %s after %d hours %d minutes\n",
 		     station, hours, minutes);
-	    fprintf (fp, "Timeout started = %s\n", 
-		     (timeout_started > 0) ? (char *)localtime_string(timeout_started) : "Startup");
+	    fprintf (fp, "Timeout started = %s\n", timeout_started_text);
 	    fprintf (fp, "Current time = %s\n", localtime_string(now));
 	    fprintf (fp, "************************************************\n");
 	    fclose(fp);

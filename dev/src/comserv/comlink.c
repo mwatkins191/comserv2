@@ -1634,7 +1634,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                       break ;
                                     }
                                 pdownload = (pvoid) shmat (pdr->dpshmid, NULL, 0) ;
-                                if ((int) pdownload == ERROR)
+                                if ((long) pdownload == ERROR)
                                     {
                                       pcom->completion_status = CSCR_PRIVATE ;
                                       do_abort () ;
@@ -1934,7 +1934,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
 	
       if (udplink)
           {
-            numread = recv(path, dest, (int) destend - (int) dest, 0) ;
+            numread = recv(path, dest, destend - dest, 0) ;
             if (numread > 0)
                 {
                   term = (pchar) ((long) dest + numread) ;
