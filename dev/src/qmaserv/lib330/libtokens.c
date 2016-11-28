@@ -340,7 +340,7 @@ begin
 #ifndef OMIT_SEED
         if (b != 0xFF)
           then
-            cur_lcq->ctrl = (pointer)(0xFFFFFF00 or b) ; /* have to resolve these later */
+            cur_lcq->ctrl = (pcontrol_detector)((pntrint)0xFFFFFF00 or (pntrint)b) ; /* have to resolve these later */
 #endif
       end
   if (cur_lcq->lcq_opt and LO_DEC)

@@ -57,7 +57,7 @@ typedef struct {
 typedef struct { /* "C" doesn't allow nested procedures, create structure to simulate */
   ret result, nextoke ;
   pdetector_operation curpt ;
-  integer tempcnt ;
+  pntrint tempcnt ;
   pcontrol_detector pcs ;
   pdop pop ;
   pq330 q330 ;
@@ -145,7 +145,7 @@ begin
             switch (*unop) begin
               case DEO_NOT :
                 stackdetop (pexp, uno->ret_dx, NIL, DEO_NOT) ;
-                uno->ret_dx = (pointer)pexp->tempcnt ;
+                uno->ret_dx = (pboolean)pexp->tempcnt ;
                 break ;
             end
       end
@@ -211,7 +211,7 @@ begin
                 then
                   begin
                     stackdetop (pexp, ter->ret_dx, nfac.ret_dx, DEO_AND) ;
-                    ter->ret_dx = (pointer)pexp->tempcnt ;
+                    ter->ret_dx = (pboolean)pexp->tempcnt ;
                   end
                 else
                   begin
@@ -224,7 +224,7 @@ begin
                 then
                   begin
                     stackdetop (pexp, ter->ret_dx, nfac.ret_dx, DEO_EOR) ;
-                    ter->ret_dx = (pointer)pexp->tempcnt ;
+                    ter->ret_dx = (pboolean)pexp->tempcnt ;
                   end
                 else
                   begin
@@ -255,7 +255,7 @@ begin
             then
               begin
                 stackdetop (pexp, expr->ret_dx, nter.ret_dx, DEO_OR) ;
-                expr->ret_dx = (pointer)pexp->tempcnt ;
+                expr->ret_dx = (pboolean)pexp->tempcnt ;
               end
         end /* while */
 end

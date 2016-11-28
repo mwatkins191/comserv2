@@ -147,7 +147,7 @@ begin
 end
 
 #ifndef OMIT_NETWORK
-static longword baler_socket (pq330 q330, integer sockpath, enum tbaler_socket socktype)
+static longword baler_socket (pq330 q330, pntrint sockpath, enum tbaler_socket socktype)
 begin
 
   if (q330->par_create.call_baler)
@@ -157,7 +157,7 @@ begin
         q330->baler_call.baler_type = BT_SOCKET ;
         memcpy(addr(q330->baler_call.station_name), addr(q330->station_ident), sizeof(string9)) ;
         q330->baler_call.info = socktype ;
-        q330->baler_call.info2 = (pointer) sockpath ;
+        q330->baler_call.info2 = (void *) sockpath ;
         q330->baler_call.response = 0 ;
         q330->par_create.call_baler (addr(q330->baler_call)) ;
         return q330->baler_call.response ;
