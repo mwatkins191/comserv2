@@ -9,11 +9,10 @@
 #	clean
 #	install
 
-# export NUMBITS = 32
-export NUMBITS = 64
 ifeq ($(NUMBITS), 64)
 export QLIB2_LIB = lib64
 else
+export NUMBITS = 32
 export QLIB2_LIB = lib
 endif
 
