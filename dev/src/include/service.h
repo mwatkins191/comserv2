@@ -140,20 +140,20 @@ Edit History:
 /* Service queue structure */
 typedef struct
   {
-    int clientseg ;
+    int32_t clientseg ;
     complong clientname ;
   } tsvc ;
  
 typedef struct
   {
     char init ;                /* Is "I" if structure initialized */
-    int server_pid ;           /* PID of server */
-    int server_semid ;         /* Id of access semaphore */
-    int server_uid ;           /* UID of server */
-    long client_wait ;         /* Number of microseconds client should wait for service */
-    long privusec ;            /* Microseconds per wait for privileged users */
-    long nonusec ;             /* Microseconds per wait for non-privileged users */
-    long next_data ;           /* Next data packet number */
+    int32_t server_pid ;       /* PID of server */
+    int32_t server_semid ;     /* Id of access semaphore */
+    int32_t server_uid ;       /* UID of server */
+    int32_t client_wait ;      /* Number of microseconds client should wait for service */
+    int32_t privusec ;         /* Microseconds per wait for privileged users */
+    int32_t nonusec ;          /* Microseconds per wait for non-privileged users */
+    int32_t next_data ;        /* Next data packet number */
     double servcode ;          /* Unique server invocation code */
     tsvc svcreqs[MAXCLIENTS] ; /* Service queue */
   } tserver_struc ;
@@ -162,8 +162,8 @@ typedef tserver_struc *pserver_struc ;
 
 typedef struct
   {
-    short first ;   /* first selector */
-    short last ;    /* last selector */
+    int16_t first ;   /* first selector */
+    int16_t last ;    /* last selector */
   } selrange ;
 
 /* 
@@ -173,29 +173,29 @@ typedef struct
 typedef struct
   {
     complong name ;           /* station name */
-    int seg_key ;             /* station segment key */
-    short command ;           /* Command to perform for this call */
+    int32_t seg_key ;         /* station segment key */
+    int16_t command ;         /* Command to perform for this call */
     boolean blocking ;        /* Client is blocking */
     byte status ;             /* station status */
-    long next_data ;          /* Next data packet I want */
+    int32_t next_data ;       /* Next data packet I want */
     double last_attempt ;     /* time at last attempt to talk to server */ 
     double last_good ;        /* time of last good access to server */
     double servcode ;         /* Server reference code for sequence validity */
     pserver_struc base ;      /* address of server's shared memory segment in my address space */
-    long cominoffset ;        /* Offset to command input buffer */
-    long comoutoffset ;       /* Offset to command output buffer */
-    long comoutsize ;         /* Size of command output buffer */
-    long dbufoffset ;         /* Offset to start of data buffers */
-    long dbufsize ;           /* Size of user data to be moved */
-    short maxdbuf ;           /* Maximum number of data buffers that can be filled */
-    short reqdbuf ;           /* Number of data packets requested in this call */
-    short valdbuf ;           /* Number of data packets valid after call */
-    short seqdbuf ;           /* Sequence control for data request */
+    int32_t cominoffset ;     /* Offset to command input buffer */
+    int32_t comoutoffset ;    /* Offset to command output buffer */
+    int32_t comoutsize ;      /* Size of command output buffer */
+    int32_t dbufoffset ;      /* Offset to start of data buffers */
+    int32_t dbufsize ;        /* Size of user data to be moved */
+    int16_t maxdbuf ;         /* Maximum number of data buffers that can be filled */
+    int16_t reqdbuf ;         /* Number of data packets requested in this call */
+    int16_t valdbuf ;         /* Number of data packets valid after call */
+    int16_t seqdbuf ;         /* Sequence control for data request */
     double startdbuf ;        /* Earliest time for packets */
-    long seloffset ;          /* Offset to start of selector array */
-    short maxsel ;            /* Number of selectors */
+    int32_t seloffset ;       /* Offset to start of selector array */
+    int16_t maxsel ;          /* Number of selectors */
     selrange sels[CHAN+1] ;   /* Selector ranges for each type of data and channel request */
-    short datamask ;          /* Data/blockette request command bitmask */
+    int16_t datamask ;        /* Data/blockette request command bitmask */
 /* 
    Command input buffer, command output buffer, data buffers, blockette buffers, and
    selector array follows.
@@ -211,17 +211,17 @@ typedef tclient_station *pclient_station ;
 */
 typedef struct
   {
-    complong myname ;           /* Client's Name */
-    int client_pid ;            /* Client's PID */
-    int client_shm ;            /* Client's shared memory */
-    int client_uid ;            /* Client's UID */
-    boolean done ;              /* Service has been performed */
+    complong myname ;              /* Client's Name */
+    int32_t client_pid ;           /* Client's PID */
+    int32_t client_shm ;           /* Client's shared memory */
+    int32_t client_uid ;           /* Client's UID */
+    boolean done ;                 /* Service has been performed */
     byte spare ;
-    short error ;               /* Error code for service */
-    short maxstation ;          /* Number of stations this client works with */
-    short curstation ;          /* Current station */
-    long offsets[MAXSTATIONS] ; /* Offsets from start of this structure to start
-                                   of the tclient_station structures for each station */
+    int16_t error ;                /* Error code for service */
+    int16_t maxstation ;           /* Number of stations this client works with */
+    int16_t curstation ;           /* Current station */
+    int32_t offsets[MAXSTATIONS] ; /* Offsets from start of this structure to start
+                                      of the tclient_station structures for each station */
   } tclient_struc ;
 
 typedef tclient_struc *pclient_struc ;
@@ -233,11 +233,11 @@ typedef tclient_struc *pclient_struc ;
 typedef struct
   {
     complong stationname ;    /* Station's name */
-    long comoutsize ;         /* Comoutbuf size */
-    short selectors ;         /* Number of selectors wanted */
-    short mask ;              /* Data request mask */
+    int32_t comoutsize ;      /* Comoutbuf size */
+    int16_t selectors ;       /* Number of selectors wanted */
+    int16_t mask ;            /* Data request mask */
     boolean blocking ;        /* Blocking connection */
-    int segkey ;              /* Segment key for this station */
+    int32_t segkey ;          /* Segment key for this station */
     char directory[120] ;     /* Directory for station */
   } tstation_entry ;
   
@@ -245,8 +245,8 @@ typedef struct
   {
     complong myname ;                           /* Client's name */
     boolean shared ;                            /* TRUE if comoutbuffer is shared among all stations */
-    short station_count ;                       /* Number of stations in list */
-    short data_buffers ;                        /* Number of data buffers to allocate */
+    int16_t station_count ;                     /* Number of stations in list */
+    int16_t data_buffers ;                      /* Number of data buffers to allocate */
     tstation_entry station_list[MAXSTATIONS] ;  /* Array of station specific information */
   } tstations_struc ;
   

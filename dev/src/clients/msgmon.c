@@ -41,6 +41,7 @@ Edit History:
 #include "os9stuff.h"
 #endif
 
+#define BUF_SIZE 200
 char name[5] = "MSGM" ;
 char sname[5] = "RAND" ;
 tstations_struc stations ;
@@ -68,7 +69,7 @@ static int verbosity ; /* defaults to zero? */
       pchar pc1, pc2 ;
       double ctime ;
       int sel ;
-      char s1[200] ;
+      char s1[BUF_SIZE] ;
 
 /* Allow override of station name on command line */
       if (argc >= 2)
@@ -96,7 +97,7 @@ static int verbosity ; /* defaults to zero? */
 
 /* Get startup options */
       printf ("Startup option (0 = First, 1 = Last, 2 = At Time) : ") ;
-      gets (s1) ;
+      gets_buf (s1, BUF_SIZE) ;
       sscanf (s1, "%i", &sel) ;
       switch (sel)
         {
@@ -114,7 +115,7 @@ static int verbosity ; /* defaults to zero? */
             {
               ctime = dtime () ;
               printf ("Number of seconds previous to current time to start : ") ;
-              gets(s1) ;
+              gets_buf(s1, BUF_SIZE) ;
               sscanf (s1, "%i", &sel) ;
               if (sel < 0)
                   sel = 0 ;

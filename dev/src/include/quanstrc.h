@@ -65,32 +65,32 @@ typedef struct
 /* Quanterra data record header */
 typedef struct
   {
-    long header_flag ;                  /* flag word for header frame */
-    byte frame_type ;                   /* standard frame offset for frame type */
-    byte component ;                    /* not valid in QSL */
-    byte stream ;                       /* not valid in QSL */
-    byte soh ;                          /* state-of-health bits */
-    complong station ;                  /* 4 byte station name */
-    short millisec ;                    /* time mark millisec binary value */
-    short time_mark ;                   /* sample number of time tag, usually 1 */
-    long samp_1 ;                       /* 32-bit first sample in record */
-    short clock_corr ;                  /* last clock correction offset in milliseconds */
-    unsigned short number_of_samples ;  /* number of samples in record */
-    signed char rate ;                  /* samp rate: + = samp/sec; - = sec/samp */
+    int32_t header_flag ;                 /* flag word for header frame */
+    byte frame_type ;                     /* standard frame offset for frame type */
+    byte component ;                      /* not valid in QSL */
+    byte stream ;                         /* not valid in QSL */
+    byte soh ;                            /* state-of-health bits */
+    complong station ;                    /* 4 byte station name */
+    int16_t millisec ;                    /* time mark millisec binary value */
+    int16_t time_mark ;                   /* sample number of time tag, usually 1 */
+    int32_t samp_1 ;                      /* 32-bit first sample in record */
+    int16_t clock_corr ;                  /* last clock correction offset in milliseconds */
+    uint16_t number_of_samples ;          /* number of samples in record */
+    signed char rate ;                    /* samp rate: + = samp/sec; - = sec/samp */
     byte blockette_count ;
-    time_array time_of_sample ;         /* time of the tagged sample */
-    long packet_seq ;
+    time_array time_of_sample ;           /* time of the tagged sample */
+    int32_t packet_seq ;
     byte header_revision ;
     byte detection_day ;
-    short detection_seq ;
+    int16_t detection_seq ;
  /* Following fields are valid in QSL format only */
-    long clock_drift ;
+    int32_t clock_drift ;
     seed_name_type seedname ;
     signed char clkq ;
     seed_net_type seednet ;
     location_type location ;
-    short ht_sp3 ;
-    short microsec ;                    /* time mark microsec binary value */
+    int16_t ht_sp3 ;
+    int16_t microsec ;                    /* time mark microsec binary value */
     byte frame_count ;
     byte hdrsp1 ;
     byte z[5] ;
@@ -107,22 +107,22 @@ typedef struct
 /* Event reporting structure */
 typedef struct
   {
-    long jdate ;                        /* seconds since Jan 1, 1984 00:00:00 */
-    short millisec ;                    /* 0..999 fractional part of time */
-    byte component ;                    /* not valid in QSL */
-    byte stream ;                       /* not valid in QSL */
-    long motion_pick_lookback_quality ; /* "string" of this gives, eg "CA200999" */
-    long peak_amplitude ;               /* & threshold sample value */
-    long period_x_100 ;                 /* 100 times detected period */
-    long background_amplitude ;         /* & threshold limit exceeded */
+    int32_t jdate ;                        /* seconds since Jan 1, 1984 00:00:00 */
+    int16_t millisec ;                     /* 0..999 fractional part of time */
+    byte component ;                       /* not valid in QSL */
+    byte stream ;                          /* not valid in QSL */
+    int32_t motion_pick_lookback_quality ; /* "string" of this gives, eg "CA200999" */
+    int32_t peak_amplitude ;               /* & threshold sample value */
+    int32_t period_x_100 ;                 /* 100 times detected period */
+    int32_t background_amplitude ;         /* & threshold limit exceeded */
   /* Following fields are valid in QSL Format only */
-    string23 detname ;                  /* detector name */
-    seed_name_type seedname ;           /* seed name */
-    byte sedr_sp1 ;                     /* zero */
-    location_type location ;            /* seed location */
-    short ev_station ;                  /* station name NOT LONGWORD ALIGNED-COMPLONG */
-    short ev_station_low ;
-    seed_net_type ev_network ;          /* seed network */
+    string23 detname ;                     /* detector name */
+    seed_name_type seedname ;              /* seed name */
+    byte sedr_sp1 ;                        /* zero */
+    location_type location ;               /* seed location */
+    int16_t ev_station ;                   /* station name NOT LONGWORD ALIGNED-COMPLONG */
+    int16_t ev_station_low ;
+    seed_net_type ev_network ;             /* seed network */
   } squeezed_event_detection_report ;
 
 /* time quality. The SUN ANSI C compiler incorrectly calculates the size of
@@ -130,7 +130,7 @@ typedef struct
    with an 6 byte array. */
 typedef struct
   {
-    long msec_correction ;             /* last timemark offset in milliseconds */
+    int32_t msec_correction ;          /* last timemark offset in milliseconds */
     byte reception_quality_indicator ; /* from Kinemetrics clock */
     byte time_base_VCO_correction ;    /* time base VCO control byte */
   } time_quality_descriptor ;
@@ -163,14 +163,14 @@ typedef struct
     byte frame_type ;
     byte clock_exception ;                 /* type of exception condition */
     time_array time_of_mark ;              /* if clock_exception = EXPECTED, VALID, DAILY, or UNEXPECTED */
-    long count_of ;                        /* seconds elapsed or consecutive marks */
+    int32_t count_of ;                     /* seconds elapsed or consecutive marks */
     byte correction_quality[6] ;
-    short usec_correction ;                /* timemark offset, 0 - 999 microseconds*/
-    long clock_drift ;                     /* clock drift in microseconds */
-    short vco ;                            /* full VCO value */
+    int16_t usec_correction ;              /* timemark offset, 0 - 999 microseconds*/
+    int32_t clock_drift ;                  /* clock drift in microseconds */
+    int16_t vco ;                          /* full VCO value */
     cl_spec_type cl_spec ;                 /* clock specific information */
-    short cl_station ;                     /* station name NOT LONG ALIGNED! */
-    short cl_station_low ;
+    int16_t cl_station ;                   /* station name NOT LONG ALIGNED! */
+    int16_t cl_station_low ;
     seed_net_type cl_net ;                 /* network */
     location_type cl_location ;            /* location */
     seed_name_type cl_seedname ;           /* seed name */
@@ -192,11 +192,11 @@ typedef struct
   {
     byte frame_type ;
     byte word_align ;
-    short cr_duration ;                /* duration in seconds NOT LONG ALIGNED -LONG*/
-    short cr_duration_low ;
-    short cr_period ;                  /* period in milliseconds NOT LONG ALIGNED-LONG */
-    short cr_period_low ;
-    short cr_amplitude ;               /* amplitude in DB */
+    int16_t cr_duration ;              /* duration in seconds NOT LONG ALIGNED -LONG*/
+    int16_t cr_duration_low ;
+    int16_t cr_period ;                /* period in milliseconds NOT LONG ALIGNED-LONG */
+    int16_t cr_period_low ;
+    int16_t cr_amplitude ;             /* amplitude in DB */
     time_array cr_time ;               /* time of signal on or abort */
     byte cr_type ;
     byte cr_component ;                /* not valid in QSL */
@@ -207,16 +207,16 @@ typedef struct
     byte cr_flags ;                    /* bit 0 = plus, bit 2 = automatic, bit 4 = p-p */
 /* Following are valid in QSL format only */
     byte cr_flags2 ;                   /* bit 0 = cap, bit 1 = white noise */
-    short cr_0dB ;                     /* 0 = dB, <> 0 = value for 0dB NOT LONG ALIGNED-FLOAT */
-    short cr_0dB_low ;
+    int16_t cr_0dB ;                   /* 0 = dB, <> 0 = value for 0dB NOT LONG ALIGNED-FLOAT */
+    int16_t cr_0dB_low ;
     seed_name_type cr_seedname ;       /* seed name */
     byte cr_sfrq ;                     /* calibration frequency if sine */
     location_type cr_location ;        /* seed location */
     seed_name_type cr_input_seedname ; /* seed name of cal input */
     byte cr_filt ;                     /* filter number */
     location_type cr_input_location ;  /* location of cal input */
-    short cr_station ;                 /* station name NOT LONG ALIGNED-COMPLONG */
-    short cr_station_low ;
+    int16_t cr_station ;               /* station name NOT LONG ALIGNED-COMPLONG */
+    int16_t cr_station_low ;
     seed_net_type cr_network ;         /* network */
   } calibration_result ;
 
@@ -276,14 +276,14 @@ typedef char comment_string_type[COMMENT_STRING_LENGTH+1] ;
 /* Event records */
 typedef struct
   {
-    long header_flag ;
+    int32_t header_flag ;
     eventlog_struc header_elog ;
   } commo_event ;
 
 /* Comment records */
 typedef struct
   {
-    long header_flag ;
+    int32_t header_flag ;
     byte frame_type ;
     byte comment_type ;
     time_array time_of_transmission ;
@@ -295,8 +295,8 @@ typedef struct
   proper locations at reception. This is to improve throughput.
   They are not valid in any other format.
 */
-    short cc_station ; /* NOT LONG ALIGNED-COMPLONG */
-    short cc_station_low ;
+    int16_t cc_station ; /* NOT LONG ALIGNED-COMPLONG */
+    int16_t cc_station_low ;
     seed_net_type cc_net ;
     location_type cc_location ;
     seed_name_type cc_seedname ;
@@ -305,39 +305,39 @@ typedef struct
 /* Reply to DP Record */
 typedef struct
   {
-    long header_flag ;
+    int32_t header_flag ;
     byte frame_type ;
     boolean first_seg ;
-    unsigned short total_bytes ;
-    short total_seg ;
-    short this_seg ;
-    unsigned short byte_offset ;
-    unsigned short byte_count ;
+    uint16_t total_bytes ;
+    int16_t total_seg ;
+    int16_t this_seg ;
+    uint16_t byte_offset ;
+    uint16_t byte_count ;
     byte bytes[MAX_REPLY_BYTE_COUNT] ;
   } commo_reply ;
 
 /* Link information Record */
 typedef struct
   {
-    long header_flag ;
+    int32_t header_flag ;
     byte frame_type ;
     boolean rcecho ;
-    short seq_modulus ;
-    short window_size ;
+    int16_t seq_modulus ;
+    int16_t window_size ;
     byte total_prio ;
     byte msg_prio ;
     byte det_prio ;
     byte time_prio ;
     byte cal_prio ;
     byte link_format ;
-    short resendtime ;  /* resend packets timeout in seconds */
-    short synctime ;    /* sync packet time in seconds */
-    short resendpkts ;  /* packets in resend blocks */
-    short netdelay ;    /* network restart delay in seconds */
-    short nettime ;     /* network connect timeout in seconds */
-    short netmax ;      /* unacked network packets before timeout */
-    short groupsize ;   /* group packet count */
-    short grouptime ;   /* group timeout in seconds */
+    int16_t resendtime ;  /* resend packets timeout in seconds */
+    int16_t synctime ;    /* sync packet time in seconds */
+    int16_t resendpkts ;  /* packets in resend blocks */
+    int16_t netdelay ;    /* network restart delay in seconds */
+    int16_t nettime ;     /* network connect timeout in seconds */
+    int16_t netmax ;      /* unacked network packets before timeout */
+    int16_t groupsize ;   /* group packet count */
+    int16_t grouptime ;   /* group timeout in seconds */
    } commo_link ;
 
 typedef byte seg_map_type[128] ;
@@ -346,7 +346,7 @@ typedef char string63[64] ;
 /* Upload map sent back to DP */
 typedef struct
   {
-    long header_flag ;
+    int32_t header_flag ;
     byte frame_type ;
     boolean upload_ok ;
     string63 fname ;
@@ -369,22 +369,22 @@ typedef union
 */
 typedef struct
   {
-    short chksum ;   /* chksum not calc over error pkt */
-    short crc ;      /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
-    short crc_low ;
+    int16_t chksum ;   /* chksum not calc over error pkt */
+    int16_t crc ;      /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
+    int16_t crc_low ;
   } error_control_packet ;
 
 /* The record is packaged with a sequence number, a control field, the actual data, and error control */
 typedef struct
   {
-    short skipped ;          /* START FILLING BUFFER AT "seq", THIS ASSURES THAT
+    int16_t skipped ;        /* START FILLING BUFFER AT "seq", THIS ASSURES THAT
                                 THE DATA BUFFER IS LONG ALIGNED */
     byte seq ;
     byte ctrl ;              /* what to do with "Seq" in DP */
     commo_record data_buf ;  /* Compressed seismic data buffer */
-    short chksum ;   /* chksum not calc over error pkt */
-    short crc ;      /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
-    short crc_low ;
+    int16_t chksum ;         /* chksum not calc over error pkt */
+    int16_t crc ;            /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
+    int16_t crc_low ;
   } DA_to_DP_buffer ;
 
 /* Upload control values */
@@ -399,7 +399,7 @@ typedef struct
   {
     boolean filefound ;
     boolean toobig ;
-    unsigned short file_size ;
+    uint16_t file_size ;
     string63 file_name ;
     byte contents[65000] ;
   } download_struc ;
@@ -415,13 +415,13 @@ typedef struct
   {
     byte param0 ;
     byte dummy2 ;
-    short param1 ;
-    short param2 ;
-    short param3 ;
-    short param4 ;
-    short param5 ;
-    short param6 ;
-    short param7 ;
+    int16_t param1 ;
+    int16_t param2 ;
+    int16_t param3 ;
+    int16_t param4 ;
+    int16_t param5 ;
+    int16_t param6 ;
+    int16_t param7 ;
   } stokely ;
   
  typedef struct /* AUTO_DAC_CORRECTION, START_CAL, ACCURATE_DAC_CORRECTION */
@@ -435,23 +435,23 @@ typedef struct /* COMM_EVENT */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short rc_sp1 ;
-    long mask ;
+    int16_t rc_sp1 ;
+    int32_t mask ;
   } comm_event_struc ;
 
 typedef struct /* ULTRA_MASS */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short mbrd ;
-    short mdur ;
+    int16_t mbrd ;
+    int16_t mdur ;
   } ultra_mass_struc ;
 
 typedef struct /* ULTRA_CAL */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short rc_sp2 ;
+    int16_t rc_sp2 ;
     cal_start_com xc ;
   } ultra_cal_struc ;
   
@@ -459,7 +459,7 @@ typedef struct /* ULTRA_STOP */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short sbrd ;
+    int16_t sbrd ;
   } ultra_stop_struc ;
 
 typedef struct /* DET_REQ */
@@ -475,7 +475,7 @@ typedef struct /* DET_ENABLE */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short rc_sp4 ;
+    int16_t rc_sp4 ;
     det_enable_com de ;
   } det_enable_struc ;
 
@@ -483,7 +483,7 @@ typedef struct /* DET_CHANGE */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short rc_sp5 ;
+    int16_t rc_sp5 ;
     det_change_com dc ;
   } det_change_struc ;
 
@@ -491,7 +491,7 @@ typedef struct /* REC_ENABLE */
   {
     byte cmd_type ;
     byte dp_seq ;
-    short rc_sp6 ;
+    int16_t rc_sp6 ;
     rec_enable_com re ;
   } rec_enable_struc ;
 
@@ -526,14 +526,14 @@ typedef struct /* UPLOAD */
       {
         struct
           { /* Send upload */
-            unsigned short byte_offset ;
-            unsigned short byte_count ;
-            short seg_num ;
+            uint16_t byte_offset ;
+            uint16_t byte_count ;
+            int16_t seg_num ;
             byte bytes[DP_TO_DA_MESSAGE_LENGTH - 10] ;
          } up_send ;
        struct
          { /* Create upload */
-           unsigned short file_size ;
+           uint16_t file_size ;
            string63 file_name ;
          } up_create ;
      } up_union ;
@@ -569,9 +569,9 @@ typedef union
 /* DP to DA command header structure */
 typedef struct
   {
-    short chksum ;   /* chksum not calc over error pkt */
-    short crc ;      /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
-    short crc_low ;
+    int16_t chksum ;               /* chksum not calc over error pkt */
+    int16_t crc ;                  /* first gen crc, then make checksum NOT LONG ALIGNED-LONG */
+    int16_t crc_low ;
     byte cmd ;                     /* Ack, Nak, Cal, Shell indicator */
     byte ack ;                     /* Nr of last packet rcv'd by DP */
   } DP_to_DA_command_header ;
@@ -590,17 +590,17 @@ typedef struct
 typedef struct
   {
     digi_record digi ;
-    short vcovalue ; /* current vco value */
+    int16_t vcovalue ; /* current vco value */
     boolean pllon ; /* true if PLL controlling PLL */
     boolean umass_ok ; /* coyp of cal.mass_ok */
-    short comcount ; /* number of comm events */
-    short comoffset ; /* offset to start of comm names */
-    short usedcount ; /* number of used combos */
-    short usedoffset ; /* offset to start of used combinations */
-    short calcount ; /* copy of cal.number */
-    short caloffset ; /* offset to start of calibrator defs */
+    int16_t comcount ; /* number of comm events */
+    int16_t comoffset ; /* offset to start of comm names */
+    int16_t usedcount ; /* number of used combos */
+    int16_t usedoffset ; /* offset to start of used combinations */
+    int16_t calcount ; /* copy of cal.number */
+    int16_t caloffset ; /* offset to start of calibrator defs */
     byte cpr_levels ; /* comlink priority levels */
     byte ultra_rev ; /* revision level, current = 1 */
-    short ut_sp2 ;
-    long comm_mask ; /* current comm detector mask */
+    int16_t ut_sp2 ;
+    int32_t comm_mask ; /* current comm detector mask */
   } ultra_type ;

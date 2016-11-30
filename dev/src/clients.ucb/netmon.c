@@ -1977,7 +1977,7 @@ int timeout_notify(char *station, char *notify_prog, double timeout_started,
 		       double time_last_notified, double last_good, 
 		       double now) 
 {
-    char *tmpfile;
+    char namebuf[] = TMPFILE_PREFIX "netm" TMPFILE_SUFFIX;
     FILE *fp;
     int seconds, minutes, hours;
     int status = -1;
@@ -1990,8 +1990,7 @@ int timeout_notify(char *station, char *notify_prog, double timeout_started,
 	     localtime_string(now), station, hours, minutes);
     fflush (info);
 
-    if ((tmpfile=tempnam(P_tmpdir,"netm")) != NULL) {
-	if ((fp=fopen(tmpfile,"w"))!= NULL) {
+    if ((fp = tmpfile_open(namebuf, "w")) != NULL) {
 	    char cmd[2048];
             pchar last_good_text = "Never";
             if (last_good > 0) {
@@ -2005,11 +2004,8 @@ int timeout_notify(char *station, char *notify_prog, double timeout_started,
 	    fprintf (fp, "Current time = %s\n", localtime_string(now));
 	    fprintf (fp, "************************************************\n");
 	    fclose(fp);
-	    sprintf (cmd, "%s < %s", notify_prog, tmpfile);
+	    sprintf (cmd, "%s < %s", notify_prog, namebuf);
 	    status = system (cmd);
-	    unlink (tmpfile);
-	}
-	free(tmpfile);
     }
     return (status);
 }
@@ -2022,7 +2018,7 @@ int resume_notify(char *station, char *notify_prog, double timeout_started,
 		       double time_last_notified, double last_good, 
 		       double now) 
 {
-    char *tmpfile;
+    char namebuf[] = TMPFILE_PREFIX "netm" TMPFILE_SUFFIX;
     FILE *fp;
     int seconds, minutes, hours;
     int status = -1;
@@ -2035,8 +2031,7 @@ int resume_notify(char *station, char *notify_prog, double timeout_started,
 	     localtime_string(now), station, hours, minutes);
     fflush (info);
 
-    if ((tmpfile=tempnam(P_tmpdir,"netm")) != NULL) {
-	if ((fp=fopen(tmpfile,"w"))!= NULL) {
+    if ((fp = tmpfile_open(namebuf, "w")) != NULL) {
 	    char cmd[2048];
             pchar timeout_started_text = "Startup";
             if (timeout_started > 0) {
@@ -2050,11 +2045,8 @@ int resume_notify(char *station, char *notify_prog, double timeout_started,
 	    fprintf (fp, "Current time = %s\n", localtime_string(now));
 	    fprintf (fp, "************************************************\n");
 	    fclose(fp);
-	    sprintf (cmd, "%s < %s", notify_prog, tmpfile);
+	    sprintf (cmd, "%s < %s", notify_prog, namebuf);
 	    status = system (cmd);
-	    unlink (tmpfile);
-	}
-	free(tmpfile);
     }
     return (status);
 }

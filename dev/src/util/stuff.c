@@ -28,6 +28,8 @@ Edit History:
    11 24 Aug 07 DSN Port to LINUX, and separate ENDIAN_LITTLE from LINUX logic.
 */
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #ifndef _OSK
@@ -64,6 +66,50 @@ short VER_STUFF = 11 ;
            (double) (ticks & 0xffff) / (double) (ticks >> 16) ;
 #endif
     }
+
+/* safe version of gets */
+  void gets_buf(char *buffer, int size)
+   {
+     if (fgets(buffer, size, stdin) == 0)
+     {
+       buffer[0] = '\0';
+     }
+   }
+
+/* safe version of strerror */
+  const char *strerror_buf(int errnum, char *buf, int buflen)
+   {
+    char const *msg;
+#if (_POSIX_C_SOURCE >= 200112L) && !  _GNU_SOURCE
+    msg = buf;
+    // XSI-compliant version
+    if (strerror_r(errnum, buf, buflen) != 0)
+    {
+       if (buflen > strlen("Unknown error nnn"))
+           sprintf(buf, "Unknown error %3d", errnum);
+        else
+	   msg = "Unknown error";
+    }
+#else
+    // GNU-specific version
+    msg = strerror_r(errnum, buf, buflen);
+#endif
+    return msg;
+   }
+
+/* create a unique temporary file */
+  FILE *tmpfile_open(char *namebuf, const char *mode)
+   {
+     FILE *fp = NULL;
+     int fd = mkstemp(namebuf);
+     if (fd != -1 && (fp = fdopen(fd, mode)) != NULL)
+     {
+       // call unlink so that whenever the file is closed or the
+       // program exits the temporary file is deleted
+       unlink(namebuf);
+     }
+     return fp;
+   }
 
 /* Convert C string to longinteger */
   long str_long (pchar name)

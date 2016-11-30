@@ -1,34 +1,25 @@
 #include <stdio.h>
 #include <errno.h>
+#include "stuff.h"
+
+#define ERRBUFLEN 256
 
 int syserr(char *msg)
 {
-  extern int errno, sys_nerr;
-#ifndef LINUX  /*IGD -stdio.h LINUX */
-  extern char *sys_errlist[];
-#endif 
-
-  fprintf(stdout,"ERROR: %s ( errno: %d",msg,errno);
-  if (errno > 0 && errno < sys_nerr)
-    fprintf(stdout,"; Description: %s)\n",sys_errlist[errno]);
-  else
-    fprintf(stdout,")\n");  
+  int errnum = errno;
+  char errbuf[ERRBUFLEN];
+  char const *errmsg = strerror_buf(errnum, errbuf, ERRBUFLEN);
+  fprintf(stdout,"ERROR: %s ( errno: %d",errmsg,errnum);
   fflush(stdout);
   return(1);
 }
 
 void fatalsyserr(char *msg)
 {
-  extern int errno, sys_nerr;
-#ifndef LINUX  /*IGD*/
-  extern char *sys_errlist[];
-#endif 
-
-  fprintf(stdout,"FATAL ERROR: %s ( errno: %d",msg,errno);
-  if (errno > 0 && errno < sys_nerr)
-    fprintf(stdout,"; Description: %s)\n",sys_errlist[errno]);
-  else
-    fprintf(stdout,")\n");  
+  int errnum = errno;
+  char errbuf[ERRBUFLEN];
+  char const *errmsg = strerror_buf(errnum, errbuf, ERRBUFLEN);
+  fprintf(stdout,"FATAL ERROR: %s ( errno: %d",errmsg,errnum);
   fflush(stdout);
   exit(1);
 }

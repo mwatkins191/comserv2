@@ -39,35 +39,35 @@ Edit History:
 /* Data only blockette structure for data records */
 typedef struct
   {
-    short blockette_type ; /* 1000 always */
-    short next_offset ;    /* offset to next blockette */
-    byte encoding_format ; /* 10 = Steim1, 11 = Steim2, 19 = Steim3, 0 = none */
-    byte word_order ;      /* 1 always */
-    byte rec_length ;      /* 9=512 always */
-    byte dob_reserved ;    /* 0 always */
+    int16_t blockette_type ; /* 1000 always */
+    int16_t next_offset ;    /* offset to next blockette */
+    byte encoding_format ;   /* 10 = Steim1, 11 = Steim2, 19 = Steim3, 0 = none */
+    byte word_order ;        /* 1 always */
+    byte rec_length ;        /* 9=512 always */
+    byte dob_reserved ;      /* 0 always */
   } data_only_blockette ;
 
 /* data extension blockette structure for data records */
 typedef struct
   {
-    short blockette_type ; /* 1001 always */
-    short next_offset ;    /* offset to next blockette */
-    byte qual ;            /* 0 to 100% quality indicator */
-    byte usec99 ;          /* 0 to 99 microseconds */
-    byte deb_flags ;       /* DEB_XXXXX */
-    byte frame_count ;     /* number of 64 byte data frames */
+    int16_t blockette_type ; /* 1001 always */
+    int16_t next_offset ;    /* offset to next blockette */
+    byte qual ;              /* 0 to 100% quality indicator */
+    byte usec99 ;            /* 0 to 99 microseconds */
+    byte deb_flags ;         /* DEB_XXXXX */
+    byte frame_count ;       /* number of 64 byte data frames */
   } data_extension_blockette ;
 
 /* time structure used in seed records */
 typedef struct
   {
-    short yr ;             /* year */
-    short jday ;           /* julian day */
-    byte hr ;              /* hour */
-    byte minute ;          /* minutes */
-    byte seconds ;         /* seconds */
-    byte unused ;          /* zero */
-    short tenth_millisec ; /* tenth of a millisecond */
+    int16_t yr ;             /* year */
+    int16_t jday ;           /* julian day */
+    byte hr ;                /* hour */
+    byte minute ;            /* minutes */
+    byte seconds ;           /* seconds */
+    byte unused ;            /* zero */
+    int16_t tenth_millisec ; /* tenth of a millisecond */
   } seed_time_struc ;
 
 /* this 48 byte structure is used for data records and blockettes */
@@ -81,16 +81,16 @@ typedef struct
     seed_name_type channel_id ;           /* non aligned! */
     seed_net_type seednet ;               /* seed netword ID */
     seed_time_struc  starting_time ;
-    short samples_in_record ;
-    short sample_rate_factor ;
-    short sample_rate_multiplier ;        /* always 1 */
-    byte activity_flags ;                 /* ?I?LEBTC */
-    byte IO_flags ;                       /* ??L????? */
-    byte data_quality_flags ;             /* Q??M???? */
-    byte number_of_following_blockettes ; /* normally 0 */
-    long tenth_msec_correction ;          /* temporarily 0 */
-    short first_data_byte ;               /* 0, 48, or 56 or multiple of 64 */
-    short first_blockette_byte ;          /* 0 or 48 */
+    int16_t samples_in_record ;
+    int16_t sample_rate_factor ;
+    int16_t sample_rate_multiplier ;        /* always 1 */
+    byte activity_flags ;                   /* ?I?LEBTC */
+    byte IO_flags ;                         /* ??L????? */
+    byte data_quality_flags ;               /* Q??M???? */
+    byte number_of_following_blockettes ;   /* normally 0 */
+    int32_t tenth_msec_correction ;         /* temporarily 0 */
+    int16_t first_data_byte ;               /* 0, 48, or 56 or multiple of 64 */
+    int16_t first_blockette_byte ;          /* 0 or 48 */
   } seed_record_header ;
 
 /* Data records also include the data_only_blockette and data_extension_blockette */
@@ -118,8 +118,8 @@ typedef struct
 /* Murdock-Hutt event detections use this blockette */
 typedef struct
   {
-    short blockette_type ;              /* 201 for MH */
-    short next_blockette ;              /* record offset of next */
+    int16_t blockette_type ;            /* 201 for MH */
+    int16_t next_blockette ;            /* record offset of next */
     float signal_amplitude ;
     float signal_period ;               /* not used for threshold */
     float background_estimate ;         /* limit crossed for threshold */
@@ -136,8 +136,8 @@ typedef struct
 /* Threshold detections */
 typedef struct
   {
-    short blockette_type ;              /* 200 for Threshold */
-    short next_blockette ;              /* record offset of next */
+    int16_t blockette_type ;            /* 200 for Threshold */
+    int16_t next_blockette ;            /* record offset of next */
     float signal_amplitude ;
     float signal_period ;               /* not used for threshold */
     float background_estimate ;         /* limit crossed for threshold */
@@ -151,13 +151,13 @@ typedef struct
 /* Clock timing */
 typedef struct
   {
-    short blockette_type ;              /* 500 */
-    short next_blockette ;              /* record offset of next */
+    int16_t blockette_type ;            /* 500 */
+    int16_t next_blockette ;            /* record offset of next */
     float vco_correction ;              /* 0 to 100.0% of full range */
     seed_time_struc time_of_exception ;
     byte usec99 ;                       /* 0-99 usecs extension to above */
     byte reception_quality ;            /* 0 to 100% clock quality */
-    long exception_count ;              /* seconds/consecutive */
+    int32_t exception_count ;           /* seconds/consecutive */
     char exception_type[16] ;           /* Type of exception */
     char clock_model[32] ;              /* Manufacture & Type of clock */
     char clock_status[128] ;            /* Operating status */
@@ -166,8 +166,8 @@ typedef struct
 /* Calibration blockettes are made up of pieces */
 typedef struct
   {
-    short blockette_type ;             /* 300, 310, 320, or 395 */
-    short next_blockette ;             /* record offset of next */
+    int16_t blockette_type ;             /* 300, 310, 320, or 395 */
+    int16_t next_blockette ;             /* record offset of next */
     seed_time_struc calibration_time ; /* start or stop */
   } cal1 ;
     
@@ -184,46 +184,46 @@ typedef struct
 typedef struct
   {
     cal1 fixed ;
-    byte number_of_steps ;      /* 1 */
-    byte calibration_flags ;    /* bit 0 = +, bit 2 = automatic */
-    long calibration_duration ; /* 0.0001 seconds / count */
-    long interval_duration ;    /* 0 */
+    byte number_of_steps ;         /* 1 */
+    byte calibration_flags ;       /* bit 0 = +, bit 2 = automatic */
+    int32_t calibration_duration ; /* 0.0001 seconds / count */
+    int32_t interval_duration ;    /* 0 */
     cal2 step2 ;
   } step_calibration ;
     
 typedef struct
   {
     cal1 fixed ;
-    byte res ;                  /* 0 */
-    byte calibration_flags ;    /* bit 2 = automatic, bit 4 set */
-    long calibration_duration ; /* 0.0001 seconds / count */
-    float sine_period ;         /* in seconds */
+    byte res ;                     /* 0 */
+    byte calibration_flags ;       /* bit 2 = automatic, bit 4 set */
+    int32_t calibration_duration ; /* 0.0001 seconds / count */
+    float sine_period ;            /* in seconds */
     cal2 sine2 ;
   } sine_calibration ;
     
 typedef struct
   {
     cal1 fixed ;
-    byte res ;                  /* 0 */
-    byte calibration_flags ;    /* bit 2 = automatic, bit 4 = ? */
-    long calibration_duration ; /* 0.0001 seconds / count*/
+    byte res ;                     /* 0 */
+    byte calibration_flags ;       /* bit 2 = automatic, bit 4 = ? */
+    int32_t calibration_duration ; /* 0.0001 seconds / count*/
     cal2 random2 ;
-    char noise_type[8] ;        /* frequency characteristics of noise */
+    char noise_type[8] ;           /* frequency characteristics of noise */
   } random_calibration ;
     
 typedef struct
   {
     cal1 fixed ;
-    short res ;                 /* 0 */
+    int16_t res ;                    /* 0 */
   } abort_calibration ;
 
 typedef struct
   {
-    short blockette_type ;      /* any number */
-    short next_blockette ;      /* record offset of next */
-    short blockette_lth ;       /* byte count of blockette */
-    short data_offset ;         /* offset from start of blockette to start of data */
-    long record_num ;           /* record number */
+    int16_t blockette_type ;    /* any number */
+    int16_t next_blockette ;    /* record offset of next */
+    int16_t blockette_lth ;     /* byte count of blockette */
+    int16_t data_offset ;       /* offset from start of blockette to start of data */
+    int32_t record_num ;        /* record number */
     byte word_order ;           /* 1 = correct, 0 = wrong */
     byte data_flags ;           /* fragmentation not supported */
       /* number of header fields is one byte, but that would make odd

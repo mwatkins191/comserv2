@@ -575,7 +575,7 @@ pclient_struc setup_comserv_connections(LIST station_list, LIST station_exclude,
 
 int output (char *msgbuf) 
 {
-    char *file;
+    char namebuf[] = TMPFILE_PREFIX "evta" TMPFILE_SUFFIX;
     FILE *fp;
     UA_LIST *nl;
     char user[16],action[16];
@@ -585,16 +585,15 @@ int output (char *msgbuf)
 
     n = 0;
     if (msgbuf == NULL || msgbuf[0] == '\0') return (0);
-    file = tmpnam(NULL);
-    if ((fp=fopen(file,"w")) == NULL) {
-	fprintf (stderr, "Error opening msg file %s\n", file);
+    if ((fp = tmpfile_open(namebuf, "w")) == NULL) {
+	fprintf (stderr, "Error opening msg file %s\n", namebuf);
 	return (-1);
     }
     fwrite (msgbuf, 1, strlen(msgbuf), fp);
     fclose (fp);
     if (debug) {
 	printf ("msg is: %s",msgbuf);
-	printf ("file is: %s\n", file);
+	printf ("file is: %s\n", namebuf);
     }
 
     for (nl=notify_list; *nl!=NULL; nl++) {
@@ -608,10 +607,10 @@ int output (char *msgbuf)
 	strcpy(action,++p);
 
 	if (strcasecmp(action,"EMAIL")==0) {
-	    sprintf (cmd, "%s %s < %s", EMAIL_CMD, user, file);
+	    sprintf (cmd, "%s %s < %s", EMAIL_CMD, user, namebuf);
 	}
 	else if (strcasecmp(action,"PAGER")==0) {
-	    sprintf (cmd, "%s %s < %s", PAGER_CMD, user, file);
+	    sprintf (cmd, "%s %s < %s", PAGER_CMD, user, namebuf);
 	}
 	else {
 	    fprintf (stderr, "Unknown action for notify entry: %s\n", *nl);
@@ -629,7 +628,6 @@ int output (char *msgbuf)
 	n++;
     }
 
-    unlink (file);
     return (n);
 }
 

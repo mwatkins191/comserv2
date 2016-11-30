@@ -139,18 +139,18 @@ Edit History:
 
 /* Alias some names. Make sure that logical not is used on boolean
    values rather than bitwise not. Non-O/S specific values should
-   never be declared as "int" or "unsigned int" since this may 16
-   bits on some systems, and 32 bits on others, use short or long
-   instead.
+   never be declared as "int" or "long" since this may be different
+   sizes on some systems, use int16_t or int32_t instead.
 */
+#include <stdint.h>
 #define boolean unsigned char
 #define byte unsigned char
 
 /* instead of pascal 0..31 sets, bitmaps are used */
-typedef long psuedo_set ;
+typedef uint32_t psuedo_set ;
 
 /* likewise, channel maps are represented by bitmaps */
-typedef long chan_map ;
+typedef uint32_t chan_map ;
 
 typedef char *pchar ;
 typedef void *pvoid ;
@@ -172,44 +172,44 @@ typedef union
   {
     unsigned char b[2] ;
     signed char sb[2] ;
-    short s ;
+    int16_t s ;
   } compword ;
 typedef union
   {
     unsigned char b[4] ;
     signed char sb[4] ;
-    short s[2] ;
-    long l ;
+    int16_t s[2] ;
+    int32_t l ;
     float f ;
   } complong ;
 
 /* Structure returned for CSIM_LINK */
 typedef struct
   {
-    byte window_size ;  /* window size, max pending is window_size -1 */
-    byte total_prio ;   /* total number of priority levels */
-    byte msg_prio ;     /* message record priority */
-    byte det_prio ;     /* detection packets priority */
-    byte time_prio ;    /* timing packets priority */
-    byte cal_prio ;     /* calibration packets priority */
-    byte link_format ;  /* link format (see CSF_xxx above */
-    boolean rcecho ;    /* True if command confirmations expected */
-    short resendtime ;  /* resend packets timeout in seconds */
-    short synctime ;    /* sync packet time in seconds */
-    short resendpkts ;  /* packets in resend blocks */
-    short netdelay ;    /* network restart delay in seconds */
-    short nettime ;     /* network connect timeout in seconds */
-    short netmax ;      /* unacked network packets before considered timeout */
-    short groupsize ;   /* group packet count */
-    short grouptime ;   /* group timeout in seconds */
+    byte window_size ;    /* window size, max pending is window_size -1 */
+    byte total_prio ;     /* total number of priority levels */
+    byte msg_prio ;       /* message record priority */
+    byte det_prio ;       /* detection packets priority */
+    byte time_prio ;      /* timing packets priority */
+    byte cal_prio ;       /* calibration packets priority */
+    byte link_format ;    /* link format (see CSF_xxx above */
+    boolean rcecho ;      /* True if command confirmations expected */
+    int16_t resendtime ;  /* resend packets timeout in seconds */
+    int16_t synctime ;    /* sync packet time in seconds */
+    int16_t resendpkts ;  /* packets in resend blocks */
+    int16_t netdelay ;    /* network restart delay in seconds */
+    int16_t nettime ;     /* network connect timeout in seconds */
+    int16_t netmax ;      /* unacked network packets before considered timeout */
+    int16_t groupsize ;   /* group packet count */
+    int16_t grouptime ;   /* group timeout in seconds */
    } link_record ;
 
 /* Duration information for each type of waveform */
 typedef struct
   {
-    long min_dur ; /* minimum duration */
-    long max_dur ; /* maximum duration */
-    long inc_dur ; /* duration increment */
+    int32_t min_dur ; /* minimum duration */
+    int32_t max_dur ; /* maximum duration */
+    int32_t inc_dur ; /* duration increment */
   } tdurations ;
 
 /* Description of one calibrator returned from CSIM_CAL */
@@ -217,25 +217,25 @@ typedef struct
   {
     boolean coupling_option ;       /* supports capacitor/resistor coupling */
     boolean polarity_option ;       /* supports plus and minus step */
-    short board ;                   /* which board this goes with */
-    short min_settle ;              /* minimum settling time in seconds */
-    short max_settle ;              /* maximum settling time in seconds */
-    short inc_settle ;              /* supports settling time in inc seconds */
-    short min_mass_dur ;            /* minimum duration in ms */
-    short max_mass_dur ;            /* maximum duration in ms, 0=none */
-    short inc_mass_dur ;            /* duration increment */
-    short def_mass_dur ;            /* default duration in ms */
-    short min_filter ;              /* minimum filter number */
-    short max_filter ;              /* maximum filter number */
-    short min_amp ;                 /* minimum amplitude in db */
-    short max_amp ;                 /* maximum amplitude in db */
-    short amp_step ;                /* amplitude step in db */
-    short monitor ;                 /* channel that monitors the calibrator */
-    short rand_min_period ;         /* minimum random period */
-    short rand_max_period ;         /* maximum random period */
-    short default_step_filt ;       /* default step filter */
-    short default_rand_filt ;       /* default rand filter */
-    short ct_sp2 ;                  /* always zero */
+    int16_t board ;                 /* which board this goes with */
+    int16_t min_settle ;            /* minimum settling time in seconds */
+    int16_t max_settle ;            /* maximum settling time in seconds */
+    int16_t inc_settle ;            /* supports settling time in inc seconds */
+    int16_t min_mass_dur ;          /* minimum duration in ms */
+    int16_t max_mass_dur ;          /* maximum duration in ms, 0=none */
+    int16_t inc_mass_dur ;          /* duration increment */
+    int16_t def_mass_dur ;          /* default duration in ms */
+    int16_t min_filter ;            /* minimum filter number */
+    int16_t max_filter ;            /* maximum filter number */
+    int16_t min_amp ;               /* minimum amplitude in db */
+    int16_t max_amp ;               /* maximum amplitude in db */
+    int16_t amp_step ;              /* amplitude step in db */
+    int16_t monitor ;               /* channel that monitors the calibrator */
+    int16_t rand_min_period ;       /* minimum random period */
+    int16_t rand_max_period ;       /* maximum random period */
+    int16_t default_step_filt ;     /* default step filter */
+    int16_t default_rand_filt ;     /* default rand filter */
+    int16_t ct_sp2 ;                /* always zero */
     tdurations durations[WRAND+1] ; /* Durations for each waveform */
     chan_map map ;                  /* channels this calibrator calibrates */
     psuedo_set waveforms ;          /* supported waveforms */
@@ -248,7 +248,7 @@ typedef struct
 /* Header returned from CSIM_CAL */
 typedef struct
   {
-    short number ;          /* actual number of active calibrators */
+    int16_t number ;        /* actual number of active calibrators */
     boolean mass_ok ;       /* non-zero if mass recentering ok */
     byte ct_sp1 ;           /* always zero */
     eachcal acal[MAXCAL] ;  /* the calibrators */
@@ -295,23 +295,23 @@ typedef struct
     byte det_count ;          /* number of detectors */
     byte c_prio ;             /* comlink continuous priority */
     byte e_prio ;             /* comlink event priority */
-    short rate ;              /* sampling rate, + is samp/sec, - is sec/samp */
+    int16_t rate ;            /* sampling rate, + is samp/sec, - is sec/samp */
   } chan_record ;
 
 /* Structure to return all requested channels */
 typedef struct
   {
-    short chancount ;             /* Number of active channels */
+    int16_t chancount ;           /* Number of active channels */
     chan_record chans[VARIABLE] ; /* Array of channels */
   } chan_struc ;
 
 /* Structure returned from CSIM_ULTRA call */
 typedef struct
   {
-    short vcovalue ;                        /* current vco value */
+    int16_t vcovalue ;                      /* current vco value */
     boolean pllon ;                         /* true if PLL controlling PLL */
     boolean umass_ok ;                      /* copy of cal.mass_ok */
-    long comm_mask ;                        /* Current comm detector mask */
+    int32_t comm_mask ;                     /* Current comm detector mask */
     byte ultra_rev ;                        /* Ultra revision */
     char commnames[CE_MAX*(COMMLENGTH+1)] ; /* Comm event names */
   } ultra_rec ;
@@ -319,50 +319,50 @@ typedef struct
 /* Structure returned for the CSIM_LINKSTAT call */
 typedef struct
   {
-    boolean ultraon ;      /* Ultra Shear mode */
-    boolean linkrecv ;     /* Link packet received */
-    boolean ultrarecv ;    /* Ultra packet received */
-    boolean suspended ;    /* Suspended */
-    long total_packets ;   /* total number of packets */
-    long sync_packets ;    /* number of sync packets */
-    long seq_errors ;      /* number of sequence errors */
-    long check_errors ;    /* number of checksum errors */
-    long io_errors ;       /* number of I/O errors */
-    long lastio_error ;    /* last io error number */
-    long blocked_packets ; /* number of blocked packets */
-    long seconds_inop ;    /* seconds in operation */
-    double last_good ;     /* Time of last good packet received */
-    double last_bad ;      /* Time of last bad packet received */
-    char seedformat[4] ;   /* Seed format (such as V2.3) */
-    char seedext ;         /* Seed extension level */
-    byte data_format ;     /* Data format */
-    string59 description ; /* Station description */
-    short lsr_sp1 ;        /* For longword alignment */
-    long pollusecs ;       /* server polling delay */
-    long reconcnt ;        /* how many errors to do reconfigure */
-    long net_idle_to ;     /* no packets received timeout */
-    long net_conn_dly ;    /* network connection polling delay */
-    long grpsize ;         /* ack packet grouping */
-    long grptime ;         /* ack pakcet grouping timeout */
+    boolean ultraon ;         /* Ultra Shear mode */
+    boolean linkrecv ;        /* Link packet received */
+    boolean ultrarecv ;       /* Ultra packet received */
+    boolean suspended ;       /* Suspended */
+    int32_t total_packets ;   /* total number of packets */
+    int32_t sync_packets ;    /* number of sync packets */
+    int32_t seq_errors ;      /* number of sequence errors */
+    int32_t check_errors ;    /* number of checksum errors */
+    int32_t io_errors ;       /* number of I/O errors */
+    int32_t lastio_error ;    /* last io error number */
+    int32_t blocked_packets ; /* number of blocked packets */
+    int32_t seconds_inop ;    /* seconds in operation */
+    double last_good ;        /* Time of last good packet received */
+    double last_bad ;         /* Time of last bad packet received */
+    char seedformat[4] ;      /* Seed format (such as V2.3) */
+    char seedext ;            /* Seed extension level */
+    byte data_format ;        /* Data format */
+    string59 description ;    /* Station description */
+    int16_t lsr_sp1 ;         /* For longword alignment */
+    int32_t pollusecs ;       /* server polling delay */
+    int32_t reconcnt ;        /* how many errors to do reconfigure */
+    int32_t net_idle_to ;     /* no packets received timeout */
+    int32_t net_conn_dly ;    /* network connection polling delay */
+    int32_t grpsize ;         /* ack packet grouping */
+    int32_t grptime ;         /* ack pakcet grouping timeout */
   } linkstat_rec ;
 
 /* Structure returned from the CSIM_COMSTAT call */
 typedef struct
   {
-    long command_tag ;       /* command tag */
-    long completion_status ; /* completion status */
-    long moreinfo ;          /* this is really variable length */
+    int32_t command_tag ;       /* command tag */
+    int32_t completion_status ; /* completion status */
+    int32_t moreinfo ;          /* this is really variable length */
   } comstat_rec ;
 
 /* Structure returned from the CSCM_CLIENTS call */
 typedef struct
   {
-    int client_memid ;       /* Client's shared memory ID */
-    int client_pid ;         /* Client's process ID */
+    int32_t client_memid ;   /* Client's shared memory ID */
+    int32_t client_pid ;     /* Client's process ID */
     complong client_name ;   /* Client's name */
     double last_service ;    /* Time of last service */
-    long timeout ;           /* Timeout value */
-    short block_count ;      /* Number of packets blocked by this client */
+    int32_t timeout ;        /* Timeout value */
+    int16_t block_count ;    /* Number of packets blocked by this client */
     boolean blocking ;       /* True if blocking used */
     boolean active ;         /* True if client active */
     boolean reserved ;       /* Reserved client */
@@ -370,7 +370,7 @@ typedef struct
   
 typedef struct
   {
-    short client_count ;           /* Number of clients */
+    int16_t client_count ;         /* Number of clients */
     one_client clients[VARIABLE] ; /* One for each client */
   } client_info ;
     
@@ -383,44 +383,44 @@ typedef struct
   } shell_com ;
 
 /* CSCM_VCO command structure */
-typedef short vco_com ;
+typedef int16_t vco_com ;
 
 /* CSCM_LINKADJ command structure */
 typedef struct
   {
-    short window_size ; /* window size, 2 to 64 */
-    byte set_msg ;      /* message record priority */
-    byte set_det ;      /* detection packet priority */
-    byte set_time ;     /* timing packet priority */
-    byte set_calp ;     /* calibration packet priority */
-    short resendtime ;  /* resend packets timeout in seconds */
-    short synctime ;    /* sync packet time in seconds */
-    short resendpkts ;  /* packets in resend blocks */
-    short netdelay ;    /* network restart delay in seconds */
-    short nettime ;     /* network connect timeout in seconds */
-    short netmax ;      /* unacked network packets before being considered timeout */
-    short groupsize ;   /* group packet count */
-    short grouptime ;   /* group timeout in seconds */
-    short lasp1 ;
-    short lasp2 ;
+    int16_t window_size ; /* window size, 2 to 64 */
+    byte set_msg ;        /* message record priority */
+    byte set_det ;        /* detection packet priority */
+    byte set_time ;       /* timing packet priority */
+    byte set_calp ;       /* calibration packet priority */
+    int16_t resendtime ;  /* resend packets timeout in seconds */
+    int16_t synctime ;    /* sync packet time in seconds */
+    int16_t resendpkts ;  /* packets in resend blocks */
+    int16_t netdelay ;    /* network restart delay in seconds */
+    int16_t nettime ;     /* network connect timeout in seconds */
+    int16_t netmax ;      /* unacked network packets before being considered timeout */
+    int16_t groupsize ;   /* group packet count */
+    int16_t grouptime ;   /* group timeout in seconds */
+    int16_t lasp1 ;
+    int16_t lasp2 ;
   } linkadj_com ;
 
 /* CSCM_LINKSET command structure */
 typedef struct
   {
-    long pollusecs ;       /* server polling delay */
-    long reconcnt ;        /* how many errors to do reconfigure */
-    long net_idle_to ;     /* no packets received timeout */
-    long net_conn_dly ;    /* network connection polling delay */
-    long grpsize ;         /* ack packet grouping */
-    long grptime ;         /* ack pakcet grouping timeout */
+    int32_t pollusecs ;       /* server polling delay */
+    int32_t reconcnt ;        /* how many errors to do reconfigure */
+    int32_t net_idle_to ;     /* no packets received timeout */
+    int32_t net_conn_dly ;    /* network connection polling delay */
+    int32_t grpsize ;         /* ack packet grouping */
+    int32_t grptime ;         /* ack pakcet grouping timeout */
    } linkset_com ;
   
 /* CSCM_MASS_RECENTER command structure */
 typedef struct
   {
-    short board ;    /* calibrator board number */
-    short duration ; /* duration in milliseconds */
+    int16_t board ;    /* calibrator board number */
+    int16_t duration ; /* duration in milliseconds */
   } recenter_com ;
 
 /* CSCM_CAL_START command structure */
@@ -432,31 +432,31 @@ typedef struct
     boolean capacitor ;  /* resistive = FALSE, capacitive = TRUE */
     byte autoflag ;      /* non zero for automatic calibration */
     byte ext_sp1 ;       /* set to zero */
-    short calnum ;       /* calibrator board number */
-    long duration ;      /* in seconds, 0=infinate */
-    short amp ;          /* amplitude, in DB */
-    short rmult ;        /* random multiplier */
-    short map ;          /* channel map local to this board */
-    short settle ;       /* relay settling time, in seconds */
-    short filt ;         /* filter to use 1..MAXCAL_FILT */
-    short ext_sp2 ;      /* set to zero */
+    int16_t calnum ;     /* calibrator board number */
+    int32_t duration ;   /* in seconds, 0=infinate */
+    int16_t amp ;        /* amplitude, in DB */
+    int16_t rmult ;      /* random multiplier */
+    int16_t map ;        /* channel map local to this board */
+    int16_t settle ;     /* relay settling time, in seconds */
+    int16_t filt ;       /* filter to use 1..MAXCAL_FILT */
+    int16_t ext_sp2 ;    /* set to zero */
   } cal_start_com ;
 
 /* CSCM_CAL_ABORT command structure */
-typedef short board ;
+typedef int16_t board ;
 
 /* Detector blocks for CSCM_DET_ENABLE command */
 typedef struct
   {
-    short detector_id ; /* Detector ID to enable */
-    boolean enable ;    /* set to TRUE to enable detector */
-    byte de_sp1 ;       /* Set to zero */
+    int16_t detector_id ; /* Detector ID to enable */
+    boolean enable ;      /* set to TRUE to enable detector */
+    byte de_sp1 ;         /* Set to zero */
   } det_en_entry ;
 
 /* CSCM_DET_ENABLE command structure */
 typedef struct
   {
-    short count ;                /* number of valid entries */
+    int16_t count ;              /* number of valid entries */
     det_en_entry detectors[20] ; /* up to 20 detector entries */
   } det_enable_com ;
 
@@ -467,19 +467,19 @@ typedef struct
 */
 typedef struct
   {
-    long filhi, fillo ;     /* threshold limits */
-    long iwin ;             /* window length in samples & threshold hysterisis */
-    long n_hits ;           /* #P-T >= th2 for detection & threshold min. dur. */
-    long xth1, xth2, xth3, xthx ;
-    long def_tc ;
-    long wait_blk ;         /* samples to wait before new detection */
-    short val_avg ;
+    int32_t filhi, fillo ;     /* threshold limits */
+    int32_t iwin ;             /* window length in samples & threshold hysterisis */
+    int32_t n_hits ;           /* #P-T >= th2 for detection & threshold min. dur. */
+    int32_t xth1, xth2, xth3, xthx ;
+    int32_t def_tc ;
+    int32_t wait_blk ;         /* samples to wait before new detection */
+    int16_t val_avg ;
   } shortdetload ;
 
 /* CSCM_DET_CHANGE command structure */
 typedef struct
   {
-    short id ;          /* detector id */
+    int16_t id ;        /* detector id */
     boolean enab ;      /* set to TRUE to enable */
     byte dct_sp ;       /* set to zero */
     byte ucon[42] ;     /* parameters for detector, should be shortdetload */
@@ -493,13 +493,13 @@ typedef struct
     location_type seedloc ;   /* location */
     byte c_prio ;             /* comlink continous priority */
     byte e_prio ;             /* comlink event priority */
-    short rec_sp1 ;           /* set to zero */
+    int16_t rec_sp1 ;         /* set to zero */
   } rec_one ;
 
 /* CSCM_REC_ENABLE command structure */
 typedef struct
   {
-    short count ;        /* number of changes */
+    int16_t count ;      /* number of changes */
     rec_one changes[8] ; /* channels to change */
   } rec_enable_com ;
 
@@ -518,7 +518,7 @@ typedef struct
     byte dettype ;        /* standard detector types */
     byte dd_sp1 ;         /* always zero */
     byte cons[42] ;       /* detector parameters, should be shortdetload */
-    short id ;            /* detector ID */
+    int16_t id ;          /* detector ID */
     string23 name ;       /* detector name */
     string15 params[12] ; /* params[0] is detector type name, 1..11 are parameter names */
   } det_descr ;
@@ -526,8 +526,8 @@ typedef struct
 /* CSCM_DET_REQUEST response record */
 typedef struct
   {
-    short count ;        /* number of detectors described */
-    short dat_sp1 ;      /* always zero */
+    int16_t count ;        /* number of detectors described */
+    int16_t dat_sp1 ;      /* always zero */
     det_descr dets[20] ; /* up to 20 detector descriptions */
   } det_request_rec ;
 
@@ -543,23 +543,23 @@ typedef struct
   {
     string59 dadest ;      /* destination file name */
     string23 dpmodname ;   /* DP data module name for OS9 host */
-    int dpshmid ;          /*   or shared memory segment for Unix host */
-    unsigned short fsize ; /* file size in bytes */
+    int32_t dpshmid ;      /*   or shared memory segment for Unix host */
+    uint16_t fsize ; /* file size in bytes */
   } upload_com ;
 
 /* Download status (command output) */
 typedef struct
   {
-    int dpshmid ;               /* Shared memory segment for Unix host */
-    unsigned short fsize ;      /* file size in bytes */
-    unsigned short byte_count ; /* Bytes transferred so far */
+    int32_t dpshmid ;     /* Shared memory segment for Unix host */
+    uint16_t fsize ;      /* file size in bytes */
+    uint16_t byte_count ; /* Bytes transferred so far */
   } download_result ;
 
 /* Upload status (command output) */
 typedef struct
   {
-    unsigned short bytecount ;  /* bytes transferred so far */
-    short retries ;             /* packets resent */
+    uint16_t bytecount ;  /* bytes transferred so far */
+    int16_t retries ;     /* packets resent */
   } upload_result ;
 
 typedef byte tupbuf[65000] ; /* up/download buffer (data module/shared memory */

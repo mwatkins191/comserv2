@@ -12,6 +12,7 @@ Edit History:
     3  3 Nov 97 WHO Add c++ conditionals.
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #ifndef _OSK
@@ -24,12 +25,24 @@ Edit History:
 #include "dpstruc.h"
 #endif
 
+#define TMPFILE_PREFIX P_tmpdir "/"
+#define TMPFILE_SUFFIX "XXXXXX"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Return seconds (and parts of a second) since 1970 */
   double dtime (void) ;
+
+/* safe version of gets */
+  void gets_buf(char *buffer, int size) ;
+
+/* safe version of strerror */
+  const char *strerror_buf(int errnum, char *buf, int buflen);
+
+/* create a unique temporary file */
+  FILE *tmpfile_open(char *namebuf, const char *mode);
 
 /* Convert C string to longinteger */
   long str_long (pchar name) ;
