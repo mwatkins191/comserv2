@@ -20,6 +20,7 @@ Edit History:
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
 #ifndef _OSK
 #include <termio.h>
 #include <fcntl.h>
@@ -52,7 +53,7 @@ extern long blockmask, noackmask ;
       basetemp = base ;
       basetemp++ ;      /* skip over tserver_struc */
       /* double word align */
-      datatemp = (pvoid) (((long) basetemp + 7) & 0xfffffff8) ;
+      datatemp = (pvoid) (((uintptr_t) basetemp + 7) & 0xfffffff8) ;
       for (j = DATAQ ; j < NUMQ ; j++)
         {
           last = NULL ;
@@ -64,7 +65,7 @@ extern long blockmask, noackmask ;
               if (last)
                   last->next = (pvoid) datatemp ; /* forward link */
               last = datatemp ;
-              datatemp = (pvoid) ((long) datatemp + rings[j].size) ; /* move to next record */
+              datatemp = (pvoid) ((uintptr_t) datatemp + rings[j].size) ; /* move to next record */
             }
           last->next = (pvoid) rings[j].head ;    /* complete the linked list */
           rings[j].tail = rings[j].head ; /* empty ring */

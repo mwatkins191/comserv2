@@ -46,6 +46,7 @@ Edit History:
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
 #ifndef _OSK
 #include <termio.h>
 #include <fcntl.h>
@@ -211,8 +212,8 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
       int ii;  /*IGD swapping counter */
       
       pt = &clients[clientnum] ;
-      client = (pclient_station) ((long) svc + svc->offsets[svc->curstation]) ;
-      pcom = (pvoid) ((long) svc + client->comoutoffset) ;
+      client = (pclient_station) ((uintptr_t) svc + svc->offsets[svc->curstation]) ;
+      pcom = (pvoid) ((uintptr_t) svc + client->comoutoffset) ;
       pv = &pcom->moreinfo ;
  
 /* Check privilege requirements */
@@ -288,7 +289,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
    New records that can be transferred to client. They are transferred in the 
    order that they were received, regardless of packet type.
 */
-              pdata = (pdata_user) ((long) svc + client->dbufoffset) ;
+              pdata = (pdata_user) ((uintptr_t) svc + client->dbufoffset) ;
               while (client->valdbuf < client->reqdbuf)
                 {
                   lowest = LONG_MAX ;
@@ -307,7 +308,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                         good = bscan[lowi]->user_data.header_time >= client->startdbuf ;
                         if (good && (lowi < NUMQ)) /* still good and selectors valid */
                             {
-                              psa = (pselarray) ((long) svc + client->seloffset) ;
+                              psa = (pselarray) ((uintptr_t) svc + client->seloffset) ;
                               good = FALSE ;
                               memcpy((pchar) &cmp, (pchar) &bscan[lowi]->user_data.data_bytes[13], 5) ;
                               for (k = client->sels[lowi].first ; k <= client->sels[lowi].last ; k++)
@@ -338,7 +339,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                             {
                               memcpy ((pchar) pdata, (pchar) &bscan[lowi]->user_data, rings[lowi].xfersize) ;
                               client->valdbuf++ ;
-                              pdata = (pdata_user) ((long) pdata + client->dbufsize) ;
+                              pdata = (pdata_user) ((uintptr_t) pdata + client->dbufsize) ;
                             }
                       }
                   client->next_data = bscan[lowi]->packet_num + 1 ;
@@ -371,7 +372,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_SIZE ;
               if (checkcom(pcom, clientnum, FALSE))
                   return CSCR_BUSY ;
-              pv2 = (pvoid) ((long) pultra + pultra->caloffset) ;
+              pv2 = (pvoid) ((uintptr_t) pultra + pultra->caloffset) ;
               memcpy(pv, pv2, size) ;
               pcom->command_tag = cmd_seq ;
               pcom->completion_status = CSCS_FINISHED ;
@@ -400,12 +401,12 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_NODATA ;
               size = sizeof(ultra_rec) - (CE_MAX * (COMMLENGTH + 1)) ;
               msize = 0 ;
-              pc1 = (pchar) ((long) pultra + pultra->comoffset) ;
+              pc1 = (pchar) ((uintptr_t) pultra + pultra->comoffset) ;
               pc2 = pc1 ;
               for (i = 0 ; i < pultra->comcount ; i++)
                 {
                   msize = msize + *pc1 + 1 ;
-                  pc1 = (pchar) ((long) pc1 + *pc1 + 1) ;
+                  pc1 = (pchar) ((uintptr_t) pc1 + *pc1 + 1) ;
                 }
               size = size + msize ;
               if (client->comoutsize < size)
@@ -444,7 +445,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               if (checkcom(pcom, clientnum, FALSE))
                   return CSCR_BUSY ;
               linkstat.blocked_packets = msize ;
-              linkstat.seconds_inop = (long) dtime () - start_time ;
+              linkstat.seconds_inop = (uintptr_t) dtime () - start_time ;
               memcpy((pchar) &linkstat.seedformat, (pchar) &seedformat, 4) ;
               linkstat.seedext = seedext ;
               strpas(linkstat.description, station_desc) ;
@@ -469,10 +470,10 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               size = 0 ;
               pcs = (pvoid) pv ;
               pcs->chancount = 0 ;
-              pcr2 = (pvoid) ((long) pultra + pultra->usedoffset) ;
+              pcr2 = (pvoid) ((uintptr_t) pultra + pultra->usedoffset) ;
               for (i = 0 ; i < pultra->usedcount ; i++)
                 {
-                  psa = (pselarray) ((long) svc + client->seloffset) ;
+                  psa = (pselarray) ((uintptr_t) svc + client->seloffset) ;
                   good = FALSE ;
                   memcpy((pchar) &cmp, (pchar) &pcr2->seedloc, 2) ;
                   memcpy(&cmp[2], (pchar) &pcr2->seedname, 3) ;
@@ -550,7 +551,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             }
           case CSCM_UNBLOCK :
             {
-              pshort = (pvoid) ((long) svc + client->cominoffset) ;
+              pshort = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               unblock (*pshort) ;
               clr_bit (&blockmask, *pshort) ;
 	      
@@ -590,7 +591,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_NODATA ;
               if (checkcom(pcom, clientnum, TRUE))
                   return CSCR_BUSY ;
-              psa = (pselarray) ((long) svc + client->seloffset) ;
+              psa = (pselarray) ((uintptr_t) svc + client->seloffset) ;
               msg.drs.cmd_type = DET_REQ ;
               msg.drs.dp_seq = cmd_seq ;
               msg.drs.rc_sp3 = 0 ;
@@ -629,7 +630,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pshell = (pvoid) ((long) svc + client->cominoffset) ;
+              pshell = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.scs.cmd_type = SHELL_CMD ;
               msg.scs.dp_seq = cmd_seq ;
               memcpy ((pchar) &msg.scs.sc, (pchar) &pshell->shell_parameter, 80) ; /*IGD char !*/
@@ -651,7 +652,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pflood = (pvoid) ((long) svc + client->cominoffset) ;
+              pflood = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.fcs.cmd_type = FLOOD_CTRL ;
               msg.fcs.dp_seq = cmd_seq ;
               msg.fcs.flood_on_off = *pflood ;
@@ -671,7 +672,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             {
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pshort = (pvoid) ((long) svc + client->cominoffset) ;
+              pshort = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.mmc.cmd_type = AUTO_DAC_CORRECTION ;
               if (*pshort == -1)
                   {
@@ -734,7 +735,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              plac = (pvoid) ((long) svc + client->cominoffset) ;
+              plac = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.las.cmd_type = LINK_ADJ ;
               msg.las.dp_seq = cmd_seq ;
               memcpy ((pchar) &msg.las.la, (pchar) plac, sizeof(linkadj_com)) ;
@@ -781,7 +782,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             {
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              prc = (pvoid) ((long) svc + client->cominoffset) ;
+              prc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               if (linkstat.ultraon)
                   {
                     msg.ums.cmd_type = ULTRA_MASS ;
@@ -810,7 +811,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             {
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pcsc = (pvoid) ((long) svc + client->cominoffset) ;
+              pcsc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               if (linkstat.ultraon)
                   {
                     msg.ucs.cmd_type = ULTRA_CAL ;
@@ -884,7 +885,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             {
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pshort = (pvoid) ((long) svc + client->cominoffset) ;
+              pshort = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               if (linkstat.ultraon)
                   {
                     msg.uss.cmd_type = ULTRA_STOP ;
@@ -915,7 +916,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pdec = (pvoid) ((long) svc + client->cominoffset) ;
+              pdec = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.des.cmd_type = DET_ENABLE ;
               msg.des.dp_seq = cmd_seq ;
               msg.des.rc_sp4 = flip2(0) ;  /*IGD flip2 here just in case*/
@@ -947,7 +948,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pdcc = (pvoid) ((long) svc + client->cominoffset) ;
+              pdcc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.dcs.cmd_type = DET_CHANGE ;
               msg.dcs.dp_seq = cmd_seq ;
               msg.dcs.rc_sp5 = flip2(0) ; /*IGD flip2 here ; just in case */
@@ -971,7 +972,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              prec = (pvoid) ((long) svc + client->cominoffset) ;
+              prec = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.res.cmd_type = REC_ENABLE ;
               msg.res.dp_seq = cmd_seq ;
               msg.res.rc_sp6 = flip2(0) ; /* IGD flip2 here in case */
@@ -985,7 +986,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               for (j = 0 ; j < prec->count ; j++)
                 {
                   pro = &(prec->changes[j]) ;
-                  pcr2 = (pvoid) ((long) pultra + pultra->usedoffset) ;
+                  pcr2 = (pvoid) ((uintptr_t) pultra + pultra->usedoffset) ;
                   for (i = 0 ; i < pultra->usedcount ; i++)
                     {
                       if ((memcmp((pchar) &pro->seedname, (pchar) &pcr2->seedname, 3) == 0) &&
@@ -1016,7 +1017,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, curlink.rcecho))
                   return CSCR_BUSY ;
-              pcec = (pvoid) ((long) svc + client->cominoffset) ;
+              pcec = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               msg.ces.cmd_type = COMM_EVENT ;
               msg.ces.dp_seq = cmd_seq ;
               msg.ces.rc_sp1 = flip2(0) ;  /*IGD flip2 just case */
@@ -1048,7 +1049,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
               msg.downs.dp_seq = cmd_seq ;
               pcom->command_tag = cmd_seq ;
               send_tx_packet (0, DOWN_ABT, &msg) ;
-              pdc = (pvoid) ((long) svc + client->cominoffset) ;
+              pdc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               pdr = pv ;
               pdr->dpshmid = NOCLIENT ;
               pdr->fsize = 0 ;
@@ -1090,12 +1091,12 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
                   return CSCR_INVALID ;
               if (checkcom(pcom, clientnum, TRUE))
                   return CSCR_BUSY ;
-              puc = (pvoid) ((long) svc + client->cominoffset) ;
+              puc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               pupres = pv ;
               pupres->bytecount = 0 ;
               pupres->retries = -1 ;
               pupbuf = (pvoid) shmat (puc->dpshmid, NULL, 0) ;
-              if ((long) pupbuf == ERROR)
+              if ((uintptr_t) pupbuf == ERROR)
                   return CSCR_PRIVATE ;
               upmemid = puc->dpshmid ;
               msg.us.cmd_type = UPLOAD ;
@@ -1140,7 +1141,7 @@ void send_tx_packet (byte nr, byte cmd_var, DP_to_DA_msg_type *msg) ;
             }
           case CSCM_LINKSET :
             {
-              plsc = (pvoid) ((long) svc + client->cominoffset) ;
+              plsc = (pvoid) ((uintptr_t) svc + client->cominoffset) ;
               polltime = plsc->pollusecs ;
               reconfig_on_err = plsc->reconcnt ;
               netto = plsc->net_idle_to ;

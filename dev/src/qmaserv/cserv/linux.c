@@ -36,9 +36,9 @@ int iSave1, iSave2, iSave3, iSave4;
 #endif
 }
 
-int flip4array (long *in, short bytes)  {
+int flip4array (int32_t *in, short bytes)  {
 /*--------------------------------------------------------
-/ Swaps "bytes" bytes of a long array *in: 12345678->43218765 etc.
+/ Swaps "bytes" bytes of a int32_t array *in: 12345678->43218765 etc.
 / returns 0 in case of success and negative value otherwise.
 / Directly modifies data stored in the memory pointed by *data,
 / therefore could be dangerous if used improperly.
@@ -51,8 +51,8 @@ unsigned char *p = (unsigned char *)in;
 short i;
 short j;
 
-if (sizeof(long) != 4) {
-        printf("Warning in flip4array: Sizeof long is not 4 as was assumed\n flip4array is aborted\n ");
+if (sizeof(int32_t) != 4) {
+        printf("Warning in flip4array: Sizeof int32_t is not 4 as was assumed\n flip4array is aborted\n ");
         return (-1);
         }
 

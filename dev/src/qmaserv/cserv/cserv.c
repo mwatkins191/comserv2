@@ -94,6 +94,7 @@ Edit History:
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#include <stddef.h>
 #ifndef _OSK
 #include <unistd.h>
 #include <termio.h>
@@ -993,7 +994,7 @@ int comserv_init (char* station_code)
       src = (pchar) &sbuf ;
       srcend = src ;
     /* destend must be past right end of packet */
-      destend = (pchar) ((long) &dbuf.crc_low + sizeof(short)) ;
+      destend = (pchar) ((uintptr_t) &dbuf.crc_low + sizeof(short)) ;
       dest = (pchar) &dbuf.seq ; /* skip "skipped" */
       cserv_crcinit () ;
       for (i = 0 ; i < 14 ; i++)
@@ -1099,7 +1100,7 @@ int comserv_init (char* station_code)
                                       }
                                   if (clients[i].timeout) /* client can be blocking */
                                       {
-                                        curclient = (pclient_station) ((long) cursvc +
+                                        curclient = (pclient_station) ((uintptr_t) cursvc +
                                                      cursvc->offsets[cursvc->curstation]) ;
                                         if (curclient->blocking)
                                             { /* client is taking blocking option */

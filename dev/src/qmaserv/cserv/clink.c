@@ -115,6 +115,7 @@ Edit History:
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#include <stddef.h>
 #ifndef _OSK
 #include <termio.h>
 #include <fcntl.h>
@@ -377,7 +378,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
           temp_pkt.msg.scs.dp_seq = cur->dpseq ;
           transmit_buf[0] = cur->leadin ;
           len = cur->len ;
-          ta = (pchar) ((long) &temp_pkt + 6) ;
+          ta = (pchar) ((uintptr_t) &temp_pkt + 6) ;
           temp_pkt.c.chksum = checksum(ta, len - 6) ;
           ltemp.l = cserv_crccalc(ta, len - 6) ;
           temp_pkt.c.crc = ltemp.s[0] ;
@@ -732,7 +733,7 @@ pchar seednamestring (seed_name_type *sd, location_type *loc) ;
                                 }
                           } ;
                       mmsg.us.up_union.up_send.byte_count = flip2(cnt) ; /*IGD flip2 here*/
-                      p1 = (pchar) ((long) pupbuf + off) ;
+                      p1 = (pchar) ((uintptr_t) pupbuf + off) ;
                       p2 = (pchar) &mmsg.us.up_union.up_send.bytes ;
                       memcpy(p2, p1, cnt) ;
                       xfer_bytes = xfer_bytes + cnt ;
@@ -1142,7 +1143,7 @@ int comlink_dataQueueBlocking() {
       if ((size & 1) == 0) /* SUN gets pissed if size is odd */
           {
             pecp = (tecp) term ;
-            pecp = (tecp) ((long) pecp - 6) ;
+            pecp = (tecp) ((uintptr_t) pecp - 6) ;
             dp_sum = checksum(dest, size) ;
             dp_crc = cserv_crccalc(dest, size) ;
             ltemp.s[0] = pecp->crc ;
@@ -1157,7 +1158,7 @@ int comlink_dataQueueBlocking() {
             this_packet = dbuf.seq ;
             if (size < 514)
                 {
-                  ta = (pchar) ((long) dest + size) ;
+                  ta = (pchar) ((uintptr_t) dest + size) ;
                   memset (ta, '\0', 514 - size) ;
                 }
             if (linkstat.ultraon)
@@ -1399,7 +1400,7 @@ int comlink_dataQueueBlocking() {
                           printf(", received at %s\n",
                               time_string(freebuf->user_data.reception_time)) ;
                         }
-                    p1 = (pvoid) ((long) pseed + 64) ;             /* skip header */
+                    p1 = (pvoid) ((uintptr_t) pseed + 64) ;             /* skip header */
                     memcpy (p1, (pchar) &dbuf.data_buf.cr.frames, 448) ;   /* and copy data portion */	
                      break ;
                   }
@@ -1479,7 +1480,7 @@ int comlink_dataQueueBlocking() {
                     if (linkstat.ultraon)
                         {
                           p1 = (pchar) &dbuf.data_buf.cc.ct ;
-                          p1 = (pchar) ((long) p1 + (unsigned long) *p1 + 1) ;
+                          p1 = (pchar) ((uintptr_t) p1 + (uintptr_t) *p1 + 1) ;
                           p2 = (pchar) &dbuf.data_buf.cc.cc_station ;
                           memcpy(p2, p1, sizeof(long) + sizeof(seed_net_type) +
                                     sizeof(location_type) + sizeof(seed_name_type)) ;
@@ -1559,7 +1560,7 @@ int comlink_dataQueueBlocking() {
 		     * from the previous case are applicable o what we do here
 		     */			
 		    flip_fixed_header(pseed);	
-		    tmp_timing = (pvoid) ((long) pseed + FIRSTDATA);    /* IGD 03/05/01 extract blockette 500
+		    tmp_timing = (pvoid) ((uintptr_t) pseed + FIRSTDATA);    /* IGD 03/05/01 extract blockette 500
 									 * for byte-swapping
 									 */
 		    tmp_timing->blockette_type = flip2(tmp_timing->blockette_type);
@@ -1617,9 +1618,9 @@ int comlink_dataQueueBlocking() {
 		    /* IGD 03/06/01 Note that it is irrelevent for byte-swapping if
 		     * the actual detector blockete is 200 or 201. We cast it as 200 here
                      */	
-                    dett = (pvoid) ((long) pseed + FIRSTDATA);
+                    dett = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
 
-                    dett = (pvoid) ((long) pseed + FIRSTDATA);
+                    dett = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
                     dett->blockette_type = flip2(dett->blockette_type);
                     dett->next_blockette = flip2(dett->next_blockette);
                     dett->signal_amplitude = flip_float(dett->signal_amplitude);
@@ -1729,7 +1730,7 @@ int comlink_dataQueueBlocking() {
 			{
                     case 300 :  /* STEP_CALIBRATION */
                       {
-                        calstep = (pvoid) ((long) pseed + FIRSTDATA);
+                        calstep = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
                         calstep->fixed.blockette_type = flip2(calstep->fixed.blockette_type);
                         calstep->fixed.next_blockette = flip2(calstep->fixed.next_blockette);
                         calstep->fixed.calibration_time.yr = flip2(calstep->fixed.calibration_time.yr);
@@ -1744,7 +1745,7 @@ int comlink_dataQueueBlocking() {
                       }
                     case 310 :  /* SINE_CALIBRATION */
                       {
-			calsine = (pvoid) ((long) pseed + FIRSTDATA);
+			calsine = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
                         calsine->fixed.blockette_type = flip2(calsine->fixed.blockette_type);
                         calsine->fixed.next_blockette = flip2(calsine->fixed.next_blockette);
                         calsine->fixed.calibration_time.yr = flip2(calsine->fixed.calibration_time.yr);
@@ -1759,7 +1760,7 @@ int comlink_dataQueueBlocking() {
                       }
                     case 320 :  /* RANDOM_CALIBRATION */
                       {
-                        calrand = (pvoid) ((long) pseed + FIRSTDATA);
+                        calrand = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
                         calrand->fixed.blockette_type = flip2(calrand->fixed.blockette_type);
                         calrand->fixed.next_blockette = flip2(calrand->fixed.next_blockette);
                         calrand->fixed.calibration_time.yr = flip2(calrand->fixed.calibration_time.yr);
@@ -1774,8 +1775,8 @@ int comlink_dataQueueBlocking() {
                       end ;
                     case 395 :  /* ABORT_CALIBRATION */
                       {
-			calabort = (pvoid) ((long) pseed + FIRSTDATA);
-                        calabort = (pvoid) ((long) pseed + FIRSTDATA);
+			calabort = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
+                        calabort = (pvoid) ((uintptr_t) pseed + FIRSTDATA);
                         calabort->fixed.blockette_type = flip2(calabort->fixed.blockette_type);
                         calabort->fixed.next_blockette = flip2(calabort->fixed.next_blockette);
                         calabort->fixed.calibration_time.yr = flip2(calabort->fixed.calibration_time.yr);
@@ -1817,7 +1818,7 @@ int comlink_dataQueueBlocking() {
                               }
                           ultra_seg[flip2 (preply->this_seg) / 8 ] = ultra_seg[flip2( preply->this_seg ) / 8] | /*IGD two flip2 here */
                                                  (byte) (1 << (flip2( preply->this_seg ) % 8))  ;  /*IGD  flip2 here */
-                          ta = (pchar) ((long) pultra + flip2( preply->byte_offset )) ; /*IGD flip2 here */
+                          ta = (pchar) ((uintptr_t) pultra + flip2( preply->byte_offset )) ; /*IGD flip2 here */
                           memcpy(ta, (pchar) &preply->bytes, flip2( preply->byte_count )) ; /*IGD flip2 here */
                           preply->total_seg = flip2(preply->total_seg);	 /*IGD flip2 here */
 			  j=0;
@@ -1844,9 +1845,9 @@ int comlink_dataQueueBlocking() {
                           	pultra->caloffset  = flip2(pultra->caloffset);
                           	pultra->ut_sp2    =  flip2(pultra->ut_sp2);
                           	pultra->comm_mask  = flip4(pultra->comm_mask);     /*IGD : 9 flip2 and flip4 */
-			  	tmpa = (pvoid) ((long) pultra  + pultra->caloffset) ; /*Swap calibrators structure */
+			  	tmpa = (pvoid) ((uintptr_t) pultra  + pultra->caloffset) ; /*Swap calibrators structure */
                                 flip_calibrators (tmpa);
-                                tmpa = (pvoid) ((long) pultra + pultra->usedoffset - 2); /*Swap channel structure */
+                                tmpa = (pvoid) ((uintptr_t) pultra + pultra->usedoffset - 2); /*Swap channel structure */
                                 flip_channels(tmpa, pultra->usedcount);
 		
 #endif
@@ -1888,7 +1889,7 @@ int comlink_dataQueueBlocking() {
                               }
                           detavail_seg[flip2(preply->this_seg) / 8] = detavail_seg[flip2(preply->this_seg) / 8] or
                                       (byte) (1 << (flip2(preply->this_seg) % 8))  ;  /*IGD three flip2 here */
-                          ta = (pchar) ((long) pdetavail + flip2(preply->byte_offset)) ;   /*IGD flip2 here */
+                          ta = (pchar) ((uintptr_t) pdetavail + flip2(preply->byte_offset)) ;   /*IGD flip2 here */
                           memcpy (ta, (pchar) &preply->bytes, flip2(preply->byte_count)) ;   /*IGD flip2 here */
                           j = 0 ;
                           for (i = 1 ; i <= flip2(preply->total_seg) ; i++) /*IGD flip2 here */
@@ -1964,7 +1965,7 @@ int comlink_dataQueueBlocking() {
                               }
 /* Isolate client from header, start the data module with the actual file contents */
                           xfer_offset = sizeof(download_struc) - 65000 ; /* source bytes to skip */
-                          ta = (pchar) ((long) pdownload + flip2(preply->byte_offset) - xfer_offset) ; /* destination */  /*IGD flip2 here*/
+                          ta = (pchar) ((uintptr_t) pdownload + flip2(preply->byte_offset) - xfer_offset) ; /* destination */  /*IGD flip2 here*/
                           p1 = (pchar) &preply->bytes ; /* source */
                           bc = flip2 (preply->byte_count) ; /* number of bytes */  /*IGD flip2 here */
                           if (flip2(preply->this_seg) == 1) /*IGD flip2 here */
@@ -2156,7 +2157,7 @@ int comlink_dataQueueBlocking() {
 #endif
       if (numread > 0)
          {
-           srcend = (pchar) ((long) srcend + numread) ;
+           srcend = (pchar) ((uintptr_t) srcend + numread) ;
            if ((insane) /* && (numread > maxbytes) */)
                {
                  maxbytes = numread ;
@@ -2271,7 +2272,7 @@ int comlink_dataQueueBlocking() {
             numread = recv(path, dest, (int) destend - (int) dest, 0) ;
             if (numread > 0)
                 {
-                  term = (pchar) ((long) dest + numread) ;
+                  term = (pchar) ((uintptr_t) dest + numread) ;
                   process () ;
                 }
             else if (numread < 0)
@@ -2432,7 +2433,7 @@ int comlink_dataQueueBlocking() {
 	for (i=0; i<   ((det_request_rec *) ta)->count; i++)  {
             (((det_request_rec *) ta)->dets)[i].id    =  flip2((((det_request_rec *) ta)->dets)[i].id) ;
 	flip4array((char *)(((det_request_rec *) ta)->dets)[i].cons, 42) ;    /*IGD this is 42 byte-long char with parameters ,
-										which is interpreted as 13 long words in the
+										which is interpreted as 13 32-bit words in the
 										dpda client; swap it */
         }
   }
