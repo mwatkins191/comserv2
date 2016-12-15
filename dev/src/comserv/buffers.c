@@ -53,7 +53,7 @@ extern long blockmask, noackmask ;
       basetemp = base ;
       basetemp++ ;      /* skip over tserver_struc */
       /* double word align */
-      datatemp = (pvoid) (((uintptr_t) basetemp + 7) & 0xfffffff8) ;
+      datatemp = (pvoid) ((((uintptr_t) basetemp + 7) >> 3) << 3) ;
       for (j = DATAQ ; j < NUMQ ; j++)
         {
           last = NULL ;
