@@ -213,6 +213,7 @@ begin
                   pm->alloc_size = DEFAULT_MEM_INC ;
               pm->sofar = 0 ;
               pm->base = malloc (pm->alloc_size) ;
+              q330->cur_memory = pm ;
             end
       end
   newblock = q330->cur_memory->base ;
